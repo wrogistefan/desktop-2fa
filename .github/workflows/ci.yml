@@ -42,6 +42,15 @@ jobs:
       - name: Run Black (check)
         run: black --check .
 
+      - name: Debug test_cli visibility
+        run: |
+          echo "=== Working directory ==="
+          pwd
+          echo "=== Files ==="
+          ls -R
+          echo "=== Grep test_list_empty ==="
+          grep -R "def test_list_empty" . || true
+
       - name: Run MyPy
         run: mypy src tests
 
