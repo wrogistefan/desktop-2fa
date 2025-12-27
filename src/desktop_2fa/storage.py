@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import List
+from typing import Any, Dict, List
 
 from .vault.model import TokenEntry, VaultData
 
@@ -31,7 +31,7 @@ class Storage:
         entry = self.get_entry(issuer)
         self.data.entries.remove(entry)
 
-    def to_json(self) -> dict:
+    def to_json(self) -> Dict[str, Any]:
         return {
             "version": self.data.version,
             "entries": [entry.__dict__ for entry in self.entries],

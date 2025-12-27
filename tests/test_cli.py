@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+
 from typer.testing import CliRunner
+
 from desktop_2fa.cli.main import app
 
 runner = CliRunner()

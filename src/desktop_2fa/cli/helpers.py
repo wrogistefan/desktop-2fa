@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+
 from desktop_2fa.storage import Storage
 
 VAULT_PATH = "vault.json"

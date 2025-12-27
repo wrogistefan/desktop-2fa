@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+
 from desktop_2fa.totp import generate_totp
-from .helpers import load_vault, save_vault, timestamp, VAULT_PATH
+
+from .helpers import VAULT_PATH, load_vault, save_vault, timestamp
 
 
 def list_entries() -> None:
