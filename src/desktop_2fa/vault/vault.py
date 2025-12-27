@@ -1,8 +1,9 @@
 import os
+from typing import List
 
 from ..crypto.aesgcm import decrypt, encrypt
 from ..crypto.argon2 import derive_key
-from .model import VaultData
+from .model import TokenEntry, VaultData
 from .storage import deserialize, serialize
 
 
@@ -11,15 +12,16 @@ class Vault:
         self.data = data
 
     @property
-    def entries(self):
+    def entries(self) -> List[TokenEntry]:
         return self.data.entries
 
-    def add_entry(self, issuer: str, secret: str):
+    def add_entry(self, issuer: str, secret: str) -> None:
         from .model import TokenEntry
+
         entry = TokenEntry(name=issuer, secret=secret, issuer=issuer)
         self.data.entries.append(entry)
 
-    def get_entry(self, issuer: str):
+    def get_entry(self, issuer: str) -> TokenEntry:
         for entry in self.entries:
             if entry.issuer == issuer:
                 return entry
