@@ -1,4 +1,3 @@
-
 from argon2.low_level import Type, hash_secret_raw
 
 

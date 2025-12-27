@@ -11,5 +11,3 @@ def test_encrypt_decrypt() -> None:
     enc = encrypt(key, data)
     dec = decrypt(key, enc)
     assert dec == data
-
-
