@@ -2,7 +2,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/desktop-2fa.svg)](https://pypi.org/project/desktop-2fa/)
 ![Python versions](https://img.shields.io/pypi/pyversions/desktop-2fa.svg)
 ![License](https://img.shields.io/github/license/wrogistefan/desktop-2fa)
-![Build](https://github.com/wrogistefan/desktop-2fa/actions/workflows/publish.yml/badge.svg)
+![Build](https://github.com/wrogistefan/desktop-2fa/actions/workflows/ci.yml/badge.svg)
 [![codecov](https://codecov.io/gh/wrogistefan/desktop-2fa/branch/main/graph/badge.svg)](https://codecov.io/gh/wrogistefan/desktop-2fa)
 
 A secure, offline two-factor authentication (2FA) manager designed for desktop environments. Built with a modular architecture in Python, featuring strong encryption and no cloud dependencies.
