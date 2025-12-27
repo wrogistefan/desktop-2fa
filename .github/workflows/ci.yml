@@ -15,15 +15,12 @@ jobs:
         python-version: ["3.11", "3.12"]
 
     steps:
-
-      
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Force clean repo
         run: |
           git clean -xfd
-
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -42,14 +39,24 @@ jobs:
       - name: Run Black (check)
         run: black --check .
 
-      - name: Debug test_cli visibility
+      - name: Debug environment before MyPy
         run: |
+          echo "=== Python version ==="
+          python --version
+          echo "=== MyPy version ==="
+          mypy --version || echo "mypy not found"
           echo "=== Working directory ==="
           pwd
-          echo "=== Files ==="
-          ls -R
-          echo "=== Grep test_list_empty ==="
-          grep -R "def test_list_empty" . || true
+          echo "=== Listing files ==="
+          ls -R .
+          echo "=== mypy.ini content (if exists) ==="
+          if [ -f mypy.ini ]; then cat mypy.ini; else echo "mypy.ini NOT FOUND"; fi
+          echo "=== pyproject.toml mypy section (if exists) ==="
+          grep -n "\[tool.mypy\]" pyproject.toml || true
+          echo "=== test_cli.py header ==="
+          head -n 20 tests/test_cli.py
+          echo "=== Grep for type annotations in test_cli.py ==="
+          grep -R "def test_" -n tests/test_cli.py
 
       - name: Run MyPy
         run: mypy src tests
