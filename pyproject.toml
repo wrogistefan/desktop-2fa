@@ -3,8 +3,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "desktop-2fa"
-version = "0.1.1"
+name = "desktop-2fa-lperek"
+version = "0.1.2"
 description = "Secure offline 2FA desktop authenticator"
 readme = "README.md"
 license = { file = "LICENSE" }
