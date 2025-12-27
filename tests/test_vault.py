@@ -1,8 +1,10 @@
+from pathlib import Path
+
 from desktop_2fa.vault.model import TokenEntry, VaultData
 from desktop_2fa.vault.vault import load_vault, save_vault
 
 
-def test_vault_roundtrip(tmp_path):
+def test_vault_roundtrip(tmp_path: Path) -> None:
     path = tmp_path / "vault.2fa"
     v = VaultData(
         version=1, entries=[TokenEntry(name="GitHub", secret="ABC", issuer="GitHub")]

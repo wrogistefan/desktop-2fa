@@ -3,10 +3,7 @@ import os
 from argon2.low_level import Type, hash_secret_raw
 
 
-def derive_key(password: str, salt: bytes | None = None):
-    if salt is None:
-        salt = os.urandom(16)
-
+def derive_key(password: str, salt: bytes) -> bytes:
     key = hash_secret_raw(
         secret=password.encode(),
         salt=salt,
@@ -16,4 +13,4 @@ def derive_key(password: str, salt: bytes | None = None):
         hash_len=32,
         type=Type.ID,
     )
-    return key, salt
+    return key
