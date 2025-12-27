@@ -1,8 +1,25 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)  
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
+
+---
+
+## [0.2.1] – 2025-12-27
+### Added
+- Fully automated PyPI publishing workflow (GitHub Actions).
+- Signed Git tag for secure release distribution.
+- Synchronized versioning across pyproject.toml, desktop_2fa.__version__, and Git tag.
+
+### Changed
+- Updated internal version to match the published package.
+- Improved consistency between package metadata and runtime version.
+
+### Fixed
+- Resolved version mismatch where Python imported an older module copy.
+- Eliminated stale Windows Store Python site-packages conflicts.
+- Ensured clean installation from PyPI (pip install desktop-2fa now reports correct version).
 
 ---
 

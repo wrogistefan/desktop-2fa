@@ -20,6 +20,14 @@ A secure, offline two-factor authentication (2FA) manager designed for desktop e
 pip install desktop-2fa
 ```
 
+Verify installation:
+
+```bash
+python -c "import desktop_2fa; print(desktop_2fa.__version__)"
+```
+
+Expected output: `0.2.1`
+
 ### From Source
 
 Clone the repository and install dependencies:
@@ -29,6 +37,10 @@ git clone https://github.com/wrogistefan/desktop-2fa.git
 cd desktop-2fa
 pip install -e .
 ```
+
+## Integrity
+
+This release is signed with a GPG key to ensure authenticity and tamper-resistance.
 
 ## Usage
 
@@ -91,10 +103,10 @@ Data is encrypted using Argon2 for key derivation and AES-GCM for symmetric encr
 
 ## Roadmap
 
-- [ ] Export/import to KeePassXC-compatible format
-- [ ] Rust migration for crypto core
-- [ ] GUI polish and token editing
-- [ ] OTP URI parsing and QR code import
+- [ ] CLI entry point (desktop-2fa command)
+- [ ] Vault UI prototype
+- [ ] Rust core migration plan
+- [ ] Extended test suite (crypto, vault, storage)
 
 ## Contributing
 
