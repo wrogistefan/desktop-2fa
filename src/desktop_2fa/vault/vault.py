@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import Any, Dict, List
 
 from ..crypto.aesgcm import decrypt, encrypt
 from ..crypto.argon2 import derive_key
@@ -26,6 +26,16 @@ class Vault:
             if entry.issuer == issuer:
                 return entry
         raise ValueError(f"Entry for issuer '{issuer}' not found")
+
+    def remove_entry(self, issuer: str) -> None:
+        entry = self.get_entry(issuer)
+        self.data.entries.remove(entry)
+
+    def to_json(self) -> Dict[str, Any]:
+        return {
+            "version": self.data.version,
+            "entries": [entry.__dict__ for entry in self.entries],
+        }
 
     @classmethod
     def load(cls, path: str, password: str = "password") -> "Vault":
