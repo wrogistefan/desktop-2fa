@@ -1,3 +1,3 @@
 from .vault import Vault
 
-__all__ = ['Vault']
+__all__ = ["Vault"]
