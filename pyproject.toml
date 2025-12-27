@@ -1,0 +1,52 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "desktop-2fa"
+version = "0.1.0"
+description = "Secure offline 2FA desktop authenticator"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Łukasz Perek" }
+]
+requires-python = ">=3.11"
+
+dependencies = [
+    "argon2-cffi>=23.1.0",
+    "cryptography>=42.0.0",
+]
+
+[project.scripts]
+desktop-2fa = "desktop_2fa.app.main:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "ruff>=0.6.0",
+    "black>=24.0.0",
+    "mypy>=1.0.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]  # bo black i tak łamie linie
+
+[tool.mypy]
+python_version = "3.11"
+warn_unused_configs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_no_return = true
+strict = true
+mypy_path = "src"
