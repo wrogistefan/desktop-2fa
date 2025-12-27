@@ -16,10 +16,13 @@ requires-python = ">=3.11"
 dependencies = [
     "argon2-cffi>=23.1.0",
     "cryptography>=42.0.0",
+    "typer>=0.9.0",
 ]
 
 [project.scripts]
 desktop-2fa = "desktop_2fa.app.main:main"
+d2fa = "desktop_2fa.cli.main:app"
+
 
 [project.optional-dependencies]
 dev = [

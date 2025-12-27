@@ -1,4 +1,9 @@
 # 🛡️ Desktop-2FA
+[![PyPI version](https://img.shields.io/pypi/v/desktop-2fa.svg)](https://pypi.org/project/desktop-2fa/)
+![Python versions](https://img.shields.io/pypi/pyversions/desktop-2fa.svg)
+![License](https://img.shields.io/github/license/wrogistefan/desktop-2fa)
+![Build](https://github.com/wrogistefan/desktop-2fa/actions/workflows/publish.yml/badge.svg)
+[![codecov](https://codecov.io/gh/wrogistefan/desktop-2fa/branch/main/graph/badge.svg)](https://codecov.io/gh/wrogistefan/desktop-2fa)
 
 A secure, offline two-factor authentication (2FA) manager designed for desktop environments. Built with a modular architecture in Python, featuring strong encryption and no cloud dependencies.
 
@@ -47,7 +52,7 @@ This release is signed with a GPG key to ensure authenticity and tamper-resistan
 Launch the application:
 
 ```bash
-python -m src.app.main
+desktop-2fa
 ```
 
 ### Adding Tokens
@@ -57,6 +62,14 @@ Use the UI to add new TOTP tokens by providing the secret key, issuer, and other
 ### Generating Codes
 
 The application will automatically generate and display TOTP codes based on the current time. Codes are copied to the clipboard for easy use.
+
+## CLI Usage
+
+```bash
+desktop-2fa-cli list
+desktop-2fa-cli add github JBSWY3DPEHPK3PXP
+desktop-2fa-cli code github
+```
 
 ## Project Structure
 
@@ -101,12 +114,16 @@ The vault stores encrypted data in a JSON structure saved as a `.2fa` file. The 
 
 Data is encrypted using Argon2 for key derivation and AES-GCM for symmetric encryption.
 
-## Roadmap
+## 🧭 Roadmap (high‑level)
+v0.3.0 — CLI
 
-- [ ] CLI entry point (desktop-2fa command)
-- [ ] Vault UI prototype
-- [ ] Rust core migration plan
-- [ ] Extended test suite (crypto, vault, storage)
+v0.4.0 — Vault format v2 + migrations
+
+v0.5.0 — Desktop UI prototype
+
+v0.6.x — Rust core (pyo3)
+
+v1.0.0 — Stable release
 
 ## Contributing
 
