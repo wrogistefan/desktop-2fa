@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 from typer.testing import CliRunner
 
 from desktop_2fa.cli.main import app
@@ -18,7 +19,7 @@ def write_vault(tmp_path: Path, entries: list[dict[str, str]]) -> Path:
     return vault_path
 
 
-def test_list_empty(tmp_path: Path, monkeypatch) -> None:
+def test_list_empty(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
     write_vault(tmp_path, [])
 
@@ -27,7 +28,7 @@ def test_list_empty(tmp_path: Path, monkeypatch) -> None:
     assert "Vault is empty" in result.stdout
 
 
-def test_add_and_list(tmp_path: Path, monkeypatch) -> None:
+def test_add_and_list(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
     write_vault(tmp_path, [])
 
@@ -40,7 +41,7 @@ def test_add_and_list(tmp_path: Path, monkeypatch) -> None:
     assert "- github" in result_list.stdout
 
 
-def test_code_generation(tmp_path: Path, monkeypatch) -> None:
+def test_code_generation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
     write_vault(tmp_path, [{"issuer": "github", "secret": "JBSWY3DPEHPK3PXP"}])
 
@@ -50,7 +51,7 @@ def test_code_generation(tmp_path: Path, monkeypatch) -> None:
     assert len(result.stdout.strip()) == 6
 
 
-def test_remove_entry(tmp_path: Path, monkeypatch) -> None:
+def test_remove_entry(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
     write_vault(tmp_path, [{"issuer": "github", "secret": "AAA"}])
 
@@ -62,7 +63,7 @@ def test_remove_entry(tmp_path: Path, monkeypatch) -> None:
     assert "Vault is empty" in result_list.stdout
 
 
-def test_rename_entry(tmp_path: Path, monkeypatch) -> None:
+def test_rename_entry(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
     write_vault(tmp_path, [{"issuer": "github", "secret": "AAA"}])
 
@@ -74,7 +75,7 @@ def test_rename_entry(tmp_path: Path, monkeypatch) -> None:
     assert "- git" in result_list.stdout
 
 
-def test_export_vault(tmp_path: Path, monkeypatch) -> None:
+def test_export_vault(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
     write_vault(tmp_path, [{"issuer": "github", "secret": "AAA"}])
 
@@ -87,7 +88,7 @@ def test_export_vault(tmp_path: Path, monkeypatch) -> None:
     assert exported["entries"][0]["issuer"] == "github"
 
 
-def test_import_vault(tmp_path: Path, monkeypatch) -> None:
+def test_import_vault(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
 
     # initial vault
@@ -107,7 +108,7 @@ def test_import_vault(tmp_path: Path, monkeypatch) -> None:
     assert "- new" in result_list.stdout
 
 
-def test_backup(tmp_path: Path, monkeypatch) -> None:
+def test_backup(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
     write_vault(tmp_path, [{"issuer": "github", "secret": "AAA"}])
 

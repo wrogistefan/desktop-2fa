@@ -52,6 +52,6 @@ python_version = "3.11"
 warn_unused_configs = true
 warn_unused_ignores = true
 warn_redundant_casts = true
-warn_no_return = false
+warn_no_return = true
 strict = true
 mypy_path = "src"
