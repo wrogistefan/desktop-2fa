@@ -9,6 +9,6 @@ def test_roundtrip() -> None:
     raw = serialize(v)
     v2 = deserialize(raw)
     assert v2.entries[0].name == "Test"
-    
+
 
 
