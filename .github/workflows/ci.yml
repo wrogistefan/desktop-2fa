@@ -57,6 +57,9 @@ jobs:
           head -n 20 tests/test_cli.py
           echo "=== Grep for type annotations in test_cli.py ==="
           grep -R "def test_" -n tests/test_cli.py
+          echo "=== mypy config file detected ==="
+          mypy --show-config
+
 
       - name: Run MyPy
         run: mypy src tests
