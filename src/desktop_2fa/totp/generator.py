@@ -1,10 +1,17 @@
 import base64
-import hmac
 import hashlib
+import hmac
 import struct
 import time
 
-def generate(secret: str, timestamp: int | None = None, digits: int = 6, period: int = 30, algorithm: str = "SHA1") -> str:
+
+def generate(
+    secret: str,
+    timestamp: int | None = None,
+    digits: int = 6,
+    period: int = 30,
+    algorithm: str = "SHA1",
+) -> str:
     if timestamp is None:
         timestamp = int(time.time())
 
@@ -23,6 +30,6 @@ def generate(secret: str, timestamp: int | None = None, digits: int = 6, period:
     msg = struct.pack(">Q", counter)
     h = hmac.new(key, msg, digestmod).digest()
     offset = h[-1] & 0x0F
-    code = (struct.unpack(">I", h[offset:offset+4])[0] & 0x7FFFFFFF) % (10 ** digits)
+    code = (struct.unpack(">I", h[offset : offset + 4])[0] & 0x7FFFFFFF) % (10**digits)
 
     return str(code).zfill(digits)

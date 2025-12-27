@@ -1,7 +1,8 @@
-from ..crypto.aesgcm import encrypt, decrypt
+from ..crypto.aesgcm import decrypt, encrypt
 from ..crypto.argon2 import derive_key
-from .storage import serialize, deserialize
 from .model import VaultData
+from .storage import deserialize, serialize
+
 
 def save_vault(path: str, vault: VaultData, password: str) -> None:
     key, salt = derive_key(password)
@@ -9,6 +10,7 @@ def save_vault(path: str, vault: VaultData, password: str) -> None:
     encrypted = encrypt(key, raw)
     with open(path, "wb") as f:
         f.write(salt + encrypted)
+
 
 def load_vault(path: str, password: str) -> VaultData:
     with open(path, "rb") as f:

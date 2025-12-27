@@ -1,5 +1,7 @@
 import os
-from argon2.low_level import hash_secret_raw, Type
+
+from argon2.low_level import Type, hash_secret_raw
+
 
 def derive_key(password: str, salt: bytes | None = None):
     if salt is None:

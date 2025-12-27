@@ -1,5 +1,6 @@
+from desktop_2fa.crypto.aesgcm import decrypt, encrypt
 from desktop_2fa.crypto.argon2 import derive_key
-from desktop_2fa.crypto.aesgcm import encrypt, decrypt
+
 
 def test_encrypt_decrypt():
     key, _ = derive_key("password")
