@@ -190,3 +190,14 @@ This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE
 ## Author
 
 Łukasz Perek
+
+## ❤️ Support the Project
+
+**Desktop-2FA** is fully open-source and free to use.
+
+If you'd like to support its development, you can do so here:
+
+- **Ko-fi**: [https://ko-fi.com/lukaszperek](https://ko-fi.com/lukaszperek)
+- **Buy Me a Coffee**: [https://buymeacoffee.com/lukaszperek](https://buymeacoffee.com/lukaszperek)
+
+Your support helps keep the project maintained, secure, and evolving.
