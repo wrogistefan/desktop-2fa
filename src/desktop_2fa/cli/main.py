@@ -1,6 +1,4 @@
-from pathlib import Path
-
-from typer import Typer
+import typer
 
 from .commands import (
     add_entry,
@@ -13,52 +11,55 @@ from .commands import (
     rename_entry,
 )
 
-app = Typer(help="desktop-2fa CLI — local-first TOTP authenticator")
+app = typer.Typer(help="Desktop‑2FA — secure offline TOTP authenticator")
 
 
-@app.command()
-def list() -> None:
+@app.command("list")
+def list_cmd() -> None:
     """List all entries in the vault."""
     list_entries()
 
 
-@app.command()
-def add(issuer: str, secret: str) -> None:
+@app.command("add")
+def add_cmd(
+    issuer: str = typer.Argument(..., help="Service provider name"),
+    secret: str = typer.Argument(..., help="TOTP secret"),
+) -> None:
     """Add a new TOTP entry."""
-    add_entry(issuer, secret)
+    add_entry(issuer=issuer, secret=secret)
 
 
-@app.command()
-def code(issuer: str) -> None:
-    """Generate a TOTP code for the given issuer."""
-    generate_code(issuer)
+@app.command("code")
+def code_cmd(name: str) -> None:
+    """Generate a TOTP code for the given entry."""
+    generate_code(name)
 
 
-@app.command()
-def remove(issuer: str) -> None:
-    """Remove an entry from the vault."""
-    remove_entry(issuer)
+@app.command("remove")
+def remove_cmd(name: str) -> None:
+    """Remove an entry by name."""
+    remove_entry(name)
 
 
-@app.command()
-def rename(old: str, new: str) -> None:
-    """Rename an entry."""
+@app.command("rename")
+def rename_cmd(old: str, new: str) -> None:
+    """Rename an entry (changes name, not issuer)."""
     rename_entry(old, new)
 
 
-@app.command()
-def export(path: Path) -> None:
-    """Export the encrypted vault to a file."""
-    export_vault(str(path))
+@app.command("export")
+def export_cmd(path: str) -> None:
+    """Export vault to a JSON file."""
+    export_vault(path)
 
 
 @app.command("import")
-def import_cmd(path: Path) -> None:
-    """Import a vault from a file."""
-    import_vault(str(path))
+def import_cmd(path: str) -> None:
+    """Import vault from a JSON file."""
+    import_vault(path)
 
 
-@app.command()
-def backup() -> None:
+@app.command("backup")
+def backup_cmd() -> None:
     """Create a timestamped backup of the vault."""
     backup_vault()

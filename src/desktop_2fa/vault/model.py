@@ -1,10 +1,10 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 
 
 @dataclass
 class TokenEntry:
-    name: str
+    name: Optional[str]
     secret: str
     issuer: str
     digits: int = 6
