@@ -200,4 +200,7 @@ If you'd like to support its development, you can do so here:
 - **Ko-fi**: [https://ko-fi.com/lukaszperek](https://ko-fi.com/lukaszperek)
 - **Buy Me a Coffee**: [https://buymeacoffee.com/lukaszperek](https://buymeacoffee.com/lukaszperek)
 
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-support-blue?logo=ko-fi&style=flat-square)](https://ko-fi.com/lukaszperek)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support-yellow?logo=buy-me-a-coffee&style=flat-square)](https://buymeacoffee.com/lukaszperek)
+
 Your support helps keep the project maintained, secure, and evolving.
