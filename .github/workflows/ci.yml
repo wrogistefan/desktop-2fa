@@ -39,25 +39,7 @@ jobs:
       - name: Run Black (check)
         run: black --check .
 
-      - name: Debug environment before MyPy
-        run: |
-          echo "=== Python version ==="
-          python --version
-          echo "=== MyPy version ==="
-          mypy --version || echo "mypy not found"
-          echo "=== Working directory ==="
-          pwd
-          echo "=== Listing files ==="
-          ls -R .
-          echo "=== mypy.ini content (if exists) ==="
-          if [ -f mypy.ini ]; then cat mypy.ini; else echo "mypy.ini NOT FOUND"; fi
-          echo "=== pyproject.toml mypy section (if exists) ==="
-          grep -n "\[tool.mypy\]" pyproject.toml || true
-          echo "=== test_cli.py header ==="
-          head -n 20 tests/test_cli.py
-          echo "=== Grep for type annotations in test_cli.py ==="
-          grep -R "def test_" -n tests/test_cli.py
-          
+      
 
       - name: Run MyPy
         run: mypy src tests

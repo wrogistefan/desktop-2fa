@@ -5,6 +5,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
+## [0.3.0] – 2025‑12‑28
+
+### Added
+- Full CLI command set: `list`, `add`, `code`, `remove`, `rename`, `export`, `import`, `backup`.
+- Encrypted vault implementation using AES‑256‑GCM and Argon2.
+- RFC 6238‑compliant TOTP generator.
+- Comprehensive test suite covering CLI, crypto, storage, and models.
+- New CI workflow with pytest, mypy, ruff, and black.
+- Development installation via `pip install -e .`.
+
+### Fixed
+- Mypy configuration detection in CI.
+- CLI inconsistencies after project restructuring.
+- Removed outdated entry point `desktop_2fa.app.main:main`.
+
+### Changed
+- Unified CLI entry point: `desktop-2fa = desktop_2fa.cli.main:app`.
+- Cleaned up project structure and module layout.
+- Updated documentation and usage examples.
+
+### Removed
+- Deprecated modules and unused entry points.
 
 ## [0.2.1] – 2025-12-27
 ### Added

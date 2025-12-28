@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "name": "GitHub",
+      "secret": "JBSWY3DPEHPK3PXP",
+      "issuer": "GitHub5",
+      "digits": 6,
+      "period": 30,
+      "algorithm": "SHA1"
+    }
+  ]
+}
