@@ -5,6 +5,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
+## [0.4.0] — 2025-12-28
+
+### 🔐 Vault encryption overhaul
+- Migrated vault storage to AES-GCM encryption with Argon2 key derivation
+- Removed legacy plaintext `storage.py` module
+- Vault now saves as binary `.bin` file in `~/.desktop-2fa/vault`
+- Backup created automatically as `vault.backup.bin`
+
+### 🧪 Full CLI test coverage
+- Added complete test suite for CLI commands: add, list, remove, rename, export, import, backup
+- All edge cases and error paths covered
+- CLI now fully deterministic and testable
+
+### 🔢 RFC-compliant TOTP generator
+- Supports SHA1, SHA256, SHA512
+- Configurable digits and period
+- Fully tested with deterministic outputs
+
+### 🧼 Codebase cleanup
+- Applied `ruff`, `black`, and `mypy` across all modules
+- Removed dead code and unused imports
+- CI now runs on Python 3.11 and 3.12
+
+### 📊 Coverage milestone
+- Achieved 99% test coverage across all modules
+- Vault, CLI, crypto, and TOTP fully covered
+
+
 ## [0.3.0] – 2025‑12‑28
 
 ### Added
