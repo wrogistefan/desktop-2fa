@@ -5,6 +5,7 @@ from desktop_2fa.crypto.argon2 import derive_key
 
 
 def test_encrypt_decrypt() -> None:
+    """Test AES-GCM encryption and decryption round-trip."""
     salt = os.urandom(16)
     key = derive_key("password", salt)
     data = b"hello"

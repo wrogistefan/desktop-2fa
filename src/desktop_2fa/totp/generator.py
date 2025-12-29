@@ -12,6 +12,18 @@ def generate(
     period: int = 30,
     algorithm: str = "SHA1",
 ) -> str:
+    """Generate a TOTP code.
+
+    Args:
+        secret: The base32-encoded secret key.
+        timestamp: The timestamp to use (defaults to current time).
+        digits: Number of digits in the code (default 6).
+        period: Time period in seconds (default 30).
+        algorithm: Hash algorithm ('SHA1', 'SHA256', 'SHA512').
+
+    Returns:
+        The TOTP code as a string.
+    """
     if timestamp is None:
         timestamp = int(time.time())
 

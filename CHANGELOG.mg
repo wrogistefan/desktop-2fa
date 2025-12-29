@@ -5,6 +5,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
+## [0.4.1] - 2025-01-XX
+### Improved
+- Added missing docstrings across the entire codebase.
+- Standardized all docstrings to Google-style format.
+- Ensured consistent English-language documentation throughout the project.
+- Improved clarity and maintainability of crypto, vault, TOTP, and CLI modules.
+- Translated remaining non-English comments to English.
+- Enhanced developer experience and future documentation generation readiness.
+
+### Notes
+This release contains no functional changes. It focuses entirely on documentation quality, readability, and internal consistency.
+
+
 ## [0.4.0] — 2025-12-28
 
 ### 🔐 Vault encryption overhaul

@@ -2,6 +2,15 @@ from argon2.low_level import Type, hash_secret_raw
 
 
 def derive_key(password: str, salt: bytes) -> bytes:
+    """Derive a key from password and salt using Argon2.
+
+    Args:
+        password: The password string.
+        salt: The salt bytes.
+
+    Returns:
+        The derived key bytes (32 bytes).
+    """
     key = hash_secret_raw(
         secret=password.encode(),
         salt=salt,

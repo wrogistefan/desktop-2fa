@@ -10,16 +10,23 @@ from .helpers import get_vault_path, load_vault, save_vault
 
 
 def list_entries() -> None:
+    """List all entries in the vault."""
     vault = load_vault()
     if not vault.entries:
         print("Vault is empty.")
         return
     for entry in vault.entries:
-        # pokazujemy name (issuer), bo issuer może się powtarzać
+        # Show name (issuer), because issuer can repeat
         print(f"- {entry.name} ({entry.issuer})")
 
 
 def add_entry(issuer: str, secret: str) -> None:
+    """Add a new entry to the vault.
+
+    Args:
+        issuer: The issuer name for the TOTP token.
+        secret: The base32-encoded secret key.
+    """
     vault = load_vault()
     vault.add_entry(name=issuer, issuer=issuer, secret=secret)
     save_vault(vault)
@@ -27,6 +34,11 @@ def add_entry(issuer: str, secret: str) -> None:
 
 
 def generate_code(name: str) -> None:
+    """Generate and print the TOTP code for the given entry name.
+
+    Args:
+        name: The name of the entry in the vault.
+    """
     vault = load_vault()
     entry = vault.get_entry(name)
     code = generate_totp(entry.secret)
@@ -34,6 +46,11 @@ def generate_code(name: str) -> None:
 
 
 def remove_entry(name: str) -> None:
+    """Remove an entry from the vault by name.
+
+    Args:
+        name: The name of the entry to remove.
+    """
     vault = load_vault()
     vault.remove_entry(name)
     save_vault(vault)
@@ -41,11 +58,14 @@ def remove_entry(name: str) -> None:
 
 
 def rename_entry(old: str, new: str) -> None:
-    """
-    Rename an entry label from OLD to NEW.
+    """Rename an entry label from old to new.
 
     Issuer is not modified. Multiple entries may share the same issuer,
     but each entry name should be unique.
+
+    Args:
+        old: The current name of the entry.
+        new: The new name for the entry.
     """
     vault = load_vault()
     entry = vault.get_entry(old)
@@ -56,6 +76,11 @@ def rename_entry(old: str, new: str) -> None:
 
 
 def export_vault(path: str) -> None:
+    """Export the vault to a JSON file.
+
+    Args:
+        path: The file path to export the vault to.
+    """
     vault_path = get_vault_path()
     if not Path(vault_path).exists():
         print("Vault does not exist.")
@@ -67,6 +92,11 @@ def export_vault(path: str) -> None:
 
 
 def import_vault(path: str) -> None:
+    """Import the vault from a JSON file, overwriting existing entries.
+
+    Args:
+        path: The file path to import the vault from.
+    """
     if not Path(path).exists():
         print("Source file does not exist.")
         return
@@ -75,7 +105,7 @@ def import_vault(path: str) -> None:
     vault.data.entries = []  # overwrite
 
     for entry in data["entries"]:
-        # zakładamy, że JSON ma już name / issuer / secret
+        # Assume JSON already has name / issuer / secret
         name = entry.get("name") or entry["issuer"]
         issuer = entry["issuer"]
         secret = entry["secret"]
@@ -86,6 +116,7 @@ def import_vault(path: str) -> None:
 
 
 def backup_vault() -> None:
+    """Create a backup of the vault file."""
     vault_path = Path(get_vault_path())
     if not vault_path.exists():
         print("Vault does not exist.")
