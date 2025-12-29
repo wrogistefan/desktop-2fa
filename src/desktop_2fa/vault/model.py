@@ -14,6 +14,7 @@ class TokenEntry:
         period: Time period in seconds (default 30).
         algorithm: Hash algorithm ('SHA1', 'SHA256', 'SHA512').
     """
+
     name: Optional[str]
     secret: str
     issuer: str
@@ -30,5 +31,6 @@ class VaultData:
         version: The vault format version.
         entries: List of TOTP token entries.
     """
+
     version: int
     entries: List[TokenEntry]
