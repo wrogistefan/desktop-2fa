@@ -62,6 +62,7 @@ def add_cmd(
             if not typer.confirm("Is this correct?", default=False):
                 secret = None
                 continue
+
         # Check for suspicious secret
         def is_repetitive(s: str) -> bool:
             n = len(s)
@@ -71,8 +72,12 @@ def add_cmd(
                     if pattern * (n // i) == s:
                         return True
             return False
+
         if len(current_secret) > 40 or is_repetitive(current_secret):
-            if prompted and not typer.confirm("This secret looks unusually long or repetitive. Did you paste it multiple times?", default=False):
+            if prompted and not typer.confirm(
+                "This secret looks unusually long or repetitive. Did you paste it multiple times?",
+                default=False,
+            ):
                 secret = None
                 continue
         secret = current_secret
