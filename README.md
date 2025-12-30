@@ -19,11 +19,12 @@ A secure, offline two-factor authentication (2FA) manager designed for desktop e
 - **🧪 Comprehensive Testing**: Full test coverage using pytest.
 - **🚀 Future-Proof**: Designed for easy migration to Rust for enhanced performance.
 
-## 🚀 What's New in v0.5.1
+## 🚀 What's New in v0.5.4
 
 - **CLI Enhancements**: Added `--version` option and version display when no arguments provided.
 - **Interactive Add Command**: The `add` command now prompts for issuer and secret if not provided as arguments.
 - **Improved User Experience**: Better CLI usability with version information and interactive prompts.
+- **Code Quality**: Achieved 100% test coverage and removed duplicate badges from README.
 
 ##  Secure Vault Storage
 
@@ -49,7 +50,7 @@ Verify installation:
 python -c "import desktop_2fa; print(desktop_2fa.__version__)"
 ```
 
-Expected output: `0.5.1`
+Expected output: `0.5.4`
 
 ### From Source
 
@@ -213,7 +214,7 @@ v0.4.0 — Vault format v2 + migrations ✓
 
 v0.5.0 — Pydantic vault system ✓
 
-v0.5.1 — CLI enhancements ✓
+v0.5.4 — CLI enhancements and 100% coverage ✓
 
 v0.6.x — Rust core (pyo3)
 

@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.5.4] - 2025-12-30
+
+### 📊 Quality Improvements
+- Achieved 100% test coverage across all modules
+- Removed duplicate Python version badge from README
+- Added comprehensive tests for CLI interactive features and error handling
+
 ---
 
 ## [0.5.3] - 2025-12-30
