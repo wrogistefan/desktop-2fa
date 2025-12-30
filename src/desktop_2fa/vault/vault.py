@@ -29,7 +29,9 @@ class Vault:
         """
         return self.data.entries
 
-    def add_entry(self, issuer: str, secret: str, account_name: Optional[str] = None) -> None:
+    def add_entry(
+        self, issuer: str, secret: str, account_name: Optional[str] = None
+    ) -> None:
         """Add a new TOTP entry to the vault.
 
         Args:

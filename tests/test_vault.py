@@ -54,4 +54,6 @@ def test_totp_entry_invalid_secret() -> None:
 
 def test_totp_entry_invalid_period() -> None:
     with pytest.raises(ValueError, match="TOTP period must be positive"):
-        TotpEntry(issuer="Test", account_name="Test", secret="JBSWY3DPEHPK3PXP", period=0)
+        TotpEntry(
+            issuer="Test", account_name="Test", secret="JBSWY3DPEHPK3PXP", period=0
+        )
