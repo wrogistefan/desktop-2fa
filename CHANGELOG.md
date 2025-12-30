@@ -5,8 +5,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
-## [0.5.0] - 2025-12-30
 
+## [0.5.1] - 2025-12-30
+
+### 💻 CLI Enhancements
+- Added `--version` option to display app version
+- Running the app without arguments now prints the version
+- Made `add` command interactive: prompts for issuer and secret if not provided as arguments
+
+---
+
+## [0.5.0] - 2025-12-30
 ### 🔄 Major Changes
 - Migrated vault system to Pydantic v2 for data validation and type safety
 

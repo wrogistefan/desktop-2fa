@@ -18,13 +18,11 @@ A secure, offline two-factor authentication (2FA) manager designed for desktop e
 - **🧪 Comprehensive Testing**: Full test coverage using pytest.
 - **🚀 Future-Proof**: Designed for easy migration to Rust for enhanced performance.
 
-## 🚀 What's New in v0.5.0
+## 🚀 What's New in v0.5.1
 
-- **Pydantic-Powered Vault**: Migrated to Pydantic v2 for robust data validation and type safety.
-- **New Data Models**: Introduced `TotpEntry` and `VaultData` models with automatic validation.
-- **Enhanced Validation**: Secrets are validated as Base32, periods must be positive.
-- **Updated CLI Behavior**: Commands now use `account_name` for identification.
-- **100% Test Coverage**: Comprehensive testing across all modules.
+- **CLI Enhancements**: Added `--version` option and version display when no arguments provided.
+- **Interactive Add Command**: The `add` command now prompts for issuer and secret if not provided as arguments.
+- **Improved User Experience**: Better CLI usability with version information and interactive prompts.
 
 ##  Secure Vault Storage
 
@@ -50,7 +48,7 @@ Verify installation:
 python -c "import desktop_2fa; print(desktop_2fa.__version__)"
 ```
 
-Expected output: `0.5.0`
+Expected output: `0.5.1`
 
 ### From Source
 
@@ -95,7 +93,16 @@ The application will automatically generate and display TOTP codes based on the 
 ## 🧪 CLI Usage
 
 ```bash
+# Show version
+desktop-2fa --version
+# or just run without args
+desktop-2fa
+
+# Add interactively (prompts for issuer and secret)
+desktop-2fa add
+# Add with arguments
 desktop-2fa add GitHub JBSWY3DPEHPK3PXP
+
 desktop-2fa list
 desktop-2fa code GitHub
 desktop-2fa rename GitHub GitHub2
@@ -200,6 +207,8 @@ v0.3.0 — CLI ✓
 v0.4.0 — Vault format v2 + migrations ✓
 
 v0.5.0 — Pydantic vault system ✓
+
+v0.5.1 — CLI enhancements ✓
 
 v0.6.x — Rust core (pyo3)
 

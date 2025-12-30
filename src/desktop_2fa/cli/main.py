@@ -2,6 +2,8 @@
 
 import typer
 
+from desktop_2fa import __version__
+
 from .commands import (
     add_entry,
     backup_vault,
@@ -16,6 +18,17 @@ from .commands import (
 app = typer.Typer(help="Desktop‑2FA — secure offline TOTP authenticator")
 
 
+@app.callback(invoke_without_command=True)
+def main(
+    ctx: typer.Context,
+    version: bool = typer.Option(None, "--version", help="Show version and exit"),
+) -> None:
+    """Print version when no command is provided or when --version is used."""
+    if version or ctx.invoked_subcommand is None:
+        print(f"Desktop-2FA v{__version__}")
+        raise typer.Exit()
+
+
 @app.command("list")
 def list_cmd() -> None:
     """List all entries in the vault."""
@@ -24,10 +37,14 @@ def list_cmd() -> None:
 
 @app.command("add")
 def add_cmd(
-    issuer: str = typer.Argument(..., help="Service provider name"),
-    secret: str = typer.Argument(..., help="TOTP secret"),
+    issuer: str = typer.Argument(None, help="Service provider name"),
+    secret: str = typer.Argument(None, help="TOTP secret"),
 ) -> None:
     """Add a new TOTP entry."""
+    if issuer is None:
+        issuer = typer.prompt("Service provider name")
+    if secret is None:
+        secret = typer.prompt("TOTP secret", hide_input=True)
     add_entry(issuer=issuer, secret=secret)
 
 
