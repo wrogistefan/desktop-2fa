@@ -1,3 +1,5 @@
+"""CLI main entry point for Desktop 2FA."""
+
 import typer
 
 from .commands import (

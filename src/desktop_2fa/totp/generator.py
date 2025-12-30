@@ -1,3 +1,5 @@
+"""TOTP code generation utilities."""
+
 import base64
 import hashlib
 import hmac
@@ -30,11 +32,12 @@ def generate(
     counter = timestamp // period
     key = base64.b32decode(secret, casefold=True)
 
-    if algorithm.upper() == "SHA1":
+    algo = algorithm.casefold()
+    if algo == "sha1":
         digestmod = hashlib.sha1
-    elif algorithm.upper() == "SHA256":
+    elif algo == "sha256":
         digestmod = hashlib.sha256
-    elif algorithm.upper() == "SHA512":
+    elif algo == "sha512":
         digestmod = hashlib.sha512
     else:
         raise ValueError("Unsupported algorithm")

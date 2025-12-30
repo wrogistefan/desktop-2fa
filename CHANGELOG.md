@@ -5,6 +5,38 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
+## [0.5.0] - 2025-12-30
+
+### 🔄 Major Changes
+- Migrated vault system to Pydantic v2 for data validation and type safety
+
+### 🏦 Vault Improvements
+- Introduced `TotpEntry` and `VaultData` Pydantic models
+- Automatic validation of Base32 secrets and positive periods
+- Enhanced data integrity with structured models
+
+### ⏱️ TOTP Generator Updates
+- No changes, remains RFC 6238 compliant
+
+### 💻 CLI Updates
+- Changed `generate` command to `code` for consistency
+- Updated entry identification to use `account_name`
+- Improved error handling and validation
+
+### 🧪 Testing Improvements
+- Achieved 100% test coverage across all modules
+- Added tests for new Pydantic models and validation
+
+### 🧹 Internal Cleanup
+- Refactored vault implementation to use Pydantic models
+- Updated dependencies to include Pydantic v2
+
+### 💥 Breaking Changes
+- Vault format changed from custom dict to Pydantic models
+- CLI command `generate` renamed to `code`
+- JSON export/import format updated to match new models
+- `entry.name` replaced with `entry.account_name`
+
 ## [0.4.1] - 2025-12-29
 ### Improved
 - Added missing docstrings across the entire codebase.

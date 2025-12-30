@@ -45,10 +45,6 @@ def generate(
 
 @pytest.fixture
 def fake_vault_env_helpers(tmp_path: Path, monkeypatch: Any) -> Path:
-    """
-    Przekierowuje get_vault_path() na katalog tymczasowy.
-    Wszystkie operacje CLI działają na tymczasowym pliku.
-    """
     fake_vault = tmp_path / "vault"
 
     monkeypatch.setattr(
@@ -72,7 +68,7 @@ def test_helpers_add_and_list_entries(fake_vault_env_helpers: Path) -> None:
     vault = helpers.load_vault()
     assert len(vault.entries) == 1
     assert vault.entries[0].issuer == "GitHub"
-    assert vault.entries[0].name == "GitHub"
+    assert vault.entries[0].account_name == "GitHub"
 
 
 def test_helpers_generate_code(fake_vault_env_helpers: Path) -> None:
@@ -96,7 +92,7 @@ def test_helpers_rename_entry(fake_vault_env_helpers: Path) -> None:
 
     vault = helpers.load_vault()
     assert vault.entries[0].issuer == "GitHub2"
-    assert vault.entries[0].name == "GitHub2"
+    assert vault.entries[0].account_name == "GitHub2"
 
 
 def test_helpers_export_and_import(
@@ -112,7 +108,7 @@ def test_helpers_export_and_import(
 
     # Reset vault
     vault = helpers.load_vault()
-    vault.data.entries = []
+    vault.data.entries.clear()
     helpers.save_vault(vault)
 
     helpers.import_vault(str(tmp_path_file))

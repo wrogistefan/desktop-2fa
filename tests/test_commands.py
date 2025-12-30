@@ -9,10 +9,6 @@ from desktop_2fa.cli import commands, helpers
 
 @pytest.fixture
 def fake_vault_env(tmp_path: Path, monkeypatch: Any) -> Path:
-    """
-    Przekierowuje get_vault_path() na katalog tymczasowy.
-    Wszystkie operacje CLI działają na tymczasowym pliku.
-    """
     fake_vault = tmp_path / "vault"
 
     monkeypatch.setattr(
@@ -49,7 +45,7 @@ def test_add_entry_and_list(fake_vault_env: Path, capsys: Any) -> None:
     vault = helpers.load_vault()
     assert len(vault.entries) == 1
     assert vault.entries[0].issuer == "GitHub"
-    assert vault.entries[0].name == "GitHub"
+    assert vault.entries[0].account_name == "GitHub"
     assert vault.entries[0].secret == "JBSWY3DPEHPK3PXP"
 
 
@@ -72,7 +68,7 @@ def test_generate_code_missing_entry_raises(fake_vault_env: Path) -> None:
 
 
 def test_remove_entry(fake_vault_env: Path) -> None:
-    commands.add_entry("GitHub", "AAA")
+    commands.add_entry("GitHub", "JBSWY3DPEHPK3PXP")
     commands.remove_entry("GitHub")
 
     vault = helpers.load_vault()
@@ -85,13 +81,13 @@ def test_remove_entry_missing_raises(fake_vault_env: Path) -> None:
 
 
 def test_rename_entry(fake_vault_env: Path) -> None:
-    commands.add_entry("GitHub", "AAA")
+    commands.add_entry("GitHub", "JBSWY3DPEHPK3PXP")
     commands.rename_entry("GitHub", "NewGitHub")
 
     vault = helpers.load_vault()
     assert len(vault.entries) == 1
     entry = vault.entries[0]
-    assert entry.name == "NewGitHub"
+    assert entry.account_name == "NewGitHub"
     assert entry.issuer == "NewGitHub"
 
 
@@ -101,7 +97,7 @@ def test_rename_entry_missing_raises(fake_vault_env: Path) -> None:
 
 
 def test_export_vault(fake_vault_env: Path, tmp_path: Path, capsys: Any) -> None:
-    commands.add_entry("GitHub", "AAA")
+    commands.add_entry("GitHub", "JBSWY3DPEHPK3PXP")
 
     export_path = tmp_path / "export.json"
     commands.export_vault(str(export_path))
@@ -133,12 +129,12 @@ def test_import_vault(
 ) -> None:
     # najpierw tworzymy "źródłowy" vault
     src_json = tmp_path / "src.json"
-    commands.add_entry("GitHub", "AAA")
+    commands.add_entry("GitHub", "JBSWY3DPEHPK3PXP")
     commands.export_vault(str(src_json))
 
     # clear the vault
     vault = helpers.load_vault()
-    vault.data.entries = []
+    vault.data.entries.clear()
     helpers.save_vault(vault)
 
     # import
@@ -147,7 +143,7 @@ def test_import_vault(
     vault = helpers.load_vault()
     assert len(vault.entries) == 1
     assert vault.entries[0].issuer == "GitHub"
-    assert vault.entries[0].secret == "AAA"
+    assert vault.entries[0].secret == "JBSWY3DPEHPK3PXP"
 
     out = capsys.readouterr().out
     assert "Vault imported from" in out
@@ -164,7 +160,7 @@ def test_import_vault_missing_source(
 
 
 def test_backup_vault(fake_vault_env: Path, capsys: Any) -> None:
-    commands.add_entry("GitHub", "AAA")
+    commands.add_entry("GitHub", "JBSWY3DPEHPK3PXP")
 
     vault_path = Path(helpers.get_vault_path())
     backup_path = vault_path.with_suffix(".backup.bin")

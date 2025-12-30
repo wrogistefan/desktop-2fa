@@ -1,3 +1,1 @@
-from .generator import generate as generate_totp
-
-__all__ = ["generate_totp"]
+"""Desktop 2FA TOTP generation package."""

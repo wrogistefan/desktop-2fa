@@ -1,10 +1,12 @@
+"""CLI command implementations for Desktop 2FA."""
+
 from __future__ import annotations
 
 import json
 import shutil
 from pathlib import Path
 
-from desktop_2fa.totp import generate_totp
+from desktop_2fa.totp.generator import generate
 
 from .helpers import get_vault_path, load_vault, save_vault
 
@@ -17,7 +19,7 @@ def list_entries() -> None:
         return
     for entry in vault.entries:
         # Show name (issuer), because issuer can repeat
-        print(f"- {entry.name} ({entry.issuer})")
+        print(f"- {entry.account_name} ({entry.issuer})")
 
 
 def add_entry(issuer: str, secret: str) -> None:
@@ -28,7 +30,7 @@ def add_entry(issuer: str, secret: str) -> None:
         secret: The base32-encoded secret key.
     """
     vault = load_vault()
-    vault.add_entry(name=issuer, issuer=issuer, secret=secret)
+    vault.add_entry(issuer=issuer, account_name=issuer, secret=secret)
     save_vault(vault)
     print(f"Added entry: {issuer}")
 
@@ -41,7 +43,12 @@ def generate_code(name: str) -> None:
     """
     vault = load_vault()
     entry = vault.get_entry(name)
-    code = generate_totp(entry.secret)
+    code = generate(
+        secret=entry.secret,
+        digits=entry.digits,
+        period=entry.period,
+        algorithm=entry.algorithm,
+    )
     print(code)
 
 
@@ -69,7 +76,7 @@ def rename_entry(old: str, new: str) -> None:
     """
     vault = load_vault()
     entry = vault.get_entry(old)
-    entry.name = new
+    entry.account_name = new
     entry.issuer = new
     save_vault(vault)
     print(f"Renamed {old} → {new}")
@@ -86,7 +93,7 @@ def export_vault(path: str) -> None:
         print("Vault does not exist.")
         return
     vault = load_vault()
-    data = vault.to_json()
+    data = json.loads(vault.data.model_dump_json())
     Path(path).write_text(json.dumps(data, indent=2))
     print(f"Vault exported to {path}")
 
@@ -109,7 +116,7 @@ def import_vault(path: str) -> None:
         name = entry.get("name") or entry["issuer"]
         issuer = entry["issuer"]
         secret = entry["secret"]
-        vault.add_entry(name=name, issuer=issuer, secret=secret)
+        vault.add_entry(issuer=issuer, account_name=name, secret=secret)
 
     save_vault(vault)
     print(f"Vault imported from {path}")

@@ -1,3 +1,5 @@
+"""CLI helper functions for Desktop 2FA."""
+
 import shutil
 import time
 from pathlib import Path
@@ -9,7 +11,7 @@ def list_entries() -> None:
     """List all entries in the vault."""
     vault = load_vault()
     for entry in vault.entries:
-        print(f"- {entry.name} ({entry.issuer})")
+        print(f"- {entry.account_name} ({entry.issuer})")
 
 
 def add_entry(issuer: str, secret: str) -> None:
@@ -20,7 +22,7 @@ def add_entry(issuer: str, secret: str) -> None:
         secret: The base32-encoded secret key.
     """
     vault = load_vault()
-    vault.add_entry(name=issuer, issuer=issuer, secret=secret)
+    vault.add_entry(issuer=issuer, account_name=issuer, secret=secret)
     save_vault(vault)
     print(f"Added entry: {issuer}")
 
@@ -34,9 +36,14 @@ def generate_code(issuer: str) -> None:
     vault = load_vault()
     entry = vault.get_entry(issuer)
 
-    from desktop_2fa.totp import generate_totp
+    from desktop_2fa.totp.generator import generate
 
-    code = generate_totp(entry.secret)
+    code = generate(
+        secret=entry.secret,
+        digits=entry.digits,
+        period=entry.period,
+        algorithm=entry.algorithm,
+    )
 
     print(code)
 
@@ -62,8 +69,9 @@ def rename_entry(old_issuer: str, new_issuer: str) -> None:
     """
     vault = load_vault()
     entry = vault.get_entry(old_issuer)
-    entry.name = new_issuer
+    entry.account_name = new_issuer
     entry.issuer = new_issuer
+
     save_vault(vault)
     print(f"Renamed '{old_issuer}' → '{new_issuer}'")
 

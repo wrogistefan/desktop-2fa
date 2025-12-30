@@ -18,7 +18,15 @@ A secure, offline two-factor authentication (2FA) manager designed for desktop e
 - **🧪 Comprehensive Testing**: Full test coverage using pytest.
 - **🚀 Future-Proof**: Designed for easy migration to Rust for enhanced performance.
 
-## 🔐 Secure Vault Storage
+## 🚀 What's New in v0.5.0
+
+- **Pydantic-Powered Vault**: Migrated to Pydantic v2 for robust data validation and type safety.
+- **New Data Models**: Introduced `TotpEntry` and `VaultData` models with automatic validation.
+- **Enhanced Validation**: Secrets are validated as Base32, periods must be positive.
+- **Updated CLI Behavior**: Commands now use `account_name` for identification.
+- **100% Test Coverage**: Comprehensive testing across all modules.
+
+##  Secure Vault Storage
 
 All secrets are stored in a local encrypted vault using:
 
@@ -42,7 +50,7 @@ Verify installation:
 python -c "import desktop_2fa; print(desktop_2fa.__version__)"
 ```
 
-Expected output: `0.4.0`
+Expected output: `0.5.0`
 
 ### From Source
 
@@ -53,6 +61,16 @@ git clone https://github.com/wrogistefan/desktop-2fa.git
 cd desktop-2fa
 pip install -e .
 ```
+
+## 🔧 Upgrade Guide (v0.4.x → v0.5.0)
+
+If upgrading from v0.4.x:
+
+1. Export your existing vault: `desktop-2fa export backup.json`
+2. Upgrade the package: `pip install --upgrade desktop-2fa`
+3. Import the vault: `desktop-2fa import backup.json`
+
+Note: The vault format has changed; export/import ensures compatibility.
 
 ## Integrity
 
@@ -79,7 +97,7 @@ The application will automatically generate and display TOTP codes based on the 
 ```bash
 desktop-2fa add GitHub JBSWY3DPEHPK3PXP
 desktop-2fa list
-desktop-2fa generate GitHub
+desktop-2fa code GitHub
 desktop-2fa rename GitHub GitHub2
 desktop-2fa remove GitHub2
 desktop-2fa export vault.json
@@ -123,7 +141,7 @@ src/desktop_2fa/
 │   └── time.py         # Time-related utilities
 ├── vault/
 │   ├── __init__.py
-│   ├── model.py        # Vault data models
+│   ├── models.py       # Vault data models
 │   └── vault.py        # Vault management
 └── __init__.py         # Package initialization
 tests/
@@ -146,6 +164,14 @@ Run the test suite using pytest:
 pytest tests/
 ```
 
+## 🧠 Developer Notes
+
+This version uses Pydantic v2 for data modeling:
+
+- `@field_validator`: Custom validation for fields like Base32 secrets.
+- `model_dump_json()`: Serialize models to JSON.
+- `model_validate_json()`: Deserialize and validate JSON data.
+
 ## Vault Format
 
 The vault stores encrypted data in a binary format saved as `vault.bin` in `~/.desktop-2fa/`. The vault uses AES-GCM encryption with Argon2 key derivation for maximum security. Automatic backups are created as `vault.backup.bin` on each save.
@@ -154,15 +180,15 @@ For export/import operations, data can be converted to/from JSON format with the
 
 ```json
 {
-  "version": 2,
+  "version": 1,
   "entries": [
     {
-      "name": "GitHub",
-      "secret": "JBSWY3DPEHPK3PXP",
       "issuer": "GitHub",
-      "type": "totp",
+      "account_name": "GitHub",
+      "secret": "JBSWY3DPEHPK3PXP",
       "digits": 6,
-      "period": 30
+      "period": 30,
+      "algorithm": "SHA1"
     }
   ]
 }
@@ -173,7 +199,7 @@ v0.3.0 — CLI ✓
 
 v0.4.0 — Vault format v2 + migrations ✓
 
-v0.5.0 — Desktop UI prototype
+v0.5.0 — Pydantic vault system ✓
 
 v0.6.x — Rust core (pyo3)
 

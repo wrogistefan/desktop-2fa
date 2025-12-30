@@ -1,3 +1,5 @@
+"""AES-GCM encryption and decryption utilities."""
+
 import os
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM

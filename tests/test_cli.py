@@ -12,7 +12,6 @@ from desktop_2fa.cli.main import app
 
 
 def setup_function(_: object) -> None:
-    """Reset vault before each test."""
     vault_path = Path(get_vault_path())
     vault_dir = vault_path.parent
 
@@ -26,7 +25,7 @@ def test_add_and_list_entries() -> None:
     vault = load_vault()
     assert len(vault.entries) == 1
     assert vault.entries[0].issuer == "GitHub"
-    assert vault.entries[0].name == "GitHub"
+    assert vault.entries[0].account_name == "GitHub"
 
 
 def test_generate_code() -> None:
@@ -50,7 +49,7 @@ def test_rename_entry() -> None:
 
     vault = load_vault()
     assert vault.entries[0].issuer == "GitHub2"
-    assert vault.entries[0].name == "GitHub2"
+    assert vault.entries[0].account_name == "GitHub2"
 
 
 def test_export_and_import() -> None:
@@ -91,10 +90,6 @@ runner = CliRunner()
 
 @pytest.fixture
 def fake_vault_env_cli(tmp_path: Path, monkeypatch: Any) -> Path:
-    """
-    Przekierowuje get_vault_path() na katalog tymczasowy.
-    Wszystkie operacje CLI działają na tymczasowym pliku.
-    """
     fake_vault = tmp_path / "vault"
 
     monkeypatch.setattr(
@@ -169,7 +164,7 @@ def test_cli_import(fake_vault_env_cli: Path, tmp_path: Path) -> None:
 
     # Clear vault
     vault = load_vault()
-    vault.data.entries = []
+    vault.data.entries.clear()
     save_vault(vault)
 
     # Import

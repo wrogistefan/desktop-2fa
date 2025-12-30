@@ -1,3 +1,1 @@
-from .main import app
-
-__all__ = ["app"]
+"""Desktop 2FA CLI package."""

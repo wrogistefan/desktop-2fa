@@ -1,152 +1,117 @@
-import json
+"""Vault implementation for storing and managing TOTP entries."""
+
 import os
-from dataclasses import asdict
-from typing import Any, Dict, List, Optional
+from pathlib import Path
+from typing import Optional
 
 from ..crypto.aesgcm import decrypt, encrypt
 from ..crypto.argon2 import derive_key
-from .model import TokenEntry, VaultData
-
-
-def serialize(data: Any) -> bytes:
-    """Serialize data to bytes using JSON."""
-    if isinstance(data, VaultData):
-        dict_data = asdict(data)
-    elif isinstance(data, dict):
-        dict_data = data
-    else:
-        raise TypeError(f"Unsupported data type: {type(data)}")
-    return json.dumps(dict_data).encode("utf-8")
-
-
-def deserialize(blob: bytes) -> Any:
-    """Deserialize bytes to data using JSON."""
-    dict_data = json.loads(blob.decode("utf-8"))
-    # For now, assume it's VaultData if it has 'version' and 'entries'
-    if "version" in dict_data and "entries" in dict_data:
-        entries = [TokenEntry(**e) for e in dict_data["entries"]]
-        return VaultData(version=dict_data["version"], entries=entries)
-    else:
-        return dict_data
+from .models import TotpEntry, VaultData
 
 
 class Vault:
-    """Manages a collection of TOTP token entries with encryption."""
+    """Vault using Pydantic models for validation and structure."""
 
     def __init__(self, data: Optional[VaultData] = None):
-        """Initialize the vault.
+        """Initialize the vault with optional data.
 
         Args:
-            data: Optional VaultData, creates empty vault if None.
+            data: The vault data to initialize with.
         """
-        if data is None:
-            data = VaultData(version=1, entries=[])
-        self.data = data
+        self.data = data or VaultData()
 
     @property
-    def entries(self) -> List[TokenEntry]:
-        """Get the list of token entries."""
+    def entries(self) -> list[TotpEntry]:
+        """Get the list of TOTP entries.
+
+        Returns:
+            The list of TOTP entries.
+        """
         return self.data.entries
 
-    def add_entry(self, name: str, secret: str, issuer: Optional[str] = None) -> None:
-        """Add a new token entry to the vault.
+    def add_entry(self, issuer: str, secret: str, account_name: Optional[str] = None) -> None:
+        """Add a new TOTP entry to the vault.
 
         Args:
-            name: Display name for the entry.
-            secret: Base32-encoded secret key.
-            issuer: Service provider name (defaults to name if None).
+            issuer: The issuer name.
+            secret: The base32-encoded secret.
+            account_name: The account name (defaults to issuer).
         """
-        if issuer is None:
-            issuer = name
-        entry = TokenEntry(name=name, secret=secret, issuer=issuer)
+        if account_name is None:
+            account_name = issuer
+
+        entry = TotpEntry(
+            issuer=issuer,
+            account_name=account_name,
+            secret=secret,
+        )
         self.data.entries.append(entry)
 
-    def get_entry(self, name: str) -> TokenEntry:
-        """Get a token entry by name.
+    def get_entry(self, issuer: str) -> TotpEntry:
+        """Get a TOTP entry by issuer or account name.
 
         Args:
-            name: The name of the entry.
+            issuer: The issuer or account name to search for.
 
         Returns:
-            The TokenEntry instance.
+            The matching TOTP entry.
 
         Raises:
-            ValueError: If no entry with the given name exists.
+            ValueError: If no entry is found.
         """
         for entry in self.entries:
-            if entry.name == name:
+            if entry.issuer == issuer or entry.account_name == issuer:
                 return entry
-        raise ValueError(f"Entry with name '{name}' not found")
+        raise ValueError(f"Entry '{issuer}' not found")
 
-    def remove_entry(self, name: str) -> None:
-        """Remove a token entry by name.
+    def remove_entry(self, issuer: str) -> None:
+        """Remove a TOTP entry by issuer or account name.
 
         Args:
-            name: The name of the entry to remove.
-
-        Raises:
-            ValueError: If no entry with the given name exists.
+            issuer: The issuer or account name of the entry to remove.
         """
-        entry = self.get_entry(name)
+        entry = self.get_entry(issuer)
         self.data.entries.remove(entry)
 
-    def to_json(self) -> Dict[str, Any]:
-        """Convert the vault to a JSON-serializable dictionary.
-
-        Returns:
-            Dictionary representation of the vault.
-        """
-        return {
-            "version": self.data.version,
-            "entries": [entry.__dict__ for entry in self.entries],
-        }
-
     @classmethod
-    def load(cls, path: str, password: str = "password") -> "Vault":
-        """Load and decrypt a vault from file.
+    def load(cls, path: str | Path, password: str = "password") -> "Vault":
+        """Load a vault from a file.
 
         Args:
-            path: Path to the vault file.
-            password: Password for decryption (default for testing).
+            path: The file path to load from.
+            password: The password to decrypt the vault.
 
         Returns:
             The loaded Vault instance.
         """
         if not os.path.exists(path):
-            return cls(VaultData(version=1, entries=[]))
+            return cls()
 
         with open(path, "rb") as f:
-            data = f.read()
+            blob = f.read()
 
-        salt, encrypted = data[:16], data[16:]
+        salt, encrypted = blob[:16], blob[16:]
         key = derive_key(password, salt)
-        raw = decrypt(key, encrypted)
-        vault_data = deserialize(raw)
+        raw_json = decrypt(key, encrypted)
 
-        # Migration: ensure name exists
-        for entry in vault_data.entries:
-            if not getattr(entry, "name", None):
-                entry.name = entry.issuer
+        data = VaultData.model_validate_json(raw_json)
+        return cls(data)
 
-        return cls(vault_data)
-
-    def save(self, path: str, password: str = "password") -> None:
-        """Encrypt and save the vault to file.
-
-        Creates a backup if the file already exists.
+    def save(self, path: str | Path, password: str = "password") -> None:
+        """Save the vault to a file.
 
         Args:
-            path: Path to save the vault file.
-            password: Password for encryption (default for testing).
+            path: The file path to save to.
+            password: The password to encrypt the vault.
         """
-        if os.path.exists(path):
-            backup_path = str(path).replace(".bin", ".backup.bin")
-            os.rename(path, backup_path)
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
 
         salt = os.urandom(16)
         key = derive_key(password, salt)
-        raw = serialize(self.data)
-        encrypted = encrypt(key, raw)
+
+        raw_json = self.data.model_dump_json().encode("utf-8")
+        encrypted = encrypt(key, raw_json)
 
         with open(path, "wb") as f:
             f.write(salt + encrypted)
