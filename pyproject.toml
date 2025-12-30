@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "desktop-2fa"
-version = "0.5.3"
+version = "0.5.4"
 description = "Secure offline 2FA desktop authenticator"
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -17,6 +17,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 
 
