@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import json
 import shutil
 from pathlib import Path
@@ -29,6 +30,14 @@ def add_entry(issuer: str, secret: str) -> None:
         issuer: The issuer name for the TOTP token.
         secret: The base32-encoded secret key.
     """
+    if not issuer.strip():
+        print("Error: Issuer cannot be empty")
+        return
+    try:
+        base64.b32decode(secret.upper())
+    except Exception:
+        print("Error: Invalid Base32 TOTP secret")
+        return
     vault = load_vault()
     vault.add_entry(issuer=issuer, account_name=issuer, secret=secret)
     save_vault(vault)
