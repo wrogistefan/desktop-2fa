@@ -1,6 +1,5 @@
 # 🛡️ Desktop-2FA
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/desktop-2fa)
-![Python Version](https://img.shields.io/badge/python-3.10%20|%203.11%20|%203.12%20|%203.13-blue)
 [![PyPI version](https://img.shields.io/pypi/v/desktop-2fa.svg)](https://pypi.org/project/desktop-2fa/)
 ![Python versions](https://img.shields.io/pypi/pyversions/desktop-2fa.svg)
 ![License](https://img.shields.io/github/license/wrogistefan/desktop-2fa)
