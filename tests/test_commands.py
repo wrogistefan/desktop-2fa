@@ -49,6 +49,26 @@ def test_add_entry_and_list(fake_vault_env: Path, capsys: Any) -> None:
     assert vault.entries[0].secret == "JBSWY3DPEHPK3PXP"
 
 
+def test_add_entry_empty_issuer(fake_vault_env: Path, capsys: Any) -> None:
+    commands.add_entry("", "JBSWY3DPEHPK3PXP")
+
+    out = capsys.readouterr().out.strip()
+    assert "Error: Issuer cannot be empty" in out
+
+    vault = helpers.load_vault()
+    assert len(vault.entries) == 0
+
+
+def test_add_entry_invalid_secret(fake_vault_env: Path, capsys: Any) -> None:
+    commands.add_entry("GitHub", "INVALID")
+
+    out = capsys.readouterr().out.strip()
+    assert "Error: Invalid Base32 TOTP secret" in out
+
+    vault = helpers.load_vault()
+    assert len(vault.entries) == 0
+
+
 def test_generate_code(fake_vault_env: Path, capsys: Any) -> None:
     commands.add_entry("GitHub", "JBSWY3DPEHPK3PXP")
 

@@ -178,3 +178,69 @@ def test_cli_backup(fake_vault_env_cli: Path) -> None:
     result = runner.invoke(app, ["backup"])
     assert result.exit_code == 0
     assert "Backup created:" in result.output
+
+
+def test_cli_version(fake_vault_env_cli: Path) -> None:
+    result = runner.invoke(app, ["--version"])
+    assert result.exit_code == 0
+    assert "Desktop-2FA v" in result.output
+
+
+def test_cli_version_no_args(fake_vault_env_cli: Path) -> None:
+    result = runner.invoke(app, [])
+    assert result.exit_code == 0
+    assert "Desktop-2FA v" in result.output
+
+
+def test_cli_add_interactive(fake_vault_env_cli: Path) -> None:
+    # Provide issuer and secret via input
+    result = runner.invoke(app, ["add"], input="GitHub\nJBSWY3DPEHPK3PXP\ny\n")
+    assert result.exit_code == 0
+    assert "Service provider name" in result.output
+    assert "TOTP secret:" in result.output
+    assert "Added TOTP entry for GitHub" in result.output
+
+
+def test_cli_add_interactive_confirm_no(fake_vault_env_cli: Path) -> None:
+    result = runner.invoke(app, ["add"], input="GitHub\nJBSWY3DPEHPK3PXP\nn\nJBSWY3DPEHPK3PXP\ny\n")
+    assert result.exit_code == 0
+    assert "Is this correct?" in result.output
+    assert "Added TOTP entry for GitHub" in result.output
+
+
+def test_cli_add_interactive_repetitive(fake_vault_env_cli: Path) -> None:
+    repetitive_secret = "AAAA" * 10
+    result = runner.invoke(app, ["add"], input=f"GitHub\n{repetitive_secret}\ny\ny\n")
+    assert result.exit_code == 0
+    assert "unusually long or repetitive" in result.output
+    assert "Added TOTP entry for GitHub" in result.output
+
+
+def test_cli_add_error(fake_vault_env_cli: Path, monkeypatch: Any) -> None:
+    def mock_add_entry(*args, **kwargs):
+        raise ValueError("test error")
+    monkeypatch.setattr("desktop_2fa.cli.main.add_entry", mock_add_entry)
+    result = runner.invoke(app, ["add", "GitHub", "JBSWY3DPEHPK3PXP"])
+    assert result.exit_code == 0
+    assert "Error: test error" in result.output
+
+
+def test_cli_add_empty_secret_loop(fake_vault_env_cli: Path, monkeypatch: Any) -> None:
+    prompts = iter(["GitHub", "", "JBSWY3DPEHPK3PXP"])
+    confirms = iter(["y"])
+    monkeypatch.setattr("typer.prompt", lambda text, **kwargs: next(prompts))
+    monkeypatch.setattr("typer.confirm", lambda text, **kwargs: next(confirms))
+    result = runner.invoke(app, ["add"])
+    assert result.exit_code == 0
+    assert "Secret cannot be empty" in result.output
+    assert "Added TOTP entry for GitHub" in result.output
+
+
+def test_cli_add_repetitive_no(fake_vault_env_cli: Path, monkeypatch: Any) -> None:
+    prompts = iter(["GitHub", "AAAA" * 10, "JBSWY3DPEHPK3PXP"])
+    confirms = iter(["y", False, "y"])
+    monkeypatch.setattr("typer.prompt", lambda text, **kwargs: next(prompts))
+    monkeypatch.setattr("typer.confirm", lambda text, **kwargs: next(confirms))
+    result = runner.invoke(app, ["add"])
+    assert result.exit_code == 0
+    assert "Added TOTP entry for GitHub" in result.output
