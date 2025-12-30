@@ -118,7 +118,7 @@ def test_cli_list_empty(fake_vault_env_cli: Path) -> None:
 def test_cli_add_and_list(fake_vault_env_cli: Path) -> None:
     result = runner.invoke(app, ["add", "GitHub", "JBSWY3DPEHPK3PXP"])
     assert result.exit_code == 0
-    assert "Added entry: GitHub" in result.output
+    assert "Added TOTP entry for GitHub" in result.output
 
     result = runner.invoke(app, ["list"])
     assert result.exit_code == 0

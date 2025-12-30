@@ -37,15 +37,50 @@ def list_cmd() -> None:
 
 @app.command("add")
 def add_cmd(
-    issuer: str = typer.Argument(None, help="Service provider name"),
-    secret: str = typer.Argument(None, help="TOTP secret"),
+    issuer: str | None = typer.Argument(None, help="Service provider name"),
+    secret: str | None = typer.Argument(None, help="TOTP secret"),
 ) -> None:
     """Add a new TOTP entry."""
     if issuer is None:
         issuer = typer.prompt("Service provider name")
-    if secret is None:
-        secret = typer.prompt("TOTP secret", hide_input=True)
-    add_entry(issuer=issuer, secret=secret)
+
+    assert issuer is not None
+
+    while True:
+        current_secret = secret
+        if current_secret is None:
+            current_secret = typer.prompt("TOTP secret:", hide_input=False)
+        if not current_secret.strip():
+            print("Secret cannot be empty. Please enter a Base32 secret.")
+            secret = None
+            continue
+        print(f"You entered: {current_secret}")
+        if not typer.confirm("Is this correct?", default=False):
+            secret = None
+            continue
+        # Check for suspicious secret
+        def is_repetitive(s: str) -> bool:
+            n = len(s)
+            for i in range(1, n // 2 + 1):
+                if n % i == 0:
+                    pattern = s[:i]
+                    if pattern * (n // i) == s:
+                        return True
+            return False
+        if len(current_secret) > 40 or is_repetitive(current_secret):
+            if not typer.confirm("This secret looks unusually long or repetitive. Did you paste it multiple times?", default=False):
+                secret = None
+                continue
+        secret = current_secret
+        break
+
+    assert secret is not None
+
+    try:
+        add_entry(issuer=issuer, secret=secret)
+        print(f"Added TOTP entry for {issuer}")
+    except Exception as e:
+        print(f"Error: {e}")
 
 
 @app.command("code")

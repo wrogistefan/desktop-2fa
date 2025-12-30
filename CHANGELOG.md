@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [0.5.2] - 2025-12-30
+## [0.5.3] - 2025-12-30
 
 ### 🛡️ Security & Validation Improvements
 - Added input validation for `add` command to prevent adding entries with invalid Base32 secrets or empty issuer names
