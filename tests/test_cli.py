@@ -202,7 +202,9 @@ def test_cli_add_interactive(fake_vault_env_cli: Path) -> None:
 
 
 def test_cli_add_interactive_confirm_no(fake_vault_env_cli: Path) -> None:
-    result = runner.invoke(app, ["add"], input="GitHub\nJBSWY3DPEHPK3PXP\nn\nJBSWY3DPEHPK3PXP\ny\n")
+    result = runner.invoke(
+        app, ["add"], input="GitHub\nJBSWY3DPEHPK3PXP\nn\nJBSWY3DPEHPK3PXP\ny\n"
+    )
     assert result.exit_code == 0
     assert "Is this correct?" in result.output
     assert "Added TOTP entry for GitHub" in result.output
@@ -217,8 +219,9 @@ def test_cli_add_interactive_repetitive(fake_vault_env_cli: Path) -> None:
 
 
 def test_cli_add_error(fake_vault_env_cli: Path, monkeypatch: Any) -> None:
-    def mock_add_entry(*args, **kwargs):
+    def mock_add_entry(*args: Any, **kwargs: Any) -> None:
         raise ValueError("test error")
+
     monkeypatch.setattr("desktop_2fa.cli.main.add_entry", mock_add_entry)
     result = runner.invoke(app, ["add", "GitHub", "JBSWY3DPEHPK3PXP"])
     assert result.exit_code == 0
