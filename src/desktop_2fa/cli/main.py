@@ -41,8 +41,10 @@ def add_cmd(
     secret: str | None = typer.Argument(None, help="TOTP secret"),
 ) -> None:
     """Add a new TOTP entry."""
+    prompted = False
     if issuer is None:
         issuer = typer.prompt("Service provider name")
+        prompted = True
 
     assert issuer is not None
 
@@ -50,14 +52,16 @@ def add_cmd(
         current_secret = secret
         if current_secret is None:
             current_secret = typer.prompt("TOTP secret:", hide_input=False)
+            prompted = True
         if not current_secret.strip():
             print("Secret cannot be empty. Please enter a Base32 secret.")
             secret = None
             continue
-        print(f"You entered: {current_secret}")
-        if not typer.confirm("Is this correct?", default=False):
-            secret = None
-            continue
+        if prompted:
+            print(f"You entered: {current_secret}")
+            if not typer.confirm("Is this correct?", default=False):
+                secret = None
+                continue
         # Check for suspicious secret
         def is_repetitive(s: str) -> bool:
             n = len(s)
@@ -68,7 +72,7 @@ def add_cmd(
                         return True
             return False
         if len(current_secret) > 40 or is_repetitive(current_secret):
-            if not typer.confirm("This secret looks unusually long or repetitive. Did you paste it multiple times?", default=False):
+            if prompted and not typer.confirm("This secret looks unusually long or repetitive. Did you paste it multiple times?", default=False):
                 secret = None
                 continue
         secret = current_secret
