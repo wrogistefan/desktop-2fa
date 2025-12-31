@@ -1,0 +1,15 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="256" height="256" fill="#0d1117"/>
+    
+    <!-- Shield outline -->
+    <path d="M128 40 L188 70 L188 135 C188 170 163 195 128 205 C93 195 68 170 68 135 L68 70 Z"
+          stroke="#58a6ff" stroke-width="6" fill="none"/>
+
+    <!-- Hexagon core -->
+    <path d="M128 90 L158 107 L158 141 L128 158 L98 141 L98 107 Z"
+          stroke="#58a6ff" stroke-width="4" fill="none"/>
+
+    <!-- Keyhole -->
+    <circle cx="128" cy="118" r="10" stroke="#58a6ff" stroke-width="4" fill="none"/>
+    <rect x="122" y="124" width="12" height="20" rx="3" stroke="#58a6ff" stroke-width="4" fill="none"/>
+</svg>
