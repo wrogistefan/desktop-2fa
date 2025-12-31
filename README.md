@@ -38,6 +38,26 @@ All secrets are stored in a local encrypted vault using:
 
 Vault is automatically backed up as `vault.backup.bin` on each save.
 
+### Security model (current state, WIP)
+
+Right now, the vault encryption is **not** backed by a user-provided secret.
+
+- The vault is encrypted using AES‑GCM.
+- The encryption key is derived using Argon2 from a fixed internal password plus a per‑vault random salt.
+- The salt is stored alongside the ciphertext.
+- There is no way for the user to set their own passphrase yet.
+
+**Implication:**
+If someone gains access to your vault file and knows how this project works, they can decrypt it. The current implementation does *not* offer strong cryptographic protection against an attacker who has a copy of the vault.
+
+This is a known limitation and will be addressed by:
+
+- Introducing a mandatory user passphrase for vault encryption.
+- Keeping Argon2-based key derivation, but using user input as the secret.
+- Updating this section with a precise, formal security model.
+
+Until then, this project should be considered experimental and **not a replacement for established tools** like Bitwarden, KeePass, or Aegis for high‑security use cases.
+
 ## Installation
 
 ### From PyPI (Recommended)
