@@ -5,6 +5,8 @@
 ![License](https://img.shields.io/github/license/wrogistefan/desktop-2fa)
 ![Build](https://github.com/wrogistefan/desktop-2fa/actions/workflows/ci.yml/badge.svg)
 [![codecov](https://codecov.io/gh/wrogistefan/desktop-2fa/branch/main/graph/badge.svg)](https://codecov.io/gh/wrogistefan/desktop-2fa)
+[![Live site](https://img.shields.io/badge/live-desktop--2fa-blue?style=for-the-badge)](https://desktop-2fa.lukasz-perek.workers.dev/)
+
 
 A secure, offline two-factor authentication (2FA) manager designed for desktop environments. Built with a modular architecture in Python, featuring strong encryption and no cloud dependencies.
 
