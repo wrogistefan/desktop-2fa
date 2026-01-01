@@ -91,7 +91,12 @@ class Vault:
             The loaded Vault instance.
         """
         if not os.path.exists(path):
-            return cls()
+            # Create empty vault file if it doesn't exist
+            # TODO: Consider refactoring this into a separate ensure_vault() method
+            # to separate the side-effect of file creation from loading logic
+            vault = cls()
+            vault.save(path, password)
+            return vault
 
         with open(path, "rb") as f:
             blob = f.read()

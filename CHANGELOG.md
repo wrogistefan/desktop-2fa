@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.5.5.1] - 2026-01-01
+
+### 🐛 Fixed
+- **Vault initialization**: `Vault.load()` now creates and saves an empty vault file if none exists
+- Resolves issue where CLI commands like `list` and `add` failed silently due to missing vault file
+- Method now requires a password to persist the vault
+
+### ⚠️ Notes
+- This introduces a side-effect in `load()` — consider separating creation logic in future
+- TODO: Refactor `load()` → `ensure_vault()` to separate concerns
+
+---
+
 ## [0.5.5] - 2025-12-31
 
 ### 🛡️ Security Enhancements
