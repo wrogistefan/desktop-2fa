@@ -8,7 +8,7 @@ import typer
 from desktop_2fa import __version__
 
 from . import commands
-from .helpers import get_password_from_cli
+from .helpers import get_password_for_vault
 
 
 def is_interactive() -> bool:
@@ -64,8 +64,7 @@ def main(
 
 @app.command("list")
 def list_cmd(ctx: typer.Context) -> None:
-    password = get_password_from_cli(ctx)
-    commands.list_entries(password)
+    commands.list_entries(ctx)
 
 
 @app.command("add")
@@ -74,41 +73,34 @@ def add_cmd(
     issuer: str,
     secret: str,
 ) -> None:
-    password = get_password_from_cli(ctx)
-    commands.add_entry(issuer, secret, password)
+    commands.add_entry(issuer, secret, ctx)
 
 
 @app.command("code")
 def code_cmd(ctx: typer.Context, name: str) -> None:
-    password = get_password_from_cli(ctx)
-    commands.generate_code(name, password)
+    commands.generate_code(name, ctx)
 
 
 @app.command("remove")
 def remove_cmd(ctx: typer.Context, name: str) -> None:
-    password = get_password_from_cli(ctx)
-    commands.remove_entry(name, password)
+    commands.remove_entry(name, ctx)
 
 
 @app.command("rename")
 def rename_cmd(ctx: typer.Context, old: str, new: str) -> None:
-    password = get_password_from_cli(ctx)
-    commands.rename_entry(old, new, password)
+    commands.rename_entry(old, new, ctx)
 
 
 @app.command("export")
 def export_cmd(ctx: typer.Context, path: str) -> None:
-    password = get_password_from_cli(ctx)
-    commands.export_vault(path, password)
+    commands.export_vault(path, ctx)
 
 
 @app.command("import")
 def import_cmd(ctx: typer.Context, source: str) -> None:
-    password = get_password_from_cli(ctx)
-    commands.import_vault(source, password)
+    commands.import_vault(source, ctx)
 
 
 @app.command("backup")
 def backup_cmd(ctx: typer.Context) -> None:
-    password = get_password_from_cli(ctx)
-    commands.backup_vault(password)
+    commands.backup_vault(ctx)

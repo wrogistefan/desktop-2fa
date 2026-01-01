@@ -41,7 +41,7 @@ def test_cli_add_and_list(fake_vault_env_cli: Path) -> None:
         ["--password", TEST_PASSWORD, "add", "GitHub", "JBSWY3DPEHPK3PXP"],
     )
     assert result.exit_code == 0
-    assert "Added entry: GitHub" in result.output
+    assert "Entry added: GitHub" in result.output
 
     result = runner.invoke(app, ["--password", TEST_PASSWORD, "list"])
     assert result.exit_code == 0

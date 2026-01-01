@@ -100,7 +100,7 @@ def save_vault(path: Path, vault: Vault, password: str) -> None:
     vault.save(path, password)
 
 
-def get_password_from_cli(ctx: typer.Context) -> str:
+def get_password_for_vault(ctx: typer.Context, new_vault: bool = False) -> str:
     """Get the password for vault operations."""
     password = ctx.obj.get("password")
     password_file = ctx.obj.get("password_file")
@@ -133,12 +133,13 @@ def get_password_from_cli(ctx: typer.Context) -> str:
         raise typer.Exit(1)
 
     # Interactive mode → prompt
-    while True:
-        pwd = typer.prompt("Enter vault password", hide_input=True)
+    pwd = typer.prompt("Enter vault password", hide_input=True)
+    if new_vault:
         confirm = typer.prompt("Confirm vault password", hide_input=True)
-        if pwd == confirm:
-            return pwd  # type: ignore[no-any-return]
-        print("Passwords do not match. Please try again.")
+        if pwd != confirm:
+            print("Passwords do not match. Please try again.")
+            raise typer.Exit(1)
+    return pwd  # type: ignore[no-any-return]
 
 
 def timestamp() -> str:

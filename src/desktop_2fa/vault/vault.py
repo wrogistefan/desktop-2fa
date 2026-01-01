@@ -89,14 +89,13 @@ class Vault:
 
         Returns:
             The loaded Vault instance.
+
+        Raises:
+            FileNotFoundError: If the vault file does not exist.
+            Exception: If decryption fails (invalid password).
         """
         if not os.path.exists(path):
-            # Create empty vault file if it doesn't exist
-            # TODO: Consider refactoring this into a separate ensure_vault() method
-            # to separate the side-effect of file creation from loading logic
-            vault = cls()
-            vault.save(path, password)
-            return vault
+            raise FileNotFoundError(f"Vault file not found: {path}")
 
         with open(path, "rb") as f:
             blob = f.read()
