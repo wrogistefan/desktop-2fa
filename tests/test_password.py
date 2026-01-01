@@ -118,7 +118,9 @@ def test_cli_password_flag(fake_vault_env: pathlib.Path) -> None:
     assert "Added entry: GitHub" in result.output
 
 
-def test_cli_password_file_flag(fake_vault_env: pathlib.Path, tmp_path: pathlib.Path) -> None:
+def test_cli_password_file_flag(
+    fake_vault_env: pathlib.Path, tmp_path: pathlib.Path
+) -> None:
     """Test --password-file flag in CLI."""
     password_file = tmp_path / "pass.txt"
     password_file.write_text("filepass")
@@ -130,7 +132,9 @@ def test_cli_password_file_flag(fake_vault_env: pathlib.Path, tmp_path: pathlib.
     assert "Added entry: GitHub" in result.output
 
 
-def test_cli_both_password_flags_error(fake_vault_env: pathlib.Path, tmp_path: pathlib.Path) -> None:
+def test_cli_both_password_flags_error(
+    fake_vault_env: pathlib.Path, tmp_path: pathlib.Path
+) -> None:
     """Test error when both --password and --password-file are provided."""
     password_file = tmp_path / "pass.txt"
     password_file.write_text("filepass")
