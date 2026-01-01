@@ -1,4 +1,5 @@
 import pathlib
+
 import pytest
 
 from desktop_2fa.cli.importers import (
