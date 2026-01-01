@@ -142,5 +142,10 @@ def get_password_for_vault(ctx: typer.Context, new_vault: bool = False) -> str:
     return pwd  # type: ignore[no-any-return]
 
 
+def get_password_from_cli(ctx: typer.Context) -> str:
+    """Legacy alias for backward compatibility."""
+    return get_password_for_vault(ctx, new_vault=False)
+
+
 def timestamp() -> str:
     return str(int(time.time()))

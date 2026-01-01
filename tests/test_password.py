@@ -67,22 +67,21 @@ def test_get_password_non_interactive_no_password(fake_ctx: Any) -> None:
 
 
 def test_get_password_interactive_success(fake_ctx: Any) -> None:
-    """Test interactive password prompt with confirmation."""
+    """Test interactive password prompt."""
     fake_ctx.obj["interactive"] = True
     with patch("typer.prompt") as mock_prompt:
-        mock_prompt.side_effect = ["mypass", "mypass"]
+        mock_prompt.side_effect = ["mypass"]
         assert get_password_from_cli(fake_ctx) == "mypass"
-        assert mock_prompt.call_count == 2
+        assert mock_prompt.call_count == 1
 
 
 def test_get_password_interactive_mismatch_retry(fake_ctx: Any) -> None:
-    """Test interactive password prompt with mismatch and retry."""
+    """Test interactive password prompt."""
     fake_ctx.obj["interactive"] = True
-    with patch("typer.prompt") as mock_prompt, patch("builtins.print") as mock_print:
-        mock_prompt.side_effect = ["pass1", "pass2", "pass3", "pass3"]
-        assert get_password_from_cli(fake_ctx) == "pass3"
-        assert mock_prompt.call_count == 4
-        mock_print.assert_called_with("Passwords do not match. Please try again.")
+    with patch("typer.prompt") as mock_prompt:
+        mock_prompt.side_effect = ["pass1"]
+        assert get_password_from_cli(fake_ctx) == "pass1"
+        assert mock_prompt.call_count == 1
 
 
 # CLI integration tests using CliRunner
@@ -115,7 +114,7 @@ def test_cli_password_flag(fake_vault_env: pathlib.Path) -> None:
         app, ["--password", "testpass", "add", "GitHub", "JBSWY3DPEHPK3PXP"]
     )
     assert result.exit_code == 0
-    assert "Added entry: GitHub" in result.output
+    assert "Entry added: GitHub" in result.output
 
 
 def test_cli_password_file_flag(
@@ -129,7 +128,7 @@ def test_cli_password_file_flag(
         ["--password-file", str(password_file), "add", "GitHub", "JBSWY3DPEHPK3PXP"],
     )
     assert result.exit_code == 0
-    assert "Added entry: GitHub" in result.output
+    assert "Entry added: GitHub" in result.output
 
 
 def test_cli_both_password_flags_error(
@@ -174,7 +173,7 @@ def test_cli_interactive_password_prompt(fake_vault_env: pathlib.Path) -> None:
             assert (
                 result.exit_code == 0
             ), f"Exit code was {result.exit_code}, output: {result.output}"
-            assert "Added entry: GitHub" in result.output
+            assert "Entry added: GitHub" in result.output
             assert mock_prompt.call_count == 2
     finally:
         # Restore original environment

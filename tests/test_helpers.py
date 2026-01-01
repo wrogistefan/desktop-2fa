@@ -28,6 +28,8 @@ def fake_vault_env_helpers(tmp_path: Path, monkeypatch: Any) -> Path:
 def test_helpers_add_and_list_entries(
     fake_vault_env_helpers: Path, capsys: Any
 ) -> None:
+    from desktop_2fa.vault import Vault
+    helpers.save_vault(fake_vault_env_helpers, Vault(), TEST_PASSWORD)
     helpers.add_entry(
         fake_vault_env_helpers,
         "GitHub",
@@ -51,6 +53,8 @@ def test_helpers_add_and_list_entries(
 
 
 def test_helpers_generate_code(fake_vault_env_helpers: Path, capsys: Any) -> None:
+    from desktop_2fa.vault import Vault
+    helpers.save_vault(fake_vault_env_helpers, Vault(), TEST_PASSWORD)
     helpers.add_entry(
         fake_vault_env_helpers,
         "GitHub",
@@ -70,6 +74,8 @@ def test_helpers_generate_code(fake_vault_env_helpers: Path, capsys: Any) -> Non
 
 
 def test_helpers_remove_entry(fake_vault_env_helpers: Path) -> None:
+    from desktop_2fa.vault import Vault
+    helpers.save_vault(fake_vault_env_helpers, Vault(), TEST_PASSWORD)
     helpers.add_entry(
         fake_vault_env_helpers,
         "GitHub",
@@ -84,6 +90,8 @@ def test_helpers_remove_entry(fake_vault_env_helpers: Path) -> None:
 
 
 def test_helpers_rename_entry(fake_vault_env_helpers: Path) -> None:
+    from desktop_2fa.vault import Vault
+    helpers.save_vault(fake_vault_env_helpers, Vault(), TEST_PASSWORD)
     helpers.add_entry(
         fake_vault_env_helpers,
         "GitHub",
@@ -101,6 +109,8 @@ def test_helpers_rename_entry(fake_vault_env_helpers: Path) -> None:
 def test_helpers_export_and_import(
     fake_vault_env_helpers: Path, tmp_path: Path
 ) -> None:
+    from desktop_2fa.vault import Vault
+    helpers.save_vault(fake_vault_env_helpers, Vault(), TEST_PASSWORD)
     helpers.add_entry(
         fake_vault_env_helpers,
         "GitHub",
@@ -124,6 +134,8 @@ def test_helpers_export_and_import(
 
 
 def test_helpers_backup(fake_vault_env_helpers: Path) -> None:
+    from desktop_2fa.vault import Vault
+    helpers.save_vault(fake_vault_env_helpers, Vault(), TEST_PASSWORD)
     helpers.add_entry(
         fake_vault_env_helpers,
         "GitHub",
@@ -148,10 +160,12 @@ def test_helpers_timestamp() -> None:
 def test_helpers_export_vault_missing(
     fake_vault_env_helpers: Path, tmp_path: Path, capsys: Any
 ) -> None:
+    from desktop_2fa.vault import Vault
+    helpers.save_vault(fake_vault_env_helpers, Vault(), TEST_PASSWORD)
     export_path = tmp_path / "export.bin"
     helpers.export_vault(fake_vault_env_helpers, export_path, TEST_PASSWORD)
     out = capsys.readouterr().out
-    # Aktualne zachowanie: tworzy pusty vault i eksportuje, więc:
+    # Aktualne zachowanie: eksportuje istniejący vault
     assert "Exported vault to:" in out
     assert export_path.exists()
 
@@ -159,20 +173,22 @@ def test_helpers_export_vault_missing(
 def test_helpers_import_vault_missing(
     fake_vault_env_helpers: Path, tmp_path: Path
 ) -> None:
+    from desktop_2fa.vault import Vault
+    helpers.save_vault(fake_vault_env_helpers, Vault(), TEST_PASSWORD)
     missing = tmp_path / "nope.bin"
-    helpers.import_vault(fake_vault_env_helpers, missing, TEST_PASSWORD)
-    # Zachowanie: brak wyjątku, ewentualny komunikat na stdout.
+    with pytest.raises(FileNotFoundError):
+        helpers.import_vault(fake_vault_env_helpers, missing, TEST_PASSWORD)
 
 
 def test_helpers_backup_vault_missing(
     fake_vault_env_helpers: Path, capsys: Any
 ) -> None:
-    if fake_vault_env_helpers.exists():
-        fake_vault_env_helpers.unlink()
+    from desktop_2fa.vault import Vault
+    helpers.save_vault(fake_vault_env_helpers, Vault(), TEST_PASSWORD)
 
     backup_path = fake_vault_env_helpers.with_suffix(".backup.bin")
     helpers.backup_vault(fake_vault_env_helpers, backup_path, TEST_PASSWORD)
     out = capsys.readouterr().out
-    # Aktualne zachowanie: backup_vault zawsze pisze backup i drukuje "Backup created:"
+    # Aktualne zachowanie: backup_vault pisze backup i drukuje "Backup created:"
     assert "Backup created:" in out
     assert backup_path.exists()

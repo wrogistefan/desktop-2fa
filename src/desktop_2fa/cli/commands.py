@@ -82,6 +82,7 @@ def generate_code(name: str, ctx: typer.Context) -> None:
         vault = Vault.load(path, password)
         entry = vault.get_entry(name)
         from desktop_2fa.totp.generator import generate
+
         code = generate(
             secret=entry.secret,
             digits=entry.digits,
