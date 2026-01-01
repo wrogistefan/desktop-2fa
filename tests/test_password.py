@@ -1,3 +1,5 @@
+import pathlib
+from typing import Any, Dict
 from unittest.mock import patch
 
 import pytest
@@ -8,24 +10,24 @@ from desktop_2fa.cli.main import app
 
 
 @pytest.fixture
-def fake_ctx():
+def fake_ctx() -> Any:
     """Create a fake typer context."""
 
     class FakeContext:
-        def __init__(self):
-            self.obj = {}
+        def __init__(self) -> None:
+            self.obj: Dict[str, Any] = {}
 
     return FakeContext()
 
 
-def test_get_password_from_flag(fake_ctx):
+def test_get_password_from_flag(fake_ctx: Any) -> None:
     """Test getting password from --password flag."""
     fake_ctx.obj["password"] = "testpass"
     fake_ctx.obj["interactive"] = True
     assert get_password_from_cli(fake_ctx) == "testpass"
 
 
-def test_get_password_from_file(fake_ctx, tmp_path):
+def test_get_password_from_file(fake_ctx: Any, tmp_path: pathlib.Path) -> None:
     """Test getting password from --password-file flag."""
     password_file = tmp_path / "password.txt"
     password_file.write_text("filepass")
@@ -34,7 +36,7 @@ def test_get_password_from_file(fake_ctx, tmp_path):
     assert get_password_from_cli(fake_ctx) == "filepass"
 
 
-def test_get_password_both_flags_error(fake_ctx):
+def test_get_password_both_flags_error(fake_ctx: Any) -> None:
     """Test error when both --password and --password-file are provided."""
     fake_ctx.obj["password"] = "test"
     fake_ctx.obj["password_file"] = "file"
@@ -45,7 +47,7 @@ def test_get_password_both_flags_error(fake_ctx):
         get_password_from_cli(fake_ctx)
 
 
-def test_get_password_file_not_found(fake_ctx):
+def test_get_password_file_not_found(fake_ctx: Any) -> None:
     """Test error when password file does not exist."""
     fake_ctx.obj["password_file"] = "/nonexistent/file"
     fake_ctx.obj["interactive"] = True
@@ -55,7 +57,7 @@ def test_get_password_file_not_found(fake_ctx):
         get_password_from_cli(fake_ctx)
 
 
-def test_get_password_non_interactive_no_password(fake_ctx):
+def test_get_password_non_interactive_no_password(fake_ctx: Any) -> None:
     """Test error in non-interactive mode when no password provided."""
     fake_ctx.obj["interactive"] = False
     from click.exceptions import Exit
@@ -64,7 +66,7 @@ def test_get_password_non_interactive_no_password(fake_ctx):
         get_password_from_cli(fake_ctx)
 
 
-def test_get_password_interactive_success(fake_ctx):
+def test_get_password_interactive_success(fake_ctx: Any) -> None:
     """Test interactive password prompt with confirmation."""
     fake_ctx.obj["interactive"] = True
     with patch("typer.prompt") as mock_prompt:
@@ -73,7 +75,7 @@ def test_get_password_interactive_success(fake_ctx):
         assert mock_prompt.call_count == 2
 
 
-def test_get_password_interactive_mismatch_retry(fake_ctx):
+def test_get_password_interactive_mismatch_retry(fake_ctx: Any) -> None:
     """Test interactive password prompt with mismatch and retry."""
     fake_ctx.obj["interactive"] = True
     with patch("typer.prompt") as mock_prompt, patch("builtins.print") as mock_print:
@@ -89,7 +91,7 @@ runner = CliRunner()
 
 
 @pytest.fixture
-def fake_vault_env(tmp_path, monkeypatch):
+def fake_vault_env(tmp_path: pathlib.Path, monkeypatch: Any) -> pathlib.Path:
     fake_vault = tmp_path / "vault"
 
     monkeypatch.setattr(
@@ -107,7 +109,7 @@ def fake_vault_env(tmp_path, monkeypatch):
     return fake_vault
 
 
-def test_cli_password_flag(fake_vault_env):
+def test_cli_password_flag(fake_vault_env: pathlib.Path) -> None:
     """Test --password flag in CLI."""
     result = runner.invoke(
         app, ["--password", "testpass", "add", "GitHub", "JBSWY3DPEHPK3PXP"]
@@ -116,7 +118,7 @@ def test_cli_password_flag(fake_vault_env):
     assert "Added entry: GitHub" in result.output
 
 
-def test_cli_password_file_flag(fake_vault_env, tmp_path):
+def test_cli_password_file_flag(fake_vault_env: pathlib.Path, tmp_path: pathlib.Path) -> None:
     """Test --password-file flag in CLI."""
     password_file = tmp_path / "pass.txt"
     password_file.write_text("filepass")
@@ -128,7 +130,7 @@ def test_cli_password_file_flag(fake_vault_env, tmp_path):
     assert "Added entry: GitHub" in result.output
 
 
-def test_cli_both_password_flags_error(fake_vault_env, tmp_path):
+def test_cli_both_password_flags_error(fake_vault_env: pathlib.Path, tmp_path: pathlib.Path) -> None:
     """Test error when both --password and --password-file are provided."""
     password_file = tmp_path / "pass.txt"
     password_file.write_text("filepass")
@@ -139,7 +141,7 @@ def test_cli_both_password_flags_error(fake_vault_env, tmp_path):
     assert "Error: Cannot specify both --password and --password-file" in result.output
 
 
-def test_cli_non_interactive_no_password_error(fake_vault_env):
+def test_cli_non_interactive_no_password_error(fake_vault_env: pathlib.Path) -> None:
     """Test error in non-interactive mode without password."""
     with (
         patch("sys.stdin.isatty", return_value=False),
@@ -153,7 +155,7 @@ def test_cli_non_interactive_no_password_error(fake_vault_env):
         )
 
 
-def test_cli_interactive_password_prompt(fake_vault_env):
+def test_cli_interactive_password_prompt(fake_vault_env: pathlib.Path) -> None:
     """Test interactive password prompt in CLI."""
     # Set environment variable to force interactive mode for testing
     import os

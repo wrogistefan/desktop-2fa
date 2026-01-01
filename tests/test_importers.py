@@ -1,3 +1,4 @@
+import pathlib
 import pytest
 
 from desktop_2fa.cli.importers import (
@@ -10,7 +11,7 @@ from desktop_2fa.cli.importers import (
 )
 
 
-def test_parse_aegis_json():
+def test_parse_aegis_json() -> None:
     """Test parsing Aegis JSON format."""
     content = """{
         "entries": [
@@ -47,7 +48,7 @@ def test_parse_aegis_json():
     assert entry["algorithm"] == "SHA1"
 
 
-def test_parse_bitwarden_csv():
+def test_parse_bitwarden_csv() -> None:
     """Test parsing Bitwarden CSV format."""
     content = """name,totp
 GitHub,user@github.com,JBSWY3DPEHPK3PXP
@@ -73,7 +74,7 @@ Simple,JBSWY3DPEHPK3PXT"""
     assert entries[2]["secret"] == "JBSWY3DPEHPK3PXT"
 
 
-def test_parse_1password_csv():
+def test_parse_1password_csv() -> None:
     """Test parsing 1Password CSV format."""
     content = """title,otp
 GitHub,JBSWY3DPEHPK3PXP
@@ -91,7 +92,7 @@ Google:test@gmail.com,JBSWY3DPEHPK3PXS"""
     assert entries[1]["secret"] == "JBSWY3DPEHPK3PXS"
 
 
-def test_parse_otpauth_uri():
+def test_parse_otpauth_uri() -> None:
     """Test parsing otpauth URI."""
     uri = "otpauth://totp/GitHub:user@github.com?secret=JBSWY3DPEHPK3PXP&digits=6&period=30&algorithm=SHA1"
 
@@ -106,7 +107,7 @@ def test_parse_otpauth_uri():
     assert entry["algorithm"] == "SHA1"
 
 
-def test_parse_otpauth_uri_no_issuer():
+def test_parse_otpauth_uri_no_issuer() -> None:
     """Test parsing otpauth URI without issuer."""
     uri = "otpauth://totp/user@github.com?secret=JBSWY3DPEHPK3PXP"
 
@@ -118,7 +119,7 @@ def test_parse_otpauth_uri_no_issuer():
     assert entry["secret"] == "JBSWY3DPEHPK3PXP"
 
 
-def test_parse_otpauth_uri_invalid():
+def test_parse_otpauth_uri_invalid() -> None:
     """Test parsing invalid otpauth URI."""
     with pytest.raises(ValueError, match="Invalid otpauth URI"):
         parse_otpauth_uri("https://example.com")
@@ -130,7 +131,7 @@ def test_parse_otpauth_uri_invalid():
         parse_otpauth_uri("otpauth://totp/GitHub:user")
 
 
-def test_parse_freeotp_xml():
+def test_parse_freeotp_xml() -> None:
     """Test parsing FreeOTP XML format."""
     content = """<?xml version="1.0" encoding="utf-8"?>
 <tokens>
@@ -163,7 +164,7 @@ def test_parse_freeotp_xml():
     assert entries[1]["secret"] == "JBSWY3DPEHPK3PXS"
 
 
-def test_import_from_format_aegis(tmp_path):
+def test_import_from_format_aegis(tmp_path: pathlib.Path) -> None:
     """Test import_from_format with Aegis JSON."""
     aegis_file = tmp_path / "aegis.json"
     aegis_file.write_text(
@@ -175,7 +176,7 @@ def test_import_from_format_aegis(tmp_path):
     assert entries[0]["issuer"] == "Test"
 
 
-def test_import_from_format_bitwarden(tmp_path):
+def test_import_from_format_bitwarden(tmp_path: pathlib.Path) -> None:
     """Test import_from_format with Bitwarden CSV."""
     csv_file = tmp_path / "bitwarden.csv"
     csv_file.write_text("name,totp\nTest,SECRET")
@@ -185,7 +186,7 @@ def test_import_from_format_bitwarden(tmp_path):
     assert entries[0]["issuer"] == "Test"
 
 
-def test_import_from_format_1password(tmp_path):
+def test_import_from_format_1password(tmp_path: pathlib.Path) -> None:
     """Test import_from_format with 1Password CSV."""
     csv_file = tmp_path / "1password.csv"
     csv_file.write_text("title,otp\nTest,SECRET")
@@ -195,7 +196,7 @@ def test_import_from_format_1password(tmp_path):
     assert entries[0]["issuer"] == "Test"
 
 
-def test_import_from_format_otpauth():
+def test_import_from_format_otpauth() -> None:
     """Test import_from_format with otpauth URI."""
     uri = "otpauth://totp/Test:test?secret=SECRET"
     entries = import_from_format("otpauth", uri)
@@ -203,7 +204,7 @@ def test_import_from_format_otpauth():
     assert entries[0]["issuer"] == "Test"
 
 
-def test_import_from_format_freeotp(tmp_path):
+def test_import_from_format_freeotp(tmp_path: pathlib.Path) -> None:
     """Test import_from_format with FreeOTP XML."""
     xml_file = tmp_path / "freeotp.xml"
     xml_file.write_text(
@@ -222,7 +223,7 @@ def test_import_from_format_freeotp(tmp_path):
     assert entries[0]["issuer"] == "Test"
 
 
-def test_import_from_format_unsupported():
+def test_import_from_format_unsupported() -> None:
     """Test import_from_format with unsupported format."""
     with pytest.raises(ValueError, match="Unsupported format"):
         import_from_format("unsupported", "dummy")
