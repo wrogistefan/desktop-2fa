@@ -53,6 +53,12 @@ This implementation provides robust protection against unauthorized access. An a
 **Important Note:**
 While the vault is encrypted, it is important to understand that the security of the vault depends entirely on the strength of the user-provided passphrase. Additionally, the vault is stored locally on the same device, which means that if the device is compromised, the vault could be accessed. For maximum security, consider using a dedicated device for storing sensitive information.
 
+## CLI UX Specification
+
+CLI behavior is defined by an explicit UX contract that ensures consistent and predictable interactions. The vault lifecycle and first-use behavior are thoroughly documented to guide user expectations and system responses. This UX specification serves as the foundation for future refactors and GUI work, maintaining alignment across all interfaces.
+
+See [docs/ux.md](docs/ux.md) for details.
+
 ## Installation
 
 ### From PyPI (Recommended)
