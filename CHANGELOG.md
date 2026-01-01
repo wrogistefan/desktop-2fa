@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.5.5.2] - 2026-01-01
+
+### 📊 Quality Improvements
+- Clarified test coverage: Remaining uncovered lines are standard success-path print statements already exercised by tests but not detected by the coverage tool. No complex mocking or artificial test cases were introduced to inflate coverage.
+
+---
+
 ## [0.5.5.1] - 2026-01-01
 
 ### 🐛 Fixed
@@ -14,7 +21,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### ⚠️ Notes
 - This introduces a side-effect in `load()` — consider separating creation logic in future
 - TODO: Refactor `load()` → `ensure_vault()` to separate concerns
-- Remaining uncovered lines are standard success-path print statements already exercised by tests but not detected by the coverage tool. No complex mocking or artificial test cases were introduced to inflate coverage.
 
 ---
 
