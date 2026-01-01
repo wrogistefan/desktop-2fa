@@ -1,40 +1,34 @@
 """CLI helper functions for Desktop 2FA."""
 
-import shutil
 import time
 from pathlib import Path
+
+import typer
 
 from desktop_2fa.vault import Vault
 
 
-def list_entries() -> None:
+def list_entries(path: Path, password: str) -> None:
     """List all entries in the vault."""
-    vault = load_vault()
+    vault = Vault.load(path, password)
     for entry in vault.entries:
         print(f"- {entry.account_name} ({entry.issuer})")
 
 
-def add_entry(issuer: str, secret: str) -> None:
-    """Add a new entry to the vault.
-
-    Args:
-        issuer: The issuer name for the TOTP token.
-        secret: The base32-encoded secret key.
-    """
-    vault = load_vault()
-    vault.add_entry(issuer=issuer, account_name=issuer, secret=secret)
-    save_vault(vault)
+def add_entry(
+    path: Path, issuer: str, account: str, secret: str, password: str
+) -> None:
+    """Add a new entry to the vault."""
+    vault = Vault.load(path, password)
+    vault.add_entry(issuer=issuer, account_name=account, secret=secret)
+    vault.save(path, password)
     print(f"Added entry: {issuer}")
 
 
-def generate_code(issuer: str) -> None:
-    """Generate and print the TOTP code for the given issuer.
-
-    Args:
-        issuer: The issuer name of the entry.
-    """
-    vault = load_vault()
-    entry = vault.get_entry(issuer)
+def generate_code(path: Path, name: str, password: str) -> None:
+    """Generate and print the TOTP code for the given issuer."""
+    vault = Vault.load(path, password)
+    entry = vault.get_entry(name)
 
     from desktop_2fa.totp.generator import generate
 
@@ -48,115 +42,104 @@ def generate_code(issuer: str) -> None:
     print(code)
 
 
-def remove_entry(issuer: str) -> None:
-    """Remove an entry from the vault by issuer.
-
-    Args:
-        issuer: The issuer name of the entry to remove.
-    """
-    vault = load_vault()
-    vault.remove_entry(issuer)
-    save_vault(vault)
-    print(f"Removed entry: {issuer}")
+def remove_entry(path: Path, name: str, password: str) -> None:
+    """Remove an entry from the vault."""
+    vault = Vault.load(path, password)
+    vault.remove_entry(name)
+    vault.save(path, password)
+    print(f"Removed entry: {name}")
 
 
-def rename_entry(old_issuer: str, new_issuer: str) -> None:
-    """Rename an entry's issuer from old_issuer to new_issuer.
+def rename_entry(path: Path, old: str, new: str, password: str) -> None:
+    """Rename an entry."""
+    vault = Vault.load(path, password)
+    entry = vault.get_entry(old)
+    entry.account_name = new
+    entry.issuer = new
 
-    Args:
-        old_issuer: The current issuer name.
-        new_issuer: The new issuer name.
-    """
-    vault = load_vault()
-    entry = vault.get_entry(old_issuer)
-    entry.account_name = new_issuer
-    entry.issuer = new_issuer
-
-    save_vault(vault)
-    print(f"Renamed '{old_issuer}' → '{new_issuer}'")
+    vault.save(path, password)
+    print(f"Renamed '{old}' → '{new}'")
 
 
-def export_vault(path: str) -> None:
-    """Export the vault file to the specified path.
-
-    Args:
-        path: The destination file path.
-    """
-    src = Path(get_vault_path())
-    dst = Path(path)
-
-    if not src.exists():
-        print("Vault does not exist.")
-        return
-
-    shutil.copy2(src, dst)
-    print(f"Exported vault to: {dst}")
+def export_vault(path: Path, export_path: Path, password: str) -> None:
+    """Export the vault file."""
+    vault = Vault.load(path, password)
+    vault.save(export_path, password)
+    print(f"Exported vault to: {export_path}")
 
 
-def import_vault(path: str) -> None:
-    """Import the vault file from the specified path.
-
-    Args:
-        path: The source file path.
-    """
-    src = Path(path)
-    dst = Path(get_vault_path())
-
-    if not src.exists():
-        print("Source file does not exist.")
-        return
-
-    dst.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(src, dst)
-    print(f"Imported vault from: {src}")
+def import_vault(path: Path, import_path: Path, password: str) -> None:
+    """Import the vault file."""
+    vault = Vault.load(import_path, password=password)
+    vault.save(path, password)
+    print("Vault imported from")
 
 
-def backup_vault() -> None:
+def backup_vault(path: Path, backup_path: Path, password: str) -> None:
     """Create a backup of the vault file."""
-    src = Path(get_vault_path())
-
-    if not src.exists():
-        print("Vault does not exist.")
-        return
-
-    backup_path = src.with_suffix(".backup.bin")
-    shutil.copy2(src, backup_path)
-    print(f"Backup created: {backup_path}")
+    vault = Vault.load(path, password)
+    vault.save(backup_path, password)
+    print("Backup created:")
 
 
 def get_vault_path() -> str:
-    """Get the default path for the vault file.
-
-    Returns:
-        The path to the vault file as a string.
-    """
+    """Get the default path for the vault file."""
     return str(Path.home() / ".desktop-2fa" / "vault")
 
 
-def load_vault() -> Vault:
-    """Load the vault from the default path.
+def load_vault(path: Path, password: str) -> Vault:
+    """Load the vault from the specified path."""
+    try:
+        return Vault.load(path, password)
+    except Exception as e:
+        raise Exception(f"Failed to load vault: {e}") from e
 
-    Returns:
-        The loaded Vault instance.
-    """
-    return Vault.load(get_vault_path())
+
+def save_vault(path: Path, vault: Vault, password: str) -> None:
+    """Save the vault to the specified path."""
+    vault.save(path, password)
 
 
-def save_vault(vault: Vault) -> None:
-    """Save the vault to the default path.
+def get_password_from_cli(ctx: typer.Context) -> str:
+    """Get the password for vault operations."""
+    password = ctx.obj.get("password")
+    password_file = ctx.obj.get("password_file")
+    interactive = ctx.obj.get("interactive")
 
-    Args:
-        vault: The Vault instance to save.
-    """
-    path = Path(get_vault_path())
-    path.parent.mkdir(parents=True, exist_ok=True)
-    vault.save(str(path))
+    # Both flags provided
+    if password and password_file:
+        print("Error: Cannot specify both --password and --password-file")
+        raise typer.Exit(1)
+
+    # Direct password
+    if password:
+        return password  # type: ignore[no-any-return]
+
+    # Password from file
+    if password_file:
+        try:
+            with open(password_file, "r") as f:
+                return f.read().strip()
+        except FileNotFoundError:
+            print(f"Error: Password file '{password_file}' not found")
+            raise typer.Exit(1)
+        except Exception as e:
+            print(f"Error reading password file: {e}")
+            raise typer.Exit(1)
+
+    # No password provided
+    if not interactive:
+        print("Error: Password not provided and not running in interactive mode")
+        raise typer.Exit(1)
+
+    # Interactive mode → prompt
+    while True:
+        pwd = typer.prompt("Enter vault password", hide_input=True)
+        confirm = typer.prompt("Confirm vault password", hide_input=True)
+        if pwd == confirm:
+            return pwd  # type: ignore[no-any-return]
+        print("Passwords do not match. Please try again.")
 
 
 def timestamp() -> str:
-    """Get the current timestamp as a string.
-
-    Returns:
-        The current Unix timestamp as a string.
-    """
     return str(int(time.time()))

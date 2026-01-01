@@ -12,7 +12,7 @@ A secure, offline two-factor authentication (2FA) manager designed for desktop e
 
 ## Features
 
-- **🔐 Encrypted Vault**: Secure storage using AES-256-GCM encryption with Argon2 key derivation.
+- **🔐 Vault**: Storage using AES-256-GCM encryption with Argon2 key derivation.
 - **⏱️ TOTP Generation**: RFC 6238 compliant Time-based One-Time Password (TOTP) generation.
 - **📋 Clipboard Integration**: Automatic copying of generated codes for convenience.
 - **🖥️ Desktop-First Design**: Native desktop application with no internet connectivity required.
@@ -21,16 +21,16 @@ A secure, offline two-factor authentication (2FA) manager designed for desktop e
 - **🧪 Comprehensive Testing**: Full test coverage using pytest.
 - **🚀 Future-Proof**: Designed for easy migration to Rust for enhanced performance.
 
-## 🚀 What's New in v0.5.4
+## 🚀 What's New in v0.5.5
 
-- **CLI Enhancements**: Added `--version` option and version display when no arguments provided.
-- **Interactive Add Command**: The `add` command now prompts for issuer and secret if not provided as arguments.
-- **Improved User Experience**: Better CLI usability with version information and interactive prompts.
-- **Code Quality**: Achieved 100% test coverage and removed duplicate badges from README.
+- **Security Enhancements**: Implemented secure vault password system with mandatory user passphrase.
+- **CLI Enhancements**: Added `--password` and `--password-file` flags for password input.
+- **Interactive Prompt**: Added interactive prompt for password entry.
+- **Importers**: Added support for popular TOTP formats: Aegis JSON, Bitwarden CSV, 1Password CSV, otpauth URI, FreeOTP XML.
 
-##  Secure Vault Storage
+##  Vault Storage
 
-All secrets are stored in a local encrypted vault using:
+All secrets are stored in a local vault using:
 
 - AES-GCM encryption
 - Argon2 key derivation
@@ -38,25 +38,20 @@ All secrets are stored in a local encrypted vault using:
 
 Vault is automatically backed up as `vault.backup.bin` on each save.
 
-### Security model (current state, WIP)
+### Security Model
 
-Right now, the vault encryption is **not** backed by a user-provided secret.
+The vault encryption is backed by a user-provided passphrase for strong security.
 
-- The vault is encrypted using AES‑GCM.
-- The encryption key is derived using Argon2 from a fixed internal password plus a per‑vault random salt.
-- The salt is stored alongside the ciphertext.
-- There is no way for the user to set their own passphrase yet.
+- The vault is encrypted using AES-256-GCM with authenticated encryption.
+- The encryption key is derived using Argon2 from the user-provided passphrase combined with a per-vault random salt.
+- The salt is stored securely alongside the ciphertext in the vault file.
+- A passphrase is mandatory for vault decryption and must be provided via CLI options or interactive prompt.
 
-**Implication:**
-If someone gains access to your vault file and knows how this project works, they can decrypt it. The current implementation does *not* offer strong cryptographic protection against an attacker who has a copy of the vault.
+**Security Implications:**
+This implementation provides robust protection against unauthorized access. An attacker with access to the vault file cannot decrypt it without the passphrase, offering strong cryptographic security.
 
-This is a known limitation and will be addressed by:
-
-- Introducing a mandatory user passphrase for vault encryption.
-- Keeping Argon2-based key derivation, but using user input as the secret.
-- Updating this section with a precise, formal security model.
-
-Until then, this project should be considered experimental and **not a replacement for established tools** like Bitwarden, KeePass, or Aegis for high‑security use cases.
+**Important Note:**
+While the vault is encrypted, it is important to understand that the security of the vault depends entirely on the strength of the user-provided passphrase. Additionally, the vault is stored locally on the same device, which means that if the device is compromised, the vault could be accessed. For maximum security, consider using a dedicated device for storing sensitive information.
 
 ## Installation
 
@@ -72,7 +67,7 @@ Verify installation:
 python -c "import desktop_2fa; print(desktop_2fa.__version__)"
 ```
 
-Expected output: `0.5.4`
+Expected output: `0.5.5`
 
 ### From Source
 
@@ -138,6 +133,30 @@ desktop-2fa remove GitHub2
 desktop-2fa export vault.json
 desktop-2fa import vault.json
 desktop-2fa backup
+
+# Provide passphrase via command line option
+desktop-2fa --password mypassphrase add GitHub JBSWY3DPEHPK3PXP
+
+# Provide passphrase via file
+desktop-2fa --password-file /path/to/passphrase.txt add GitHub JBSWY3DPEHPK3PXP
+
+# Interactive mode (prompts for passphrase if not provided)
+desktop-2fa add GitHub JBSWY3DPEHPK3PXP
+
+# Import from Aegis format
+desktop-2fa import aegis_export.json --format aegis
+
+# Import from Bitwarden format
+desktop-2fa import bitwarden_export.json --format bitwarden
+
+# Import from 1Password format
+desktop-2fa import onepassword_export.json --format 1password
+
+# Import from otpauth URI
+desktop-2fa import otpauth.txt --format otpauth
+
+# Import from FreeOTP format
+desktop-2fa import freeotp_export.json --format freeotp
 ```
 
 **Note**: The `export` and `import` commands work with JSON files for data interchange, while the vault is stored internally as an encrypted binary file. Use `export` to create a portable backup and `import` to restore from a JSON file.
@@ -209,7 +228,7 @@ This version uses Pydantic v2 for data modeling:
 
 ## Vault Format
 
-The vault stores encrypted data in a binary format saved as `vault.bin` in `~/.desktop-2fa/`. The vault uses AES-GCM encryption with Argon2 key derivation for maximum security. Automatic backups are created as `vault.backup.bin` on each save.
+The vault stores encrypted data in a binary format saved as `vault.bin` in `~/.desktop-2fa/`. The vault uses AES-GCM encryption with Argon2 key derivation. Automatic backups are created as `vault.backup.bin` on each save.
 
 For export/import operations, data can be converted to/from JSON format with the following structure:
 
@@ -236,7 +255,7 @@ v0.4.0 — Vault format v2 + migrations ✓
 
 v0.5.0 — Pydantic vault system ✓
 
-v0.5.4 — CLI enhancements and 100% coverage ✓
+v0.5.5 — Security enhancements and importers ✓
 
 v0.6.x — Rust core (pyo3)
 

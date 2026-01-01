@@ -30,7 +30,10 @@ class Vault:
         return self.data.entries
 
     def add_entry(
-        self, issuer: str, secret: str, account_name: Optional[str] = None
+        self,
+        issuer: str,
+        secret: str,
+        account_name: Optional[str] = None,
     ) -> None:
         """Add a new TOTP entry to the vault.
 
@@ -76,12 +79,13 @@ class Vault:
         self.data.entries.remove(entry)
 
     @classmethod
-    def load(cls, path: str | Path, password: str = "password") -> "Vault":
+    def load(cls, path: str | Path, password: Optional[str] = None) -> "Vault":
         """Load a vault from a file.
 
         Args:
             path: The file path to load from.
-            password: The password to decrypt the vault.
+            password: The password to decrypt the vault. If None, a default
+                internal password is used (for "no-password" vaults).
 
         Returns:
             The loaded Vault instance.
@@ -92,24 +96,37 @@ class Vault:
         with open(path, "rb") as f:
             blob = f.read()
 
+        # First 16 bytes: salt, rest: AES-GCM blob (nonce + ciphertext + tag)
         salt, encrypted = blob[:16], blob[16:]
+
+        # For "no-password" vaults we consistently use an empty password string.
+        if password is None:
+            password = ""
+
         key = derive_key(password, salt)
         raw_json = decrypt(key, encrypted)
 
+        # decrypt() zwraca bytes; Pydantic v2 akceptuje bytes jako JSON input.
         data = VaultData.model_validate_json(raw_json)
         return cls(data)
 
-    def save(self, path: str | Path, password: str = "password") -> None:
+    def save(self, path: str | Path, password: Optional[str] = None) -> None:
         """Save the vault to a file.
 
         Args:
             path: The file path to save to.
-            password: The password to encrypt the vault.
+            password: The password to encrypt the vault. If None, a default
+                internal password is used (for "no-password" vaults).
         """
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
 
         salt = os.urandom(16)
+
+        # For "no-password" vaults we consistently use an empty password string.
+        if password is None:
+            password = ""
+
         key = derive_key(password, salt)
 
         raw_json = self.data.model_dump_json().encode("utf-8")

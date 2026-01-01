@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.5.5] - 2025-12-31
+
+### 🛡️ Security Enhancements
+- Implemented secure vault password system with mandatory user passphrase
+- Added CLI flags --password and --password-file for password input
+- Interactive prompt for password entry
+
+### Added
+- Importers for popular TOTP formats: Aegis JSON, Bitwarden CSV, 1Password CSV, otpauth URI, FreeOTP XML
+
+---
+
 ## [0.5.4] - 2025-12-30
 
 ### 📊 Quality Improvements

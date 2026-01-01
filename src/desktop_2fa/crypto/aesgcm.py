@@ -32,4 +32,7 @@ def decrypt(key: bytes, blob: bytes) -> bytes:
     """
     nonce, ciphertext = blob[:12], blob[12:]
     aes = AESGCM(key)
-    return aes.decrypt(nonce, ciphertext, None)
+    try:
+        return aes.decrypt(nonce, ciphertext, None)
+    except Exception as e:
+        raise Exception(f"Decryption failed: {e}") from e
