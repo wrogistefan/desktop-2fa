@@ -37,6 +37,7 @@ def fake_ctx() -> Any:
 def test_list_entries_empty(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -> None:
     # Create empty vault
     from desktop_2fa.vault import Vault
+
     vault = Vault()
     vault.save(fake_vault_env, TEST_PASSWORD)
     commands.list_entries(fake_ctx)
