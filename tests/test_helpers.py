@@ -29,6 +29,7 @@ def test_helpers_add_and_list_entries(
     fake_vault_env_helpers: Path, capsys: Any
 ) -> None:
     from desktop_2fa.vault import Vault
+
     helpers.save_vault(fake_vault_env_helpers, Vault(), TEST_PASSWORD)
     helpers.add_entry(
         fake_vault_env_helpers,
@@ -54,6 +55,7 @@ def test_helpers_add_and_list_entries(
 
 def test_helpers_generate_code(fake_vault_env_helpers: Path, capsys: Any) -> None:
     from desktop_2fa.vault import Vault
+
     helpers.save_vault(fake_vault_env_helpers, Vault(), TEST_PASSWORD)
     helpers.add_entry(
         fake_vault_env_helpers,
@@ -75,6 +77,7 @@ def test_helpers_generate_code(fake_vault_env_helpers: Path, capsys: Any) -> Non
 
 def test_helpers_remove_entry(fake_vault_env_helpers: Path) -> None:
     from desktop_2fa.vault import Vault
+
     helpers.save_vault(fake_vault_env_helpers, Vault(), TEST_PASSWORD)
     helpers.add_entry(
         fake_vault_env_helpers,
@@ -91,6 +94,7 @@ def test_helpers_remove_entry(fake_vault_env_helpers: Path) -> None:
 
 def test_helpers_rename_entry(fake_vault_env_helpers: Path) -> None:
     from desktop_2fa.vault import Vault
+
     helpers.save_vault(fake_vault_env_helpers, Vault(), TEST_PASSWORD)
     helpers.add_entry(
         fake_vault_env_helpers,
@@ -110,6 +114,7 @@ def test_helpers_export_and_import(
     fake_vault_env_helpers: Path, tmp_path: Path
 ) -> None:
     from desktop_2fa.vault import Vault
+
     helpers.save_vault(fake_vault_env_helpers, Vault(), TEST_PASSWORD)
     helpers.add_entry(
         fake_vault_env_helpers,
@@ -135,6 +140,7 @@ def test_helpers_export_and_import(
 
 def test_helpers_backup(fake_vault_env_helpers: Path) -> None:
     from desktop_2fa.vault import Vault
+
     helpers.save_vault(fake_vault_env_helpers, Vault(), TEST_PASSWORD)
     helpers.add_entry(
         fake_vault_env_helpers,
@@ -161,6 +167,7 @@ def test_helpers_export_vault_missing(
     fake_vault_env_helpers: Path, tmp_path: Path, capsys: Any
 ) -> None:
     from desktop_2fa.vault import Vault
+
     helpers.save_vault(fake_vault_env_helpers, Vault(), TEST_PASSWORD)
     export_path = tmp_path / "export.bin"
     helpers.export_vault(fake_vault_env_helpers, export_path, TEST_PASSWORD)
@@ -174,6 +181,7 @@ def test_helpers_import_vault_missing(
     fake_vault_env_helpers: Path, tmp_path: Path
 ) -> None:
     from desktop_2fa.vault import Vault
+
     helpers.save_vault(fake_vault_env_helpers, Vault(), TEST_PASSWORD)
     missing = tmp_path / "nope.bin"
     with pytest.raises(FileNotFoundError):
@@ -184,6 +192,7 @@ def test_helpers_backup_vault_missing(
     fake_vault_env_helpers: Path, capsys: Any
 ) -> None:
     from desktop_2fa.vault import Vault
+
     helpers.save_vault(fake_vault_env_helpers, Vault(), TEST_PASSWORD)
 
     backup_path = fake_vault_env_helpers.with_suffix(".backup.bin")

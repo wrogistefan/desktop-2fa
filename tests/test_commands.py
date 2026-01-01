@@ -29,11 +29,16 @@ def fake_vault_env(tmp_path: Path, monkeypatch: Any) -> Path:
 def fake_ctx() -> Any:
     class FakeContext:
         def __init__(self) -> None:
-            self.obj: dict[str, Any] = {"interactive": False, "password": TEST_PASSWORD}
+            self.obj: dict[str, Any] = {"interactive": True, "password": TEST_PASSWORD}
+
     return FakeContext()
 
 
 def test_list_entries_empty(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -> None:
+    # Create empty vault
+    from desktop_2fa.vault import Vault
+    vault = Vault()
+    vault.save(fake_vault_env, TEST_PASSWORD)
     commands.list_entries(fake_ctx)
     out = capsys.readouterr().out.strip()
     # Now prints "No entries found." for empty vault
@@ -72,8 +77,15 @@ def test_generate_code(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -> None
     assert code.isdigit()
 
 
-def test_generate_code_missing_entry_raises(fake_vault_env: Path, fake_ctx: Any) -> None:
-    with pytest.raises(Exception):
+def test_generate_code_missing_entry_raises(
+    fake_vault_env: Path, fake_ctx: Any
+) -> None:
+    # Create empty vault
+    from desktop_2fa.vault import Vault
+
+    vault = Vault()
+    vault.save(fake_vault_env, TEST_PASSWORD)
+    with pytest.raises(ValueError):
         commands.generate_code("Nope", fake_ctx)
 
 
@@ -86,7 +98,12 @@ def test_remove_entry(fake_vault_env: Path, fake_ctx: Any) -> None:
 
 
 def test_remove_entry_missing_raises(fake_vault_env: Path, fake_ctx: Any) -> None:
-    with pytest.raises(Exception):
+    # Create empty vault
+    from desktop_2fa.vault import Vault
+
+    vault = Vault()
+    vault.save(fake_vault_env, TEST_PASSWORD)
+    with pytest.raises(ValueError):
         commands.remove_entry("Nope", fake_ctx)
 
 
@@ -104,11 +121,18 @@ def test_rename_entry(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -> None:
 
 
 def test_rename_entry_missing_raises(fake_vault_env: Path, fake_ctx: Any) -> None:
-    with pytest.raises(Exception):
+    # Create empty vault
+    from desktop_2fa.vault import Vault
+
+    vault = Vault()
+    vault.save(fake_vault_env, TEST_PASSWORD)
+    with pytest.raises(ValueError):
         commands.rename_entry("Old", "New", fake_ctx)
 
 
-def test_export_vault(fake_vault_env: Path, tmp_path: Path, capsys: Any, fake_ctx: Any) -> None:
+def test_export_vault(
+    fake_vault_env: Path, tmp_path: Path, capsys: Any, fake_ctx: Any
+) -> None:
     commands.add_entry("GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
     capsys.readouterr()  # wyczyść output po add_entry
 
@@ -138,20 +162,22 @@ def test_export_vault_missing_file(
     assert "No vault found." in out
 
 
-def test_import_vault(fake_vault_env: Path, tmp_path: Path, capsys: Any) -> None:
+def test_import_vault(
+    fake_vault_env: Path, tmp_path: Path, capsys: Any, fake_ctx: Any
+) -> None:
     src = tmp_path / "src.bin"
 
-    commands.add_entry("GitHub", "JBSWY3DPEHPK3PXP", TEST_PASSWORD)
+    commands.add_entry("GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
     capsys.readouterr()  # output po add_entry
 
-    commands.export_vault(str(src), TEST_PASSWORD)
+    commands.export_vault(str(src), fake_ctx)
     capsys.readouterr()  # output po export
 
     vault = helpers.load_vault(fake_vault_env, TEST_PASSWORD)
     vault.entries.clear()
     vault.save(fake_vault_env, TEST_PASSWORD)
 
-    commands.import_vault(str(src), TEST_PASSWORD)
+    commands.import_vault(str(src), fake_ctx)
 
     vault = helpers.load_vault(fake_vault_env, TEST_PASSWORD)
     assert len(vault.entries) == 1
@@ -163,23 +189,19 @@ def test_import_vault(fake_vault_env: Path, tmp_path: Path, capsys: Any) -> None
 
 
 def test_import_vault_missing_source(
-    fake_vault_env: Path, tmp_path: Path, capsys: Any
+    fake_vault_env: Path, tmp_path: Path, capsys: Any, fake_ctx: Any
 ) -> None:
     missing = tmp_path / "nope.bin"
-    commands.import_vault(str(missing), TEST_PASSWORD)
-
-    out = capsys.readouterr().out
-    # helpers.import_vault nie sprawdza istnienia pliku i zawsze drukuje:
-    # "Vault imported from"
-    assert "Vault imported from" in out
+    with pytest.raises(FileNotFoundError):
+        commands.import_vault(str(missing), fake_ctx)
 
 
-def test_backup_vault(fake_vault_env: Path, capsys: Any) -> None:
-    commands.add_entry("GitHub", "JBSWY3DPEHPK3PXP", TEST_PASSWORD)
+def test_backup_vault(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -> None:
+    commands.add_entry("GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
     capsys.readouterr()  # output po add_entry
 
     backup_path = fake_vault_env.with_suffix(".backup.bin")
-    commands.backup_vault(TEST_PASSWORD)
+    commands.backup_vault(fake_ctx)
 
     assert backup_path.exists()
     assert backup_path.stat().st_size > 0
@@ -189,7 +211,7 @@ def test_backup_vault(fake_vault_env: Path, capsys: Any) -> None:
 
 
 def test_backup_vault_missing(
-    fake_vault_env: Path, capsys: Any, monkeypatch: Any, tmp_path: Path
+    fake_vault_env: Path, capsys: Any, monkeypatch: Any, tmp_path: Path, fake_ctx: Any
 ) -> None:
     fake_missing = tmp_path / "no_vault_here"
     monkeypatch.setattr(
@@ -197,8 +219,7 @@ def test_backup_vault_missing(
         lambda: str(fake_missing),
     )
 
-    commands.backup_vault(TEST_PASSWORD)
+    commands.backup_vault(fake_ctx)
     out = capsys.readouterr().out
-    # helpers.backup_vault nie sprawdza istnienia pliku, zawsze drukuje:
-    # "Backup created:"
-    assert "Backup created:" in out
+    # Now prints "No vault found."
+    assert "No vault found." in out
