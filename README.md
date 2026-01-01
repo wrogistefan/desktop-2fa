@@ -248,6 +248,32 @@ For export/import operations, data can be converted to/from JSON format with the
 }
 ```
 
+## Vault initialization design notes
+
+The vault file is created automatically on first use.
+
+Historically, the application assumed the vault file already existed, which caused
+silent failures for new users when running commands such as `list` or `add`.
+To address this, the vault loading logic was updated to ensure that a missing vault
+file is created and persisted on first access.
+
+This behavior is intentional and guarantees that:
+- new users are never blocked by missing files
+- CLI commands behave deterministically
+- vault creation does not require a separate manual step
+
+At present, vault creation is coupled to the loading process.
+This is a pragmatic design choice made to restore correct functionality quickly
+and safely.
+
+Future iterations may refine this design by:
+- separating vault creation from loading
+- introducing clearer initialization semantics
+- improving first‑use UX around password prompts
+
+These changes are tracked as follow‑up work and do not affect the correctness
+or security of the current implementation.
+
 ## 🧭 Roadmap (high‑level)
 v0.3.0 — CLI ✓
 
