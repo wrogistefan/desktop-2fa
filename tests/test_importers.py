@@ -34,6 +34,14 @@ def test_parse_aegis_json() -> None:
                 "info": {
                     "secret": "SECRET2"
                 }
+            },
+            {
+                "type": "totp",
+                "issuer": "Empty",
+                "name": "empty",
+                "info": {
+                    "secret": ""
+                }
             }
         ]
     }"""
@@ -54,7 +62,8 @@ def test_parse_bitwarden_csv() -> None:
     content = """name,totp
 GitHub,user@github.com,JBSWY3DPEHPK3PXP
 Google,test@gmail.com,JBSWY3DPEHPK3PXS
-Simple,JBSWY3DPEHPK3PXT"""
+Simple,JBSWY3DPEHPK3PXT
+Empty,"""
 
     entries = parse_bitwarden_csv(content)
     assert len(entries) == 3
@@ -79,7 +88,8 @@ def test_parse_1password_csv() -> None:
     """Test parsing 1Password CSV format."""
     content = """title,otp
 GitHub,JBSWY3DPEHPK3PXP
-Google:test@gmail.com,JBSWY3DPEHPK3PXS"""
+Google:test@gmail.com,JBSWY3DPEHPK3PXS
+Empty,"""
 
     entries = parse_1password_csv(content)
     assert len(entries) == 2

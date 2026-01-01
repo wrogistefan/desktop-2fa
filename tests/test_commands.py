@@ -34,16 +34,27 @@ def fake_ctx() -> Any:
     return FakeContext()
 
 
-def test_list_entries_empty(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -> None:
-    # Create empty vault
-    from desktop_2fa.vault import Vault
+@pytest.fixture
+def fake_ctx_wrong_password() -> Any:
+    class FakeContext:
+        def __init__(self) -> None:
+            self.obj: dict[str, Any] = {
+                "interactive": True,
+                "password": "wrongpassword",
+            }
 
-    vault = Vault()
-    vault.save(fake_vault_env, TEST_PASSWORD)
+    return FakeContext()
+
+
+def test_list_entries_empty(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -> None:
     commands.list_entries(fake_ctx)
-    out = capsys.readouterr().out.strip()
-    # Now prints "No entries found." for empty vault
-    assert out == "No entries found."
+    out = capsys.readouterr().out.strip().splitlines()
+    assert out == [
+        "No vault found.",
+        "A new encrypted vault will be created.",
+        "Vault created.",
+        "No entries found.",
+    ]
 
 
 def test_add_entry_and_list(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -> None:
@@ -51,7 +62,12 @@ def test_add_entry_and_list(fake_vault_env: Path, capsys: Any, fake_ctx: Any) ->
 
     # po add_entry:
     out = capsys.readouterr().out.strip().splitlines()
-    assert out == ["Entry added: GitHub"]
+    assert out == [
+        "No vault found.",
+        "A new encrypted vault will be created.",
+        "Vault created.",
+        "Entry added: GitHub",
+    ]
 
     commands.list_entries(fake_ctx)
     out = capsys.readouterr().out.strip().splitlines()
@@ -224,3 +240,103 @@ def test_backup_vault_missing(
     out = capsys.readouterr().out
     # Now prints "No vault found."
     assert "No vault found." in out
+
+
+def test_generate_code_invalid_password(
+    fake_vault_env: Path, capsys: Any, fake_ctx_wrong_password: Any
+) -> None:
+    # Create vault with correct password
+    from desktop_2fa.vault import Vault
+
+    vault = Vault()
+    vault.save(fake_vault_env, TEST_PASSWORD)
+
+    commands.generate_code("nonexistent", fake_ctx_wrong_password)
+    out = capsys.readouterr().out.strip()
+    assert out == "Invalid vault password."
+
+
+def test_add_entry_invalid_password(
+    fake_vault_env: Path, capsys: Any, fake_ctx_wrong_password: Any
+) -> None:
+    # Create vault with correct password
+    from desktop_2fa.vault import Vault
+
+    vault = Vault()
+    vault.save(fake_vault_env, TEST_PASSWORD)
+
+    commands.add_entry("Test", "SECRET", fake_ctx_wrong_password)
+    out = capsys.readouterr().out.strip()
+    assert out == "Invalid vault password."
+
+
+def test_list_entries_invalid_password(
+    fake_vault_env: Path, capsys: Any, fake_ctx_wrong_password: Any
+) -> None:
+    # Create vault with correct password
+    from desktop_2fa.vault import Vault
+
+    vault = Vault()
+    vault.save(fake_vault_env, TEST_PASSWORD)
+
+    commands.list_entries(fake_ctx_wrong_password)
+    out = capsys.readouterr().out.strip()
+    assert out == "Invalid vault password."
+
+
+def test_remove_entry_invalid_password(
+    fake_vault_env: Path, capsys: Any, fake_ctx_wrong_password: Any
+) -> None:
+    # Create vault with correct password
+    from desktop_2fa.vault import Vault
+
+    vault = Vault()
+    vault.save(fake_vault_env, TEST_PASSWORD)
+
+    commands.remove_entry("Test", fake_ctx_wrong_password)
+    out = capsys.readouterr().out.strip()
+    assert out == "Invalid vault password."
+
+
+def test_export_vault_invalid_password(
+    fake_vault_env: Path, tmp_path: Path, capsys: Any, fake_ctx_wrong_password: Any
+) -> None:
+    # Create vault with correct password
+    from desktop_2fa.vault import Vault
+
+    vault = Vault()
+    vault.save(fake_vault_env, TEST_PASSWORD)
+
+    export_path = tmp_path / "export.bin"
+    commands.export_vault(str(export_path), fake_ctx_wrong_password)
+    out = capsys.readouterr().out.strip()
+    assert out == "Invalid vault password."
+
+
+def test_import_vault_invalid_password(
+    fake_vault_env: Path, tmp_path: Path, capsys: Any, fake_ctx_wrong_password: Any
+) -> None:
+    # Create source vault with correct password
+    from desktop_2fa.vault import Vault
+
+    vault = Vault()
+    src = tmp_path / "src.bin"
+    vault.save(src, TEST_PASSWORD)
+
+    commands.import_vault(str(src), fake_ctx_wrong_password)
+    out = capsys.readouterr().out.strip()
+    assert out == "Invalid vault password."
+
+
+def test_backup_vault_invalid_password(
+    fake_vault_env: Path, capsys: Any, fake_ctx_wrong_password: Any
+) -> None:
+    # Create vault with correct password
+    from desktop_2fa.vault import Vault
+
+    vault = Vault()
+    vault.save(fake_vault_env, TEST_PASSWORD)
+
+    commands.backup_vault(fake_ctx_wrong_password)
+    out = capsys.readouterr().out.strip()
+    assert out == "Invalid vault password."

@@ -201,3 +201,43 @@ def test_helpers_backup_vault_missing(
     # Aktualne zachowanie: backup_vault pisze backup i drukuje "Backup created:"
     assert "Backup created:" in out
     assert backup_path.exists()
+
+
+def test_get_password_for_vault_password_file_missing(
+    tmp_path: Path, capsys: Any
+) -> None:
+    import typer
+
+    fake_ctx = type(
+        "FakeContext",
+        (),
+        {"obj": {"password_file": str(tmp_path / "missing.txt"), "interactive": True}},
+    )()
+    with pytest.raises(typer.Exit):
+        helpers.get_password_for_vault(fake_ctx, new_vault=False)
+    out = capsys.readouterr().out
+    assert "Error: Password file" in out
+
+
+def test_load_vault_failed(tmp_path: Path) -> None:
+    fake_vault = tmp_path / "vault"
+    fake_vault.write_text("invalid")
+    with pytest.raises(Exception, match="Failed to load vault"):
+        helpers.load_vault(fake_vault, TEST_PASSWORD)
+
+
+def test_get_vault_path() -> None:
+    path = helpers.get_vault_path()
+    assert isinstance(path, str)
+    assert ".desktop-2fa" in path
+
+
+def test_get_password_for_vault_passwords_not_match(monkeypatch: Any) -> None:
+    import typer
+
+    fake_ctx = type("FakeContext", (), {"obj": {"interactive": True}})()
+    monkeypatch.setattr(
+        "typer.prompt", lambda text, hide_input: "pass1" if "Enter" in text else "pass2"
+    )
+    with pytest.raises(typer.Exit):
+        helpers.get_password_for_vault(fake_ctx, new_vault=True)

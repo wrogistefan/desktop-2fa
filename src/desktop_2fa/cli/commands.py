@@ -90,6 +90,11 @@ def generate_code(name: str, ctx: typer.Context) -> None:
             algorithm=entry.algorithm,
         )
         print(code)
+    except ValueError as e:
+        if "not found" in str(e):
+            raise
+        if interactive:
+            print("Invalid vault password.")
     except Exception:
         if interactive:
             print("Invalid vault password.")
@@ -108,6 +113,11 @@ def remove_entry(name: str, ctx: typer.Context) -> None:
         vault.remove_entry(name)
         vault.save(path, password)
         print(f"Removed entry: {name}")
+    except ValueError as e:
+        if "not found" in str(e):
+            raise
+        if interactive:
+            print("Invalid vault password.")
     except Exception:
         if interactive:
             print("Invalid vault password.")
@@ -128,6 +138,11 @@ def rename_entry(old: str, new: str, ctx: typer.Context) -> None:
         entry.issuer = new
         vault.save(path, password)
         print(f"Renamed '{old}' → '{new}'")
+    except ValueError as e:
+        if "not found" in str(e):
+            raise
+        if interactive:
+            print("Invalid vault password.")
     except Exception:
         if interactive:
             print("Invalid vault password.")
@@ -158,6 +173,8 @@ def import_vault(source: str, ctx: typer.Context) -> None:
         vault = Vault.load(Path(source), password)
         vault.save(path, password)
         print("Vault imported from")
+    except FileNotFoundError:
+        raise
     except Exception:
         if interactive:
             print("Invalid vault password.")
