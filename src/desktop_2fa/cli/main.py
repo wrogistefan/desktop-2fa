@@ -8,7 +8,6 @@ import typer
 from desktop_2fa import __version__
 
 from . import commands
-from .helpers import get_password_for_vault
 
 
 def is_interactive() -> bool:
