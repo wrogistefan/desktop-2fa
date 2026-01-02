@@ -36,6 +36,7 @@ coverage.xml
 .vscode/
 .idea/
 *.iml
+*.code-workspace
 
 # OS-specific
 .DS_Store
