@@ -6,7 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [0.6.1] - 2026-01-03
 
-### 📚 Documentation
+### 🐛 Fixed
+- **CI workflow issues**: Fixed Ruff linting errors, Black formatting issues, and MyPy type checking errors to ensure all CI checks pass
+- **Test failures**: Corrected test cases for malformed JSON validation and added proper password handling in vault load tests
+
+###  Documentation
 - Added prominent vault format incompatibility warning to README.md, CHANGELOG.md, docs/crypto.md, and docs/ux.md
 - Clarified that vaults created prior to 0.6.0 are not compatible with 0.6.0+
 

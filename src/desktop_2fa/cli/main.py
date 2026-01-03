@@ -7,7 +7,7 @@ import typer
 
 from desktop_2fa import __version__
 
-from . import commands
+from . import commands, helpers
 
 
 def is_interactive() -> bool:
@@ -69,9 +69,23 @@ def list_cmd(ctx: typer.Context) -> None:
 @app.command("add")
 def add_cmd(
     ctx: typer.Context,
-    issuer: str,
-    secret: str,
+    issuer: str = typer.Argument(None, help="Issuer name or otpauth:// URL"),
+    secret: str = typer.Argument(None, help="TOTP secret (Base32)"),
 ) -> None:
+    # Interactive mode: prompt for missing arguments
+    interactive = ctx.obj.get("interactive", False)
+    if interactive and (issuer is None or secret is None):
+        if issuer is None:
+            issuer = typer.prompt("[cyan]Issuer[/cyan]")
+        if secret is None:
+            secret = typer.prompt("[cyan]Secret[/cyan]", hide_input=True)
+
+    if issuer is None or secret is None:
+        helpers.print_error("Missing argument: ISSUER and SECRET are required")
+        typer.echo("Usage: d2fa add ISSUER SECRET")
+        typer.echo("Example: d2fa add GitHub ABCDEFGHIJKL1234")
+        raise typer.Exit(1)
+
     commands.add_entry(issuer, secret, ctx)
 
 
@@ -107,3 +121,12 @@ def import_cmd(
 @app.command("backup")
 def backup_cmd(ctx: typer.Context) -> None:
     commands.backup_vault(ctx)
+
+
+@app.command("init-vault")
+def init_vault_cmd(
+    ctx: typer.Context,
+    force: bool = typer.Option(False, "--force", help="Overwrite existing vault"),
+) -> None:
+    """Initialize a new encrypted vault."""
+    commands.init_vault(force, ctx)

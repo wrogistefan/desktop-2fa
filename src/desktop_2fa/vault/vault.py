@@ -1,6 +1,7 @@
 """Vault implementation for storing and managing TOTP entries."""
 
 import os
+import re
 from pathlib import Path
 from typing import Optional
 
@@ -168,6 +169,8 @@ class Vault:
         try:
             data = VaultData.model_validate_json(raw_json)
         except ValidationError as e:
+            # If Pydantic validation fails, it's corrupted data (not a password issue)
+            # because the decryption succeeded but the data structure is wrong
             raise CorruptedVault("Vault contains invalid data") from e
         return cls(data)
 
@@ -217,4 +220,11 @@ class Vault:
                     temp_path.unlink()
                 except OSError:
                     pass
-            raise VaultIOError(f"Failed to save vault: {e}") from e
+            # Extract just the error message without errno prefix
+            error_msg = str(e)
+            if error_msg.startswith("[Errno"):
+                # Extract the message part after the errno
+                match = re.search(r"\] (.+)$", error_msg)
+                if match:
+                    error_msg = match.group(1)
+            raise VaultIOError(f"Failed to save vault: {error_msg}") from e
