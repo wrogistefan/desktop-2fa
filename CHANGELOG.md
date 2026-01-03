@@ -4,13 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [0.6.1] - 2026-01-03
+## [0.6.2] - 2026-01-03
 
 ### 🐛 Fixed
 - **CI workflow issues**: Fixed Ruff linting errors, Black formatting issues, and MyPy type checking errors to ensure all CI checks pass
 - **Test failures**: Corrected test cases for malformed JSON validation and added proper password handling in vault load tests
 
-###  Documentation
+### 📚 Documentation
+- Added prominent vault format incompatibility warning to README.md, CHANGELOG.md, docs/crypto.md, and docs/ux.md
+- Clarified that vaults created prior to 0.6.0 are not compatible with 0.6.0+
+
+---
+
+## [0.6.1] - 2026-01-03
+
+### 📚 Documentation
 - Added prominent vault format incompatibility warning to README.md, CHANGELOG.md, docs/crypto.md, and docs/ux.md
 - Clarified that vaults created prior to 0.6.0 are not compatible with 0.6.0+
 
