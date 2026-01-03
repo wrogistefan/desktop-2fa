@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.6.1] - 2026-01-03
+
+### 📚 Documentation
+- Added prominent vault format incompatibility warning to README.md, CHANGELOG.md, docs/crypto.md, and docs/ux.md
+- Clarified that vaults created prior to 0.6.0 are not compatible with 0.6.0+
+
+---
+
 ## [0.6.0] - 2026-01-03
 
 ### 🛡️ Security Audit Completion
@@ -12,6 +20,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Documented cryptographic contracts and parameters
 - Validated AES-GCM usage and nonce handling
 - Added comprehensive test matrix for vault security phases
+
+### ⚠️ Vault Format Breaking Change
+Starting with desktop‑2fa 0.6.0, the vault file format has been fully audited and stabilized as part of the Vault Security Audit (Phases 1–5).
+
+This audit introduced a strict, versioned vault header and hardened cryptographic parameters.
+
+As a result:
+
+Vaults created with versions prior to 0.6.0 are not compatible with 0.6.0+.
+
+Older vaults did not include:
+
+- a version field in the header,
+- the finalized magic header (D2FA),
+- the audited Argon2id parameters,
+- the stable ciphertext layout introduced after the audit.
+
+Because these fields are now required for safe parsing and forward compatibility, vaults created before the audit cannot be imported by current versions of the application.
+
+This is intentional and was required to guarantee:
+
+- deterministic parsing rules,
+- safe rejection of malformed or ambiguous vaults,
+- future‑proofing for format evolution,
+- cryptographic correctness validated in the audit.
+
+#### What this means for users
+If your vault was created with 0.5.6 or earlier, it will be rejected as "unsupported format".
+
+You will need to initialize a new vault using `d2fa init-vault`.
+
+All vaults created with 0.6.0 and later include a versioned header and will remain compatible with future releases.
+
+#### Why no automatic migration?
+The pre‑audit vaults lacked the metadata required to safely migrate them:
+
+- no version field → impossible to reliably detect layout,
+- inconsistent Argon2id parameters → unsafe to reinterpret,
+- no stable header → cannot distinguish valid vaults from corrupted files,
+- ciphertext structure changed during the audit.
+
+Attempting to "guess" the format would introduce ambiguity and weaken the security guarantees established by the audit.
+
+#### Going forward
+From 0.6.0 onward:
+
+- every vault includes a versioned header,
+- the format is stable and forward‑compatible,
+- future changes will be handled through explicit version bumps,
+- no further breaking changes are expected.
+
+This ensures that vaults created today will remain readable in all future versions.
 
 ### 🐛 Fixed
 - **CI workflow issues**: Fixed import sorting and code formatting to pass Ruff and Black checks

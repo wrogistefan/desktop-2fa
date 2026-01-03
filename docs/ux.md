@@ -109,3 +109,6 @@ Invalid vault password.
 Current behavior may be transitional while UX is refined.
 This document defines the target behavior and serves as the basis
 for future refactors and GUI development.
+
+### ⚠️ Vault Format Change (0.6.0)
+Starting with desktop‑2fa 0.6.0, vaults created with versions prior to 0.6.0 are not compatible and will be rejected as "unsupported format". Users must initialize a new vault using `d2fa init-vault`. See README.md for full details.

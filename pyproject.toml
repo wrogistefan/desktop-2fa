@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "desktop-2fa"
-version = "0.6.0"
+version = "0.6.1"
 description = "Secure offline 2FA desktop authenticator"
 readme = "README.md"
 license = { file = "LICENSE" }
