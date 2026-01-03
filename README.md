@@ -10,7 +10,7 @@
 
 A secure, offline two-factor authentication (2FA) manager designed for desktop environments. Built with a modular architecture in Python, featuring strong encryption and no cloud dependencies.
 
-🌐 **Live Demo**: Try it out at [desktop-2fa.lukasz-perek.workers.dev](https://desktop-2fa.lukasz-perek.workers.dev/)
+🌐 **Landing Page**: Visit [desktop-2fa.lukasz-perek.workers.dev](https://desktop-2fa.lukasz-perek.workers.dev/)
 
 ## Features
 
