@@ -116,7 +116,7 @@ def test_cli_import(fake_vault_env_cli: Path, tmp_path: Path) -> None:
 
     result = runner.invoke(
         app,
-        ["--password", TEST_PASSWORD, "import", str(export_path)],
+        ["--password", TEST_PASSWORD, "import", "--force", str(export_path)],
     )
     assert result.exit_code == 0
     assert "Vault imported from" in result.output

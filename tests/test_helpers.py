@@ -5,6 +5,7 @@ from typing import Any
 import pytest
 
 from desktop_2fa.cli import helpers
+from desktop_2fa.vault.vault import UnsupportedFormat, VaultIOError
 
 TEST_PASSWORD = "jawislajawisla"
 
@@ -184,7 +185,7 @@ def test_helpers_import_vault_missing(
 
     helpers.save_vault(fake_vault_env_helpers, Vault(), TEST_PASSWORD)
     missing = tmp_path / "nope.bin"
-    with pytest.raises(FileNotFoundError):
+    with pytest.raises(VaultIOError):
         helpers.import_vault(fake_vault_env_helpers, missing, TEST_PASSWORD)
 
 
@@ -222,7 +223,7 @@ def test_get_password_for_vault_password_file_missing(
 def test_load_vault_failed(tmp_path: Path) -> None:
     fake_vault = tmp_path / "vault"
     fake_vault.write_text("invalid")
-    with pytest.raises(Exception, match="Failed to load vault"):
+    with pytest.raises(UnsupportedFormat):
         helpers.load_vault(fake_vault, TEST_PASSWORD)
 
 

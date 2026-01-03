@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.6.0] - 2026-01-03
+
+### 🛡️ Security Audit Completion
+- Completed Phase 5: Cryptography Parameter Audit
+- Updated Argon2id parameters: time_cost=4, memory_cost=128 MiB, parallelism=2
+- Documented cryptographic contracts and parameters
+- Validated AES-GCM usage and nonce handling
+- Added comprehensive test matrix for vault security phases
+
+### 🐛 Fixed
+- **CI workflow issues**: Fixed import sorting and code formatting to pass Ruff and Black checks
+- **Test failure**: Corrected `test_cli_import` to use `--force` flag when importing into existing vault
+
+### 📊 Quality Improvements
+- Created tests/vault_matrix.md with complete security test coverage
+- All CI checks now pass: Ruff linting, Black formatting, MyPy type checking, and full test suite
+- Codebase fully compliant with project's code quality standards
+
+---
+
 ## [0.5.6] - 2026-01-01
 
 ### 📦 Maintenance

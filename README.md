@@ -10,6 +10,8 @@
 
 A secure, offline two-factor authentication (2FA) manager designed for desktop environments. Built with a modular architecture in Python, featuring strong encryption and no cloud dependencies.
 
+🌐 **Live Demo**: Try it out at [desktop-2fa.lukasz-perek.workers.dev](https://desktop-2fa.lukasz-perek.workers.dev/)
+
 ## Features
 
 - **🔐 Vault**: Storage using AES-256-GCM encryption with Argon2 key derivation.
@@ -21,12 +23,10 @@ A secure, offline two-factor authentication (2FA) manager designed for desktop e
 - **🧪 Comprehensive Testing**: Full test coverage using pytest.
 - **🚀 Future-Proof**: Designed for easy migration to Rust for enhanced performance.
 
-## 🚀 What's New in v0.5.5
+## 🚀 What's New in v0.6.0
 
-- **Security Enhancements**: Implemented secure vault password system with mandatory user passphrase.
-- **CLI Enhancements**: Added `--password` and `--password-file` flags for password input.
-- **Interactive Prompt**: Added interactive prompt for password entry.
-- **Importers**: Added support for popular TOTP formats: Aegis JSON, Bitwarden CSV, 1Password CSV, otpauth URI, FreeOTP XML.
+- **Security Audit Completion**: Completed Phase 6 full test implementation with comprehensive pytest test suite covering all vault security phases.
+- **Test Coverage**: Added 31 deterministic tests for error handling, format validation, filesystem safety, UX safety, cryptography parameters, and integration scenarios.
 
 ##  Vault Storage
 
@@ -73,7 +73,7 @@ Verify installation:
 python -c "import desktop_2fa; print(desktop_2fa.__version__)"
 ```
 
-Expected output: `0.5.5`
+Expected output: `0.5.7`
 
 ### From Source
 
@@ -288,6 +288,8 @@ v0.4.0 — Vault format v2 + migrations ✓
 v0.5.0 — Pydantic vault system ✓
 
 v0.5.5 — Security enhancements and importers ✓
+
+v0.5.7 — Cryptography audit completion ✓
 
 v0.6.x — Rust core (pyo3)
 

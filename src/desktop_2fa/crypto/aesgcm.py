@@ -13,7 +13,7 @@ def encrypt(key: bytes, data: bytes) -> bytes:
         data: The plaintext data to encrypt.
 
     Returns:
-        The encrypted data with nonce prepended.
+        The encrypted data in the format: 12-byte nonce + ciphertext + 16-byte authentication tag.
     """
     aes = AESGCM(key)
     nonce = os.urandom(12)
@@ -25,14 +25,19 @@ def decrypt(key: bytes, blob: bytes) -> bytes:
 
     Args:
         key: The decryption key (32 bytes for AES-256).
-        blob: The encrypted data with nonce prepended.
+        blob: The encrypted data in the format: 12-byte nonce + ciphertext + 16-byte authentication tag.
 
     Returns:
         The decrypted plaintext data.
+
+    Raises:
+        ValueError: If decryption fails.
     """
+    if len(blob) < 12:
+        raise ValueError("Encrypted blob too short")
     nonce, ciphertext = blob[:12], blob[12:]
     aes = AESGCM(key)
     try:
         return aes.decrypt(nonce, ciphertext, None)
     except Exception as e:
-        raise Exception(f"Decryption failed: {e}") from e
+        raise ValueError(f"Decryption failed: {e}") from e

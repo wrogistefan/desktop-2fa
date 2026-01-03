@@ -96,8 +96,12 @@ def export_cmd(ctx: typer.Context, path: str) -> None:
 
 
 @app.command("import")
-def import_cmd(ctx: typer.Context, source: str) -> None:
-    commands.import_vault(source, ctx)
+def import_cmd(
+    ctx: typer.Context,
+    source: str,
+    force: bool = typer.Option(False, "--force", help="Overwrite existing vault"),
+) -> None:
+    commands.import_vault(source, force, ctx)
 
 
 @app.command("backup")

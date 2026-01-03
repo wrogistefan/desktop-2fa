@@ -89,10 +89,7 @@ def get_vault_path() -> str:
 
 def load_vault(path: Path, password: str) -> Vault:
     """Load the vault from the specified path."""
-    try:
-        return Vault.load(path, password)
-    except Exception as e:
-        raise Exception(f"Failed to load vault: {e}") from e
+    return Vault.load(path, password)
 
 
 def save_vault(path: Path, vault: Vault, password: str) -> None:

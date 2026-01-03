@@ -4,9 +4,46 @@ import os
 from pathlib import Path
 from typing import Optional
 
+from pydantic import ValidationError
+
 from ..crypto.aesgcm import decrypt, encrypt
 from ..crypto.argon2 import derive_key
 from .models import TotpEntry, VaultData
+
+# Vault file format constants
+VAULT_MAGIC = b"D2FA"
+VAULT_VERSION = b"\x01"
+HEADER_LEN = len(VAULT_MAGIC) + len(VAULT_VERSION)
+
+
+class VaultError(Exception):
+    """Base exception for vault-related errors."""
+
+    pass
+
+
+class InvalidPassword(VaultError):
+    """Raised when the provided password is incorrect."""
+
+    pass
+
+
+class CorruptedVault(VaultError):
+    """Raised when the vault file is corrupted or contains invalid data."""
+
+    pass
+
+
+class UnsupportedFormat(VaultError):
+    """Raised when the vault file format is unsupported or invalid."""
+
+    pass
+
+
+class VaultIOError(VaultError):
+    """Raised for filesystem or IO-related errors."""
+
+    pass
 
 
 class Vault:
@@ -91,27 +128,47 @@ class Vault:
             The loaded Vault instance.
 
         Raises:
-            FileNotFoundError: If the vault file does not exist.
-            Exception: If decryption fails (invalid password).
+            VaultIOError: If the vault file cannot be read due to IO errors.
+            UnsupportedFormat: If the vault file format is invalid.
+            InvalidPassword: If the password is incorrect.
+            CorruptedVault: If the vault data is corrupted.
         """
-        if not os.path.exists(path):
-            raise FileNotFoundError(f"Vault file not found: {path}")
+        try:
+            with open(path, "rb") as f:
+                blob = f.read()
+        except OSError as e:
+            raise VaultIOError(f"Failed to read vault file: {e}") from e
 
-        with open(path, "rb") as f:
-            blob = f.read()
+        if len(blob) < HEADER_LEN + 16:
+            raise UnsupportedFormat("Vault file is too short or invalid format")
 
-        # First 16 bytes: salt, rest: AES-GCM blob (nonce + ciphertext + tag)
-        salt, encrypted = blob[:16], blob[16:]
+        # Check magic header and version
+        if blob[:4] != VAULT_MAGIC:
+            raise UnsupportedFormat("Invalid vault file format: incorrect magic header")
+        if blob[4:5] != VAULT_VERSION:
+            raise UnsupportedFormat("Unsupported vault file version")
+
+        # First 5 bytes: header, next 16: salt, rest: AES-GCM blob (nonce + ciphertext + tag)
+        salt, encrypted = blob[HEADER_LEN : HEADER_LEN + 16], blob[HEADER_LEN + 16 :]
+
+        if len(encrypted) == 0:
+            raise UnsupportedFormat("Vault file is invalid: empty encrypted blob")
 
         # For "no-password" vaults we consistently use an empty password string.
         if password is None:
             password = ""
 
         key = derive_key(password, salt)
-        raw_json = decrypt(key, encrypted)
+        try:
+            raw_json = decrypt(key, encrypted)
+        except ValueError as e:
+            raise InvalidPassword("Invalid password or corrupted vault") from e
 
         # decrypt() zwraca bytes; Pydantic v2 akceptuje bytes jako JSON input.
-        data = VaultData.model_validate_json(raw_json)
+        try:
+            data = VaultData.model_validate_json(raw_json)
+        except ValidationError as e:
+            raise CorruptedVault("Vault contains invalid data") from e
         return cls(data)
 
     def save(self, path: str | Path, password: Optional[str] = None) -> None:
@@ -121,20 +178,43 @@ class Vault:
             path: The file path to save to.
             password: The password to encrypt the vault. If None, a default
                 internal password is used (for "no-password" vaults).
+
+        Raises:
+            VaultIOError: If saving fails due to IO errors.
         """
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
 
-        salt = os.urandom(16)
+        temp_path = path.with_suffix(".tmp")
 
-        # For "no-password" vaults we consistently use an empty password string.
-        if password is None:
-            password = ""
+        try:
+            header = VAULT_MAGIC + VAULT_VERSION
+            salt = os.urandom(16)
 
-        key = derive_key(password, salt)
+            # For "no-password" vaults we consistently use an empty password string.
+            if password is None:
+                password = ""
 
-        raw_json = self.data.model_dump_json().encode("utf-8")
-        encrypted = encrypt(key, raw_json)
+            key = derive_key(password, salt)
 
-        with open(path, "wb") as f:
-            f.write(salt + encrypted)
+            raw_json = self.data.model_dump_json().encode("utf-8")
+            encrypted = encrypt(key, raw_json)
+
+            fd = os.open(str(temp_path), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            try:
+                with os.fdopen(fd, "wb") as f:
+                    f.write(header + salt + encrypted)
+                    f.flush()
+                    os.fsync(fd)
+            except:
+                os.close(fd)
+                raise
+
+            os.replace(temp_path, path)
+        except OSError as e:
+            if temp_path.exists():
+                try:
+                    temp_path.unlink()
+                except OSError:
+                    pass
+            raise VaultIOError(f"Failed to save vault: {e}") from e

@@ -3,8 +3,10 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+import typer
 
 from desktop_2fa.cli import commands, helpers
+from desktop_2fa.vault.vault import VaultIOError
 
 TEST_PASSWORD = "jawislajawisla"
 
@@ -194,7 +196,7 @@ def test_import_vault(
     vault.entries.clear()
     vault.save(fake_vault_env, TEST_PASSWORD)
 
-    commands.import_vault(str(src), fake_ctx)
+    commands.import_vault(str(src), True, fake_ctx)
 
     vault = helpers.load_vault(fake_vault_env, TEST_PASSWORD)
     assert len(vault.entries) == 1
@@ -209,19 +211,52 @@ def test_import_vault_missing_source(
     fake_vault_env: Path, tmp_path: Path, capsys: Any, fake_ctx: Any
 ) -> None:
     missing = tmp_path / "nope.bin"
-    with pytest.raises(FileNotFoundError):
-        commands.import_vault(str(missing), fake_ctx)
+    with pytest.raises(VaultIOError):
+        commands.import_vault(str(missing), False, fake_ctx)
+
+
+def test_import_vault_refuses_overwrite_without_force(
+    fake_vault_env: Path, tmp_path: Path, capsys: Any, fake_ctx: Any
+) -> None:
+    # Create existing vault
+    commands.add_entry("GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+    capsys.readouterr()  # clear output
+
+    # Create source vault
+    src = tmp_path / "src.bin"
+    from desktop_2fa.vault import Vault
+
+    vault = Vault()
+    vault.save(src, TEST_PASSWORD)
+
+    # Try import without force - should refuse
+    with pytest.raises(typer.Exit):
+        commands.import_vault(str(src), False, fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert out == "Refusing to overwrite existing vault. Use --force to proceed."
 
 
 def test_backup_vault(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -> None:
     commands.add_entry("GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
     capsys.readouterr()  # output po add_entry
 
+    # First backup creates backup.bin
     backup_path = fake_vault_env.with_suffix(".backup.bin")
     commands.backup_vault(fake_ctx)
 
     assert backup_path.exists()
     assert backup_path.stat().st_size > 0
+
+    out = capsys.readouterr().out
+    assert "Backup created:" in out
+
+    # Second backup creates backup-1.bin
+    commands.backup_vault(fake_ctx)
+    backup_path_1 = fake_vault_env.with_suffix(".backup-1.bin")
+
+    assert backup_path_1.exists()
+    assert backup_path_1.stat().st_size > 0
 
     out = capsys.readouterr().out
     assert "Backup created:" in out
@@ -323,7 +358,7 @@ def test_import_vault_invalid_password(
     src = tmp_path / "src.bin"
     vault.save(src, TEST_PASSWORD)
 
-    commands.import_vault(str(src), fake_ctx_wrong_password)
+    commands.import_vault(str(src), False, fake_ctx_wrong_password)
     out = capsys.readouterr().out.strip()
     assert out == "Invalid vault password."
 
