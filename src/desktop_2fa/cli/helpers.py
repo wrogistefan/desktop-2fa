@@ -139,18 +139,6 @@ def get_password_for_vault(ctx: typer.Context, new_vault: bool = False) -> str:
             print(f"Error reading password file: {e}")
             raise typer.Exit(1)
 
-    # Check if vault is unlocked - if so, password must be provided via options
-    if not new_vault and is_vault_unlocked():
-        if not password and not password_file:
-            print(
-                "Error: Vault is unlocked but password not provided. Use --password or --password-file."
-            )
-            raise typer.Exit(1)
-        # Password is provided via options, no prompting needed
-        # Mark as unlocked again to refresh timeout
-        mark_vault_unlocked()
-        return password or _read_password_file(password_file)
-
     # No password provided
     if not interactive:
         print("Error: Password not provided and not running in interactive mode")
@@ -167,7 +155,10 @@ def get_password_for_vault(ctx: typer.Context, new_vault: bool = False) -> str:
         if not _should_skip_password_checks(ctx):
             _enforce_password_strength(pwd)
     else:
-        pwd = typer.prompt("[cyan]Enter vault password:[/cyan]", hide_input=True)
+        if is_vault_unlocked():
+            pwd = typer.prompt("[cyan]Vault session active. Please enter your master password to decrypt the vault.:[/cyan]", hide_input=True)
+        else:
+            pwd = typer.prompt("[cyan]Enter vault password:[/cyan]", hide_input=True)
         # Mark vault as unlocked after successful prompt
         mark_vault_unlocked()
     return pwd  # type: ignore[no-any-return]
