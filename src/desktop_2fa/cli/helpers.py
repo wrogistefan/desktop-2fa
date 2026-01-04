@@ -156,7 +156,10 @@ def get_password_for_vault(ctx: typer.Context, new_vault: bool = False) -> str:
             _enforce_password_strength(pwd)
     else:
         if is_vault_unlocked():
-            pwd = typer.prompt("[cyan]Vault session active. Please enter your master password to decrypt the vault.:[/cyan]", hide_input=True)
+            pwd = typer.prompt(
+                "[cyan]Vault session active. Please enter your master password to decrypt the vault.:[/cyan]",
+                hide_input=True,
+            )
         else:
             pwd = typer.prompt("[cyan]Enter vault password:[/cyan]", hide_input=True)
         # Mark vault as unlocked after successful prompt
