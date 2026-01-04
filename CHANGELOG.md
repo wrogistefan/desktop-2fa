@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.6.3.1] - 2026-01-04
+
+### 📚 Documentation
+- Updated documentation for password handling fix to clarify security requirements.
+
+---
+
 ## [0.6.3] - 2026-01-04
 
 ### 🛡️ Security Hardening

@@ -262,22 +262,20 @@ Desktop-2FA supports multiple ways to provide passwords:
 
 ### Vault Unlock Timeout
 
-After successfully entering the vault password, the vault remains "unlocked" for 15 minutes. During this period:
+After successfully entering the vault password, the vault remains "unlocked" for 15 minutes. During this period, the unlock state is tracked via a timestamp file (`.vault-unlocked`) in the vault directory. However, password authentication is mandated for every vault access, even during the unlock window.
 
-- You can provide the password via `--password` or `--password-file` without being prompted again
-- The unlock state is tracked via a timestamp file (`.vault-unlocked`) in the vault directory
+- The `.vault-unlocked` file contains only a timestamp and no sensitive data
+- Password must be explicitly provided via `--password` or `--password-file` options for all vault operations
 - No passwords are stored on disk - only the unlock timestamp
 
 ```bash
-# First command requires password
+# All commands require explicit password provision during unlock window
 d2fa list --password mypassword
-
-# Subsequent commands within 15 minutes can use --password without prompting
 d2fa code GitHub --password mypassword
 d2fa add AWS ABCDEF123456 --password mypassword
 ```
 
-**Security Note:** The vault always requires the real master password for decryption. The unlock timeout only skips the password prompt when the password is provided via command-line options.
+**Security Note:** The vault always requires the real master password for decryption. The unlock timeout does not bypass password requirements; it only allows password provision via command-line options instead of interactive prompts.
 
 ### Password Strength Enforcement
 
@@ -306,6 +304,7 @@ Entropy calculation:
 - The vault is encrypted with AES-256-GCM + Argon2
 - The unlock file contains only a timestamp, no sensitive data
 - The vault always requires the real master password for decryption
+- Password authentication is mandated for every vault access, even during the unlock window
 
 ## Configuration
 

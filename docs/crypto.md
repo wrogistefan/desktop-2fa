@@ -142,6 +142,11 @@ This ensures that vaults created today will remain readable in all future versio
 
 ## Security Guarantees
 
+### Vault Unlocking Security
+- Password authentication is mandated for every vault access, even during the unlock window
+- The unlock timeout requires explicit password provision via `--password` or `--password-file` options
+- The `.vault-unlocked` file contains only a timestamp and no sensitive data
+
 ### Confidentiality
 - AES-256-GCM ensures that vault contents are unintelligible without the correct passphrase
 - Argon2id key derivation prevents brute-force attacks on weak passphrases

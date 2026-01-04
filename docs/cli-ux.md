@@ -125,12 +125,24 @@ Nothing to generate.
 [red bold]Invalid vault password.[/red bold]
 ```
 
-- No confirmation prompt  
-- No retries  
-- No writes  
-- No state changes  
+- No confirmation prompt
+- No retries
+- No writes
+- No state changes
 
 Exactly as required.
+
+---
+
+## 4. **Vault Unlocked (Password Still Required)**
+
+When the vault unlock timeout is active but no password is provided via options:
+
+```
+[red]Error: Vault is unlocked but password not provided. Use --password or --password-file.[/red]
+```
+
+**Security Enhancement:** Even during the unlock window, password authentication is mandated for every vault access. The unlock timeout requires explicit password provision via `--password` or `--password-file` options.
 
 ---
 
