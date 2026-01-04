@@ -360,6 +360,7 @@ def get_unlock_file_path() -> Path:
 def mark_vault_unlocked() -> None:
     """Mark the vault as unlocked by creating the timestamp file."""
     path = get_unlock_file_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.touch()
 
 
