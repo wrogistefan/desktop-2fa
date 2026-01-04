@@ -6,10 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [0.6.3] - 2026-01-04
 
-### 🛡️ Security Fixes
-- **Critical vault unlock security fix**: Removed password storage from `.vault-unlocked` file. The file now contains only a timestamp (mtime) and no sensitive data.
-- **Password requirement enforcement**: Vault unlock timeout now requires explicit password provision via `--password` or `--password-file` options when unlocked, preventing passwordless access.
-- **Regression test added**: `test_unlock_timeout_does_not_bypass_password()` ensures unlock status never bypasses password requirements.
+### 🛡️ Security Hardening
+- **Vault Unlock Security**: Ensured `.vault-unlocked` file contains only timestamp (mtime) with no sensitive data storage.
+- **Password Requirement Enforcement**: Vault unlock timeout requires explicit password provision via `--password` or `--password-file` options.
+- **Regression Test Added**: `test_unlock_timeout_does_not_bypass_password()` ensures unlock status never bypasses password requirements.
 
 ### ✨ New Features
 - **Interactive `d2fa add` improvements**: Secret input is now visible (not hidden) for better user experience. Issuer prompts use Rich formatting for cyan color rendering.

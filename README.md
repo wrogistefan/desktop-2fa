@@ -76,17 +76,27 @@ A secure, offline two-factor authentication (2FA) manager designed for desktop e
 - **📋 Clipboard Integration**: Automatic copying of generated codes for convenience.
 - **🖥️ Desktop-First Design**: Native desktop application with no internet connectivity required.
 - **💻 Command-Line Interface**: Full CLI for managing 2FA tokens without a GUI.
+- **🔓 Vault Unlock Timeout**: 15-minute session allowing passwordless CLI usage.
+- **🛡️ Password Strength Enforcement**: Configurable entropy checking with warnings/rejection.
 - **🧠 Modular Architecture**: Clean separation of concerns across crypto, vault, UI, and utility modules.
-- **🧪 Comprehensive Testing**: Full test coverage using pytest.
+- **🧪 Comprehensive Testing**: Full test coverage using pytest with security regression tests.
 - **🚀 Future-Proof**: Designed for easy migration to Rust for enhanced performance.
 
-## 🚀 What's New in v0.6.0+
+## 🚀 What's New in v0.6.3
 
-- **Security Audit Completion**: Completed comprehensive vault security audit (Phases 1–5) with hardened cryptographic parameters including Argon2id time_cost=4, memory_cost=128 MiB, parallelism=2.
-- **Vault Format Stabilization**: Introduced strict, versioned vault header (D2FA v1) for forward compatibility and safe parsing.
-- **Breaking Change**: Vaults created prior to 0.6.0 are not compatible; users must initialize new vaults using `d2fa init-vault`.
-- **Enhanced Testing**: Added 31+ deterministic tests covering error handling, format validation, filesystem safety, UX safety, cryptography parameters, and integration scenarios.
-- **CI Improvements**: All checks now pass (Ruff linting, Black formatting, MyPy type checking, full test suite).
+- **Critical Security Fix**: Removed password storage from unlock file - vault always requires real master password for decryption.
+- **Interactive CLI Improvements**: Visible secret input in `add` command, Rich-formatted cyan issuer prompts.
+- **Password Strength Enforcement**: Configurable entropy checking via `~/.config/d2fa/config.toml` with warnings/rejection.
+- **Vault Unlock Timeout**: 15-minute session timeout allowing passwordless CLI usage when password provided via options.
+- **CLI Bypass Options**: `--allow-weak-passwords` flag and `D2FA_ALLOW_WEAK_PASSWORDS` env var for testing/legacy scenarios.
+- **Enhanced Security Testing**: Added regression tests ensuring unlock never bypasses password requirements.
+
+### Previous v0.6.0+ Features
+- **Security Audit Completion**: Comprehensive vault security audit (Phases 1–5) with hardened Argon2id parameters.
+- **Vault Format Stabilization**: Strict, versioned vault header (D2FA v1) for forward compatibility.
+- **Breaking Change**: Vaults created prior to 0.6.0 are not compatible; initialize new vaults with `d2fa init-vault`.
+- **Enhanced Testing**: 31+ deterministic tests covering security, UX, and integration scenarios.
+- **CI Compliance**: All checks pass (Ruff, Black, MyPy, full test suite).
 
 ##  Vault Storage
 
@@ -106,9 +116,11 @@ The vault encryption is backed by a user-provided passphrase for strong security
 - The encryption key is derived using Argon2 from the user-provided passphrase combined with a per-vault random salt.
 - The salt is stored securely alongside the ciphertext in the vault file.
 - A passphrase is mandatory for vault decryption and must be provided via CLI options or interactive prompt.
+- Password strength can be enforced via configuration with entropy checking.
+- Vault unlock timeout (15 minutes) allows temporary session-based access when password provided via options.
 
 **Security Implications:**
-This implementation provides robust protection against unauthorized access. An attacker with access to the vault file cannot decrypt it without the passphrase, offering strong cryptographic security.
+This implementation provides robust protection against unauthorized access. An attacker with access to the vault file cannot decrypt it without the passphrase, offering strong cryptographic security. The unlock timeout provides convenience without compromising security.
 
 **Important Note:**
 While the vault is encrypted, it is important to understand that the security of the vault depends entirely on the strength of the user-provided passphrase. Additionally, the vault is stored locally on the same device, which means that if the device is compromised, the vault could be accessed. For maximum security, consider using a dedicated device for storing sensitive information.
@@ -133,7 +145,7 @@ Verify installation:
 python -c "import desktop_2fa; print(desktop_2fa.__version__)"
 ```
 
-Expected output: `0.6.2`
+Expected output: `0.6.3`
 
 ### From Source
 
@@ -207,23 +219,14 @@ desktop-2fa --password mypassphrase add GitHub JBSWY3DPEHPK3PXP
 # Provide passphrase via file
 desktop-2fa --password-file /path/to/passphrase.txt add GitHub JBSWY3DPEHPK3PXP
 
+# Bypass password strength checks
+desktop-2fa --allow-weak-passwords add GitHub JBSWY3DPEHPK3PXP
+
 # Interactive mode (prompts for passphrase if not provided)
 desktop-2fa add GitHub JBSWY3DPEHPK3PXP
 
-# Import from Aegis format
-desktop-2fa import aegis_export.json --format aegis
-
-# Import from Bitwarden format
-desktop-2fa import bitwarden_export.json --format bitwarden
-
-# Import from 1Password format
-desktop-2fa import onepassword_export.json --format 1password
-
-# Import from otpauth URI
-desktop-2fa import otpauth.txt --format otpauth
-
-# Import from FreeOTP format
-desktop-2fa import freeotp_export.json --format freeotp
+# Import from another vault file
+desktop-2fa import backup.bin
 ```
 
 **Note**: The `export` and `import` commands work with JSON files for data interchange, while the vault is stored internally as an encrypted binary file. Use `export` to create a portable backup and `import` to restore from a JSON file.
@@ -243,7 +246,9 @@ src/desktop_2fa/
 │   ├── __init__.py
 │   ├── commands.py     # CLI command implementations
 │   ├── helpers.py      # CLI helper functions
-│   └── main.py         # CLI entry point with Typer app
+│   ├── importers.py    # Import utilities for various formats
+│   ├── main.py         # CLI entry point with Typer app
+│   └── requirements.txt # CLI-specific dependencies
 ├── crypto/
 │   ├── __init__.py
 │   ├── aesgcm.py       # AES-GCM encryption utilities
