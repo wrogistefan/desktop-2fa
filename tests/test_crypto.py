@@ -48,3 +48,12 @@ def test_encrypt_decrypt_large_data() -> None:
     enc = encrypt(key, data)
     dec = decrypt(key, enc)
     assert dec == data
+
+
+def test_decrypt_too_short_blob() -> None:
+    """Test decryption with blob too short for nonce."""
+    salt = os.urandom(16)
+    key = derive_key("password", salt)
+
+    with pytest.raises(ValueError, match="Encrypted blob too short"):
+        decrypt(key, b"short")

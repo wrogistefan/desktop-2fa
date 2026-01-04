@@ -4,12 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [0.6.3.2] - 2026-01-04
+## [0.6.4] - 2026-01-04
 
-### 📝 Placeholder
-- Placeholder for changes
+### 🎨 CLI Output Standardization
+- **Fixed Rich markup in Typer prompts**: Eliminated literal "[cyan]..." output by separating Rich rendering from Typer input prompts
+- **Standardized colored output**: Enforced single Rich-first pattern for all CLI output using `rprint(Text(message, style="color"))`
+- **Color palette normalization**: Consistent use of cyan (prompts), green (success), yellow (warnings), red (errors), white (info), bold white (headers)
+- **Regression test added**: `test_no_rich_markup_in_prompts()` prevents future introduction of markup in prompts
+- **Preserved all existing logic**: No changes to password validation, vault behavior, or command semantics
 
----
 
 ## [0.6.3.1] - 2026-01-04
 

@@ -1,3 +1,4 @@
+import re
 import shutil
 from pathlib import Path
 from typing import Any
@@ -267,3 +268,54 @@ def test_cli_interactive_whitespace_input(
         app, ["--password", TEST_PASSWORD, "add", "GitHub", "JBSWY3DPEHPK3PXP"]
     )
     assert result.exit_code == 0  # Should not crash
+
+
+def test_cli_add_interactive_prompts(
+    fake_vault_env_cli: Path, monkeypatch: Any
+) -> None:
+    """Test add command interactive prompts."""
+    # Force interactive mode
+    monkeypatch.setenv("DESKTOP_2FA_FORCE_INTERACTIVE", "1")
+
+    # Mock typer.prompt to return values for issuer and secret
+    responses = ["TestIssuer", "JBSWY3DPEHPK3PXP"]
+    monkeypatch.setattr("typer.prompt", lambda text, hide_input=False: responses.pop(0))
+
+    result = runner.invoke(app, ["--password", TEST_PASSWORD, "add"])
+    assert result.exit_code == 0
+    assert "Entry added: TestIssuer" in result.output
+
+
+def test_no_rich_markup_in_prompts() -> None:
+    """Test that no prompt labels contain Rich markup."""
+    # Patterns to search for
+    forbidden_patterns = [
+        r"\[cyan\]",
+        r"\[red\]",
+        r"\[green\]",
+        r"\[yellow\]",
+        r"\[magenta\]",
+        r"\[blue\]",
+        r"\[white\]",
+        r"\[black\]",
+    ]
+
+    # Files to check
+    src_dir = Path(__file__).parent.parent / "src"
+    py_files = list(src_dir.rglob("*.py"))
+
+    violations = []
+    for file_path in py_files:
+        try:
+            content = file_path.read_text(encoding="utf-8")
+            for pattern in forbidden_patterns:
+                matches = re.findall(pattern, content)
+                if matches:
+                    violations.append(
+                        f"{file_path}: {pattern} found {len(matches)} times"
+                    )
+        except Exception as e:
+            violations.append(f"Error reading {file_path}: {e}")
+
+    if violations:
+        pytest.fail("Found Rich markup in prompts:\n" + "\n".join(violations))

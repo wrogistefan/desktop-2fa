@@ -10,14 +10,13 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import typer
-from rich.console import Console
+from rich import print as rprint
+from rich.text import Text
 
 from desktop_2fa.vault import Vault
 
 if TYPE_CHECKING:
     from desktop_2fa.vault.models import TotpEntry
-
-console = Console()
 
 # Vault unlock timeout in seconds (default 15 minutes)
 UNLOCK_TIMEOUT_SECONDS = 900
@@ -146,8 +145,10 @@ def get_password_for_vault(ctx: typer.Context, new_vault: bool = False) -> str:
 
     # Interactive mode → prompt
     if new_vault:
-        pwd = typer.prompt("[cyan]Enter new vault password:[/cyan]", hide_input=True)
-        confirm = typer.prompt("[cyan]Confirm vault password:[/cyan]", hide_input=True)
+        rprint(Text("Enter new vault password:", style="cyan"))
+        pwd = typer.prompt("", hide_input=True)
+        rprint(Text("Confirm vault password:", style="cyan"))
+        confirm = typer.prompt("", hide_input=True)
         if pwd != confirm:
             print_error("Passwords do not match. Please try again.")
             raise typer.Exit(1)
@@ -156,12 +157,16 @@ def get_password_for_vault(ctx: typer.Context, new_vault: bool = False) -> str:
             _enforce_password_strength(pwd)
     else:
         if is_vault_unlocked():
-            pwd = typer.prompt(
-                "[cyan]Vault session active. Please enter your master password to decrypt the vault.:[/cyan]",
-                hide_input=True,
+            rprint(
+                Text(
+                    "Vault session active. Please enter your master password to decrypt the vault.",
+                    style="cyan",
+                )
             )
+            pwd = typer.prompt("", hide_input=True)
         else:
-            pwd = typer.prompt("[cyan]Enter vault password:[/cyan]", hide_input=True)
+            rprint(Text("Enter vault password:", style="cyan"))
+            pwd = typer.prompt("", hide_input=True)
         # Mark vault as unlocked after successful prompt
         mark_vault_unlocked()
     return pwd  # type: ignore[no-any-return]
@@ -258,32 +263,32 @@ def timestamp() -> str:
 # Rich-based output helpers
 def print_success(message: str) -> None:
     """Print a success message in green."""
-    console.print(f"[green]{message}[/green]")
+    rprint(Text(message, style="green"))
 
 
 def print_warning(message: str) -> None:
     """Print a warning message in yellow."""
-    console.print(f"[yellow]{message}[/yellow]")
+    rprint(Text(message, style="yellow"))
 
 
 def print_error(message: str) -> None:
     """Print an error message in red."""
-    console.print(f"[red]{message}[/red]")
+    rprint(Text(message, style="red"))
 
 
 def print_info(message: str) -> None:
-    """Print an info message in blue."""
-    console.print(f"[blue]{message}[/blue]")
+    """Print an info message in white."""
+    rprint(Text(message, style="white"))
 
 
 def print_prompt(message: str) -> None:
     """Print a prompt message in cyan."""
-    console.print(f"[cyan]{message}[/cyan]")
+    rprint(Text(message, style="cyan"))
 
 
 def print_header(message: str) -> None:
     """Print a header message in bold white."""
-    console.print(f"[bold white]{message}[/bold white]")
+    rprint(Text(message, style="bold white"))
 
 
 def print_entries_table(entries: list["TotpEntry"]) -> None:

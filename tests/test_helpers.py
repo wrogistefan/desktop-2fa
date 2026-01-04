@@ -1,8 +1,11 @@
+import os
 import shutil
+import time
 from pathlib import Path
 from typing import Any
 
 import pytest
+import typer
 
 from desktop_2fa.cli import helpers
 from desktop_2fa.vault.vault import UnsupportedFormat, VaultIOError
@@ -237,9 +240,9 @@ def test_get_password_for_vault_passwords_not_match(monkeypatch: Any) -> None:
     import typer
 
     fake_ctx = type("FakeContext", (), {"obj": {"interactive": True}})()
-    monkeypatch.setattr(
-        "typer.prompt", lambda text, hide_input: "pass1" if "Enter" in text else "pass2"
-    )
+    # Mock to return different passwords for the two prompts
+    responses = ["pass1", "pass2"]
+    monkeypatch.setattr("typer.prompt", lambda text, hide_input: responses.pop(0))
     with pytest.raises(typer.Exit):
         helpers.get_password_for_vault(fake_ctx, new_vault=True)
 
@@ -442,5 +445,167 @@ def test_parse_otpauth_url_edge_cases() -> None:
 def test_print_header(capsys: Any) -> None:
     """Test print_header function."""
     helpers.print_header("Test message")
+    out = capsys.readouterr().out
+    assert "Test message" in out
+
+
+def test_get_password_for_vault_password_file_read_error(
+    tmp_path: Path, monkeypatch: Any
+) -> None:
+    """Test password file read error handling."""
+    # Create a file that will cause read error
+    password_file = tmp_path / "password.txt"
+    password_file.write_text("test")
+
+    # Mock open to raise an exception
+    def mock_open(*args: Any, **kwargs: Any) -> None:
+        raise PermissionError("Permission denied")
+
+    monkeypatch.setattr("builtins.open", mock_open)
+
+    fake_ctx = type(
+        "FakeContext",
+        (),
+        {"obj": {"password_file": str(password_file), "interactive": True}},
+    )()
+    with pytest.raises(typer.Exit):
+        helpers.get_password_for_vault(fake_ctx, new_vault=False)
+
+
+def test_calculate_entropy() -> None:
+    """Test password entropy calculation."""
+    # Test passphrase (4 words: 11*4 = 44)
+    assert helpers.calculate_entropy("correct horse battery staple") == 44
+
+    # Test complex password
+    assert helpers.calculate_entropy("P@ssw0rd123!") > 50
+
+    # Test weak password
+    assert helpers.calculate_entropy("password") < 40
+
+
+def test_enforce_password_strength_weak_reject(monkeypatch: Any) -> None:
+    """Test password strength enforcement with rejection."""
+
+    # Mock load_config to return reject_weak=True and low min_entropy
+    def mock_load_config() -> dict[str, Any]:
+        return {
+            "security": {"min_password_entropy": 100, "reject_weak_passwords": True}
+        }
+
+    monkeypatch.setattr("desktop_2fa.cli.helpers.load_config", mock_load_config)
+
+    with pytest.raises(typer.Exit):
+        helpers._enforce_password_strength("weak")
+
+
+def test_enforce_password_strength_weak_warn(monkeypatch: Any) -> None:
+    """Test password strength enforcement with warning."""
+
+    # Mock load_config and typer.confirm
+    def mock_load_config() -> dict[str, Any]:
+        return {
+            "security": {"min_password_entropy": 100, "reject_weak_passwords": False}
+        }
+
+    monkeypatch.setattr("desktop_2fa.cli.helpers.load_config", mock_load_config)
+    monkeypatch.setattr("typer.confirm", lambda msg: True)
+
+    # Should not raise
+    helpers._enforce_password_strength("weak")
+
+
+def test_enforce_password_strength_weak_warn_reject(monkeypatch: Any) -> None:
+    """Test password strength enforcement with warning and user rejection."""
+
+    def mock_load_config() -> dict[str, Any]:
+        return {
+            "security": {"min_password_entropy": 100, "reject_weak_passwords": False}
+        }
+
+    monkeypatch.setattr("desktop_2fa.cli.helpers.load_config", mock_load_config)
+    monkeypatch.setattr("typer.confirm", lambda msg: False)
+
+    with pytest.raises(typer.Exit):
+        helpers._enforce_password_strength("weak")
+
+
+def test_load_config_missing_file() -> None:
+    """Test load_config with missing config file."""
+    config = helpers.load_config()
+    assert config == {}
+
+
+def test_clear_vault_unlock() -> None:
+    """Test clearing vault unlock status."""
+    # Create unlock file
+    path = helpers.get_unlock_file_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.touch()
+
+    assert path.exists()
+    helpers.clear_vault_unlock()
+    assert not path.exists()
+
+
+def test_is_vault_unlocked_expired(monkeypatch: Any) -> None:
+    """Test is_vault_unlocked with expired timestamp."""
+    # Create old unlock file
+    path = helpers.get_unlock_file_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.touch()
+
+    # Set old mtime
+    old_time = time.time() - 1000
+    os.utime(path, (old_time, old_time))
+
+    # Mock to not bypass
+    monkeypatch.setattr(
+        "os.getenv", lambda key: None if key != "PYTEST_CURRENT_TEST" else None
+    )
+
+    assert not helpers.is_vault_unlocked()
+
+
+def test_validate_base32_invalid_decode(monkeypatch: Any) -> None:
+    """Test validate_base32 with invalid decode."""
+
+    # Mock base64.b32decode to raise exception
+    def mock_b32decode(data: Any) -> None:
+        raise Exception("Invalid base32")
+
+    monkeypatch.setattr("base64.b32decode", mock_b32decode)
+
+    assert not helpers.validate_base32("INVALID")
+
+
+def test_get_password_for_vault_enforce_strength(monkeypatch: Any) -> None:
+    """Test password strength enforcement in get_password_for_vault."""
+    # Mock to not skip password checks
+    monkeypatch.setattr("os.getenv", lambda key: None)
+
+    # Mock load_config to return low min_entropy and reject_weak=False
+    def mock_load_config() -> dict[str, Any]:
+        return {
+            "security": {"min_password_entropy": 10, "reject_weak_passwords": False}
+        }
+
+    monkeypatch.setattr("desktop_2fa.cli.helpers.load_config", mock_load_config)
+    monkeypatch.setattr("typer.confirm", lambda msg: True)
+
+    fake_ctx = type("FakeContext", (), {"obj": {"interactive": True}})()
+
+    # Mock prompts
+    responses = ["weak", "weak"]
+    monkeypatch.setattr("typer.prompt", lambda text, hide_input=False: responses.pop(0))
+
+    # Should not raise (accepts weak password with confirmation)
+    password = helpers.get_password_for_vault(fake_ctx, new_vault=True)
+    assert password == "weak"
+
+
+def test_print_prompt(capsys: Any) -> None:
+    """Test print_prompt function."""
+    helpers.print_prompt("Test message")
     out = capsys.readouterr().out
     assert "Test message" in out

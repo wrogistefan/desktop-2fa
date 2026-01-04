@@ -5,6 +5,7 @@ import sys
 
 import typer
 from rich import print as rich_print
+from rich import print as rprint
 from rich.text import Text
 
 from desktop_2fa import __version__
@@ -90,8 +91,8 @@ def add_cmd(
 
     if issuer is None or secret is None:
         helpers.print_error("Missing argument: ISSUER and SECRET are required")
-        typer.echo("Usage: d2fa add ISSUER SECRET")
-        typer.echo("Example: d2fa add GitHub ABCDEFGHIJKL1234")
+        rprint("Usage: d2fa add ISSUER SECRET")
+        rprint("Example: d2fa add GitHub ABCDEFGHIJKL1234")
         raise typer.Exit(1)
 
     commands.add_entry(issuer, secret, ctx)
