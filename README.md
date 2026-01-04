@@ -80,10 +80,13 @@ A secure, offline two-factor authentication (2FA) manager designed for desktop e
 - **🧪 Comprehensive Testing**: Full test coverage using pytest.
 - **🚀 Future-Proof**: Designed for easy migration to Rust for enhanced performance.
 
-## 🚀 What's New in v0.6.0
+## 🚀 What's New in v0.6.0+
 
-- **Security Audit Completion**: Completed Phase 6 full test implementation with comprehensive pytest test suite covering all vault security phases.
-- **Test Coverage**: Added 31 deterministic tests for error handling, format validation, filesystem safety, UX safety, cryptography parameters, and integration scenarios.
+- **Security Audit Completion**: Completed comprehensive vault security audit (Phases 1–5) with hardened cryptographic parameters including Argon2id time_cost=4, memory_cost=128 MiB, parallelism=2.
+- **Vault Format Stabilization**: Introduced strict, versioned vault header (D2FA v1) for forward compatibility and safe parsing.
+- **Breaking Change**: Vaults created prior to 0.6.0 are not compatible; users must initialize new vaults using `d2fa init-vault`.
+- **Enhanced Testing**: Added 31+ deterministic tests covering error handling, format validation, filesystem safety, UX safety, cryptography parameters, and integration scenarios.
+- **CI Improvements**: All checks now pass (Ruff linting, Black formatting, MyPy type checking, full test suite).
 
 ##  Vault Storage
 
@@ -130,7 +133,7 @@ Verify installation:
 python -c "import desktop_2fa; print(desktop_2fa.__version__)"
 ```
 
-Expected output: `0.5.7`
+Expected output: `0.6.2`
 
 ### From Source
 
@@ -144,7 +147,7 @@ pip install -e .
 
 ## Supported Python Versions
 
-Python 3.10, 3.11, 3.12, 3.13
+Python 3.11, 3.12, 3.13
 
 ## 🔧 Upgrade Guide (v0.4.x → v0.5.0)
 
@@ -196,6 +199,7 @@ desktop-2fa remove GitHub2
 desktop-2fa export vault.json
 desktop-2fa import vault.json
 desktop-2fa backup
+desktop-2fa init-vault
 
 # Provide passphrase via command line option
 desktop-2fa --password mypassphrase add GitHub JBSWY3DPEHPK3PXP
@@ -346,7 +350,7 @@ v0.5.0 — Pydantic vault system ✓
 
 v0.5.5 — Security enhancements and importers ✓
 
-v0.5.7 — Cryptography audit completion ✓
+v0.6.0 — Vault security audit completion & format stabilization ✓
 
 v0.6.x — Rust core (pyo3)
 
