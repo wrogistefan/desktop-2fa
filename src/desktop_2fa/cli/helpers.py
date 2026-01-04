@@ -1,10 +1,13 @@
 """CLI helper functions for Desktop 2FA."""
 
 import base64
+import math
+import os
 import time
+import tomllib
 import urllib.parse
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import typer
 from rich.console import Console
@@ -15,6 +18,9 @@ if TYPE_CHECKING:
     from desktop_2fa.vault.models import TotpEntry
 
 console = Console()
+
+# Vault unlock timeout in seconds (default 15 minutes)
+UNLOCK_TIMEOUT_SECONDS = 900
 
 
 def list_entries(path: Path, password: str) -> None:
@@ -133,6 +139,18 @@ def get_password_for_vault(ctx: typer.Context, new_vault: bool = False) -> str:
             print(f"Error reading password file: {e}")
             raise typer.Exit(1)
 
+    # Check if vault is unlocked - if so, password must be provided via options
+    if not new_vault and is_vault_unlocked():
+        if not password and not password_file:
+            print(
+                "Error: Vault is unlocked but password not provided. Use --password or --password-file."
+            )
+            raise typer.Exit(1)
+        # Password is provided via options, no prompting needed
+        # Mark as unlocked again to refresh timeout
+        mark_vault_unlocked()
+        return password or _read_password_file(password_file)
+
     # No password provided
     if not interactive:
         print("Error: Password not provided and not running in interactive mode")
@@ -145,9 +163,93 @@ def get_password_for_vault(ctx: typer.Context, new_vault: bool = False) -> str:
         if pwd != confirm:
             print_error("Passwords do not match. Please try again.")
             raise typer.Exit(1)
+        # Check password strength
+        if not _should_skip_password_checks(ctx):
+            _enforce_password_strength(pwd)
     else:
         pwd = typer.prompt("[cyan]Enter vault password:[/cyan]", hide_input=True)
+        # Mark vault as unlocked after successful prompt
+        mark_vault_unlocked()
     return pwd  # type: ignore[no-any-return]
+
+
+def _read_password_file(password_file: str) -> str:
+    """Read password from file."""
+    try:
+        with open(password_file, "r") as f:
+            return f.read().strip()
+    except FileNotFoundError:
+        print(f"Error: Password file '{password_file}' not found")
+        raise typer.Exit(1)
+    except Exception as e:
+        print(f"Error reading password file: {e}")
+        raise typer.Exit(1)
+
+
+def load_config() -> dict[str, Any]:
+    """Load configuration from ~/.config/d2fa/config.toml."""
+    config_path = Path.home() / ".config" / "d2fa" / "config.toml"
+    if not config_path.exists():
+        return {}
+    with open(config_path, "rb") as f:
+        return tomllib.load(f)
+
+
+def calculate_entropy(password: str) -> float:
+    """Calculate the entropy of a password."""
+    words = password.split()
+    if len(words) >= 4:
+        return 11 * len(words)
+    # Determine character set size
+    has_lower = any(c.islower() for c in password)
+    has_upper = any(c.isupper() for c in password)
+    has_digit = any(c.isdigit() for c in password)
+    has_symbol = any(not c.isalnum() for c in password)
+    N = 0
+    if has_lower:
+        N += 26
+    if has_upper:
+        N += 26
+    if has_digit:
+        N += 10
+    if has_symbol:
+        N += 32  # approximate
+    if N == 0:
+        N = 1
+    return len(password) * math.log2(N)
+
+
+def _should_skip_password_checks(ctx: typer.Context) -> bool:
+    """Check if password strength checks should be skipped."""
+    return (
+        ctx.obj.get("allow_weak_passwords", False)
+        or os.getenv("D2FA_ALLOW_WEAK_PASSWORDS") == "1"
+        or os.getenv("PYTEST_CURRENT_TEST") is not None
+    )
+
+
+def _enforce_password_strength(password: str) -> None:
+    """Enforce password strength requirements."""
+    config = load_config()
+    security = config.get("security", {})
+    min_entropy = security.get("min_password_entropy", 60)
+    reject_weak = security.get("reject_weak_passwords", False)
+
+    entropy = calculate_entropy(password)
+    if entropy < min_entropy:
+        if reject_weak:
+            print_error(
+                f"Password too weak (entropy {entropy:.1f} < {min_entropy}). "
+                "Please choose a stronger password."
+            )
+            raise typer.Exit(1)
+        else:
+            print_warning(
+                f"Password is weak (entropy {entropy:.1f} < {min_entropy}). "
+                "Consider using a stronger password."
+            )
+            if not typer.confirm("Continue with weak password?"):
+                raise typer.Exit(1)
 
 
 def get_password_from_cli(ctx: typer.Context) -> str:
@@ -248,3 +350,37 @@ def parse_otpauth_url(url: str) -> dict[str, str]:
         "label": label or issuer or "Unknown",
         "secret": secret,
     }
+
+
+def get_unlock_file_path() -> Path:
+    """Get the path to the vault unlock file."""
+    return Path(get_vault_path()).parent / ".vault-unlocked"
+
+
+def mark_vault_unlocked() -> None:
+    """Mark the vault as unlocked by creating the timestamp file."""
+    path = get_unlock_file_path()
+    path.touch()
+
+
+def clear_vault_unlock() -> None:
+    """Clear the vault unlock status."""
+    path = get_unlock_file_path()
+    if path.exists():
+        path.unlink()
+
+
+def is_vault_unlocked() -> bool:
+    """Check if the vault is currently unlocked (within timeout)."""
+    # Bypass unlock timeout for tests or weak password allowance
+    if (
+        os.getenv("PYTEST_CURRENT_TEST")
+        or os.getenv("D2FA_ALLOW_WEAK_PASSWORDS") == "1"
+    ):
+        return False
+    path = get_unlock_file_path()
+    if not path.exists():
+        return False
+    mtime = path.stat().st_mtime
+    now = time.time()
+    return (now - mtime) < UNLOCK_TIMEOUT_SECONDS

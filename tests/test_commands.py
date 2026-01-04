@@ -667,3 +667,38 @@ def test_generate_code_unsupported_format(
 
     out = capsys.readouterr().out.strip()
     assert "Vault file format is unsupported." in out
+
+
+def test_unlock_file_never_contains_password(
+    fake_vault_env: Path, fake_ctx: Any
+) -> None:
+    """Test that .vault-unlocked file never contains the password."""
+    # Create and unlock vault
+    commands.add_entry("GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+
+    # Check that unlock file exists and is empty
+    unlock_file = fake_vault_env.parent / ".vault-unlocked"
+    assert unlock_file.exists()
+    assert unlock_file.stat().st_size == 0
+
+    # Ensure password is not in the file
+    content = unlock_file.read_text()
+    assert TEST_PASSWORD not in content
+    assert len(content) == 0
+
+
+def test_unlock_timeout_does_not_bypass_password(
+    fake_vault_env: Path, fake_ctx: Any
+) -> None:
+    """Test that unlock timeout does not allow passwordless access."""
+    # Create vault
+    commands.add_entry("GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+
+    # Modify context to not have password and not be interactive
+    fake_ctx.obj["password"] = None
+    fake_ctx.obj["password_file"] = None
+    fake_ctx.obj["interactive"] = False
+
+    # Even with unlock file present, should still require password
+    with pytest.raises(typer.Exit):
+        commands.generate_code("GitHub", fake_ctx)

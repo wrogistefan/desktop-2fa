@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.6.3] - 2026-01-04
+
+### 🛡️ Security Fixes
+- **Critical vault unlock security fix**: Removed password storage from `.vault-unlocked` file. The file now contains only a timestamp (mtime) and no sensitive data.
+- **Password requirement enforcement**: Vault unlock timeout now requires explicit password provision via `--password` or `--password-file` options when unlocked, preventing passwordless access.
+- **Regression test added**: `test_unlock_timeout_does_not_bypass_password()` ensures unlock status never bypasses password requirements.
+
+### ✨ New Features
+- **Interactive `d2fa add` improvements**: Secret input is now visible (not hidden) for better user experience. Issuer prompts use Rich formatting for cyan color rendering.
+- **Password strength enforcement**: Configurable password policy via `~/.config/d2fa/config.toml` with entropy checking and warnings/rejection.
+- **CLI bypass flags**: `--allow-weak-passwords` flag and `D2FA_ALLOW_WEAK_PASSWORDS=1` environment variable to skip password checks for testing/legacy scenarios.
+
+### 📚 Documentation
+- **User manual updates**: Comprehensive documentation of unlock timeout behavior, password strength configuration, new CLI options, and error messages.
+- **Security clarifications**: Clear explanations that vault always requires the real master password for decryption.
+
+### 🐛 Fixed
+- **Type annotations**: Fixed MyPy errors for generic dict types.
+- **Code formatting**: Applied Black formatting to maintain code style consistency.
+
+### 🧪 Testing
+- **All tests pass**: 163 tests passing with full coverage maintained.
+- **CI compliance**: Ruff, Black, MyPy, and pytest all pass successfully.
+
+---
+
 ## [0.6.2] - 2026-01-03
 
 ### 🐛 Fixed

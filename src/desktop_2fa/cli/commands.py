@@ -30,6 +30,7 @@ def list_entries(ctx: typer.Context) -> None:
         password = helpers.get_password_for_vault(ctx, new_vault=True)
         vault = Vault()
         vault.save(path, password)
+        helpers.mark_vault_unlocked()
         if interactive:
             helpers.print_success("Vault created.")
             helpers.print_info("No entries found.")
@@ -89,6 +90,7 @@ def add_entry(issuer: str, secret: str, ctx: typer.Context) -> None:
         vault = Vault()
         vault.add_entry(issuer=issuer, account_name=account_name, secret=secret)
         vault.save(path, password)
+        helpers.mark_vault_unlocked()
         helpers.print_success("Vault created.")
         helpers.print_success(f"Entry added: {issuer}")
     else:
@@ -283,4 +285,5 @@ def init_vault(force: bool, ctx: typer.Context) -> None:
     password = helpers.get_password_for_vault(ctx, new_vault=True)
     vault = Vault()
     vault.save(path, password)
+    helpers.mark_vault_unlocked()
     helpers.print_success("Vault created.")

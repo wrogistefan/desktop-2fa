@@ -4,6 +4,8 @@ import os
 import sys
 
 import typer
+from rich import print as rich_print
+from rich.text import Text
 
 from desktop_2fa import __version__
 
@@ -36,6 +38,9 @@ def main(
         "--password-file",
         help="File containing password for vault encryption/decryption",
     ),
+    allow_weak_passwords: bool = typer.Option(
+        False, "--allow-weak-passwords", help="Allow weak passwords"
+    ),
 ) -> None:
     """
     Global CLI callback — initializes context and handles --version and no-args case.
@@ -51,6 +56,7 @@ def main(
         "password": password,
         "password_file": password_file,
         "interactive": is_interactive(),
+        "allow_weak_passwords": allow_weak_passwords,
     }
 
     # Jeśli użytkownik podał --version LUB nie podał żadnej komendy,
@@ -76,9 +82,11 @@ def add_cmd(
     interactive = ctx.obj.get("interactive", False)
     if interactive and (issuer is None or secret is None):
         if issuer is None:
-            issuer = typer.prompt("[cyan]Issuer[/cyan]")
+            rich_print(Text("Issuer", style="cyan"), end=": ")
+            issuer = typer.prompt("")
         if secret is None:
-            secret = typer.prompt("[cyan]Secret[/cyan]", hide_input=True)
+            rich_print(Text("Secret", style="cyan"), end=": ")
+            secret = typer.prompt("")
 
     if issuer is None or secret is None:
         helpers.print_error("Missing argument: ISSUER and SECRET are required")
