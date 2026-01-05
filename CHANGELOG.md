@@ -6,8 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [0.6.6.1] — Security Fix
 
+### 🛡️ Security Hardening
 - Fixed a CodeQL-reported issue where an exception message could leak sensitive information when reading a password file failed.
-- No functional changes. Safe patch release.
+- Removed password file path from error messages to prevent information disclosure.
 
 ---
 
