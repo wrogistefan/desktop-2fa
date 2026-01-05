@@ -75,7 +75,6 @@ def test_multiple_entries(tmp_path: Path) -> None:
 
 
 def test_vault_encryption_with_password(tmp_path: Path) -> None:
-    """Test vault encryption and decryption with user-supplied password."""
     path = tmp_path / "vault_encrypted.bin"
     password = "test_password_123"
 
@@ -97,7 +96,6 @@ def test_vault_encryption_with_password(tmp_path: Path) -> None:
 
 
 def test_vault_wrong_password(tmp_path: Path) -> None:
-    """Test that vault cannot be loaded with wrong password."""
     path = tmp_path / "vault_wrong_pass.bin"
     correct_password = "correct_pass"
     wrong_password = "wrong_pass"
@@ -112,7 +110,6 @@ def test_vault_wrong_password(tmp_path: Path) -> None:
 
 
 def test_vault_password_roundtrip(tmp_path: Path) -> None:
-    """Test multiple save/load cycles with password."""
     path = tmp_path / "vault_roundtrip.bin"
     password = "roundtrip_pass"
 
@@ -134,7 +131,6 @@ def test_vault_password_roundtrip(tmp_path: Path) -> None:
 
 
 def test_vault_no_password_vs_password(tmp_path: Path) -> None:
-    """Test that password-protected vaults are different from non-protected ones."""
     path_no_pass = tmp_path / "vault_no_pass.bin"
     path_with_pass = tmp_path / "vault_with_pass.bin"
     password = "some_password"

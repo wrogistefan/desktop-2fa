@@ -83,7 +83,9 @@ class Vault:
         # Check for duplicate names
         for entry in self.entries:
             if entry.account_name == name:
-                raise ValueError(f"An entry with name \"{name}\" already exists. Names must be unique.")
+                raise ValueError(
+                    f'An entry with name "{name}" already exists. Names must be unique.'
+                )
 
         entry = TotpEntry(
             account_name=name,
@@ -185,8 +187,12 @@ class Vault:
         names = [entry.account_name for entry in vault.entries if entry.account_name]
         duplicates = [name for name in set(names) if names.count(name) > 1]
         if duplicates:
-            print(f"Warning: Your vault contains multiple entries with the same name: {', '.join(chr(34) + name + chr(34) for name in duplicates)}.")
-            print("This was allowed in older versions. You can resolve this by renaming entries using the rename command.")
+            print(
+                f"Warning: Your vault contains multiple entries with the same name: {', '.join(chr(34) + name + chr(34) for name in duplicates)}."
+            )
+            print(
+                "This was allowed in older versions. You can resolve this by renaming entries using the rename command."
+            )
 
         return vault
 

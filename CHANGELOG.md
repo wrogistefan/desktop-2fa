@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.6.6] - 2026-01-05
+
+### 🐛 Fixed
+- **UX-001 Critical**: Non-interactive `d2fa list --password` no longer creates vault silently
+- **UX-008 Medium**: "Vault created." message is now always printed regardless of interactive mode
+- **UX Contract Update**: Added new principle: "All state-mutating operations MUST emit confirmation messages regardless of interactive mode."
+
+### 🧪 Testing
+- Added regression test `test_list_entries_noninteractive_creates_vault_with_messages`
+- Added regression test `test_add_entry_noninteractive_creates_vault_with_messages`
+
+### 📚 Documentation
+- Updated docs/ux.md with new UX contract principle
+- Updated version to 0.6.6 in all documentation
+
 ## [0.6.5] - 2026-01-04
 
 ### 🔄 Vault Entry Identification

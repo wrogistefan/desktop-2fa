@@ -22,6 +22,7 @@ implementations.
 3. Invalid passwords must never mutate state.
 4. Every command must clearly communicate what is happening.
 5. UX describes intent, even if implementation is implicit.
+6. All state-mutating operations MUST emit confirmation messages regardless of interactive mode.
 
 ---
 

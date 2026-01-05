@@ -330,5 +330,3 @@ def parse_otpauth_url(url: str) -> dict[str, str]:
         "label": label or issuer or "Unknown",
         "secret": secret,
     }
-
-

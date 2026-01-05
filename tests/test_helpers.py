@@ -242,7 +242,6 @@ def test_get_password_for_vault_passwords_not_match(monkeypatch: Any) -> None:
 def test_get_password_for_vault_both_password_and_file(
     tmp_path: Path, capsys: Any
 ) -> None:
-    """Test error when both password and password_file are provided."""
     import typer
 
     fake_ctx = type(
@@ -265,7 +264,6 @@ def test_get_password_for_vault_both_password_and_file(
 
 
 def test_get_password_for_vault_no_password_non_interactive(capsys: Any) -> None:
-    """Test error when no password provided and not in interactive mode."""
     import typer
 
     fake_ctx = type("FakeContext", (), {"obj": {"interactive": False}})()
@@ -278,7 +276,6 @@ def test_get_password_for_vault_no_password_non_interactive(capsys: Any) -> None
 
 
 def test_print_entries_table_empty(capsys: Any) -> None:
-    """Test print_entries_table with empty list."""
     helpers.print_entries_table([])
 
     out = capsys.readouterr().out
@@ -286,7 +283,6 @@ def test_print_entries_table_empty(capsys: Any) -> None:
 
 
 def test_validate_base32_valid() -> None:
-    """Test validate_base32 with valid Base32 strings."""
     assert helpers.validate_base32("JBSWY3DPEHPK3PXP") is True
     assert helpers.validate_base32("JBSWY3DP EHPK3PXP") is True  # with spaces
     assert helpers.validate_base32("jbswy3dpehpk3pxp") is True  # lowercase
@@ -294,14 +290,12 @@ def test_validate_base32_valid() -> None:
 
 
 def test_validate_base32_invalid() -> None:
-    """Test validate_base32 with invalid Base32 strings."""
     assert helpers.validate_base32("invalid") is True  # Actually valid Base32
     assert helpers.validate_base32("JBSWY3DPEHPK3PXP1") is False  # invalid character
     assert helpers.validate_base32("JBSWY3DPEHPK3PXP!") is False  # special character
 
 
 def test_parse_otpauth_url_valid() -> None:
-    """Test parse_otpauth_url with valid URLs."""
     result = helpers.parse_otpauth_url(
         "otpauth://totp/GitHub:octocat?secret=JBSWY3DPEHPK3PXP&issuer=GitHub"
     )
@@ -311,7 +305,6 @@ def test_parse_otpauth_url_valid() -> None:
 
 
 def test_parse_otpauth_url_issuer_only() -> None:
-    """Test parse_otpauth_url with issuer only."""
     result = helpers.parse_otpauth_url("otpauth://totp/GitHub?secret=JBSWY3DPEHPK3PXP")
     assert result["issuer"] == "GitHub"
     assert result["label"] == "GitHub"
@@ -319,7 +312,6 @@ def test_parse_otpauth_url_issuer_only() -> None:
 
 
 def test_parse_otpauth_url_label_only() -> None:
-    """Test parse_otpauth_url with label only."""
     result = helpers.parse_otpauth_url(
         "otpauth://totp/:octocat?secret=JBSWY3DPEHPK3PXP"
     )
@@ -329,7 +321,6 @@ def test_parse_otpauth_url_label_only() -> None:
 
 
 def test_parse_otpauth_url_no_colon() -> None:
-    """Test parse_otpauth_url with no colon in path."""
     result = helpers.parse_otpauth_url("otpauth://totp/GitHub?secret=JBSWY3DPEHPK3PXP")
     assert result["issuer"] == "GitHub"
     assert result["label"] == "GitHub"
@@ -337,25 +328,21 @@ def test_parse_otpauth_url_no_colon() -> None:
 
 
 def test_parse_otpauth_url_invalid_scheme() -> None:
-    """Test parse_otpauth_url with invalid scheme."""
     with pytest.raises(ValueError, match="Invalid otpauth URL"):
         helpers.parse_otpauth_url("http://example.com")
 
 
 def test_parse_otpauth_url_invalid_type() -> None:
-    """Test parse_otpauth_url with non-TOTP type."""
     with pytest.raises(ValueError, match="Only TOTP otpauth URLs are supported"):
         helpers.parse_otpauth_url("otpauth://hotp/GitHub?secret=JBSWY3DPEHPK3PXP")
 
 
 def test_parse_otpauth_url_missing_secret() -> None:
-    """Test parse_otpauth_url with missing secret."""
     with pytest.raises(ValueError, match="Secret parameter is required"):
         helpers.parse_otpauth_url("otpauth://totp/GitHub?issuer=GitHub")
 
 
 def test_parse_otpauth_url_issuer_in_query() -> None:
-    """Test parse_otpauth_url with issuer in query parameter."""
     result = helpers.parse_otpauth_url(
         "otpauth://totp/:octocat?secret=JBSWY3DPEHPK3PXP&issuer=GitHub"
     )
@@ -365,35 +352,30 @@ def test_parse_otpauth_url_issuer_in_query() -> None:
 
 
 def test_print_success(capsys: Any) -> None:
-    """Test print_success function."""
     helpers.print_success("Test message")
     out = capsys.readouterr().out
     assert "Test message" in out
 
 
 def test_print_warning(capsys: Any) -> None:
-    """Test print_warning function."""
     helpers.print_warning("Test message")
     out = capsys.readouterr().out
     assert "Test message" in out
 
 
 def test_print_error(capsys: Any) -> None:
-    """Test print_error function."""
     helpers.print_error("Test message")
     out = capsys.readouterr().out
     assert "Test message" in out
 
 
 def test_print_info(capsys: Any) -> None:
-    """Test print_info function."""
     helpers.print_info("Test message")
     out = capsys.readouterr().out
     assert "Test message" in out
 
 
 def test_validate_base32_edge_cases() -> None:
-    """Test validate_base32 with edge cases."""
     # Test very long Base32 string
     long_secret = "JBSWY3DPEHPK3PXP" * 10
     assert helpers.validate_base32(long_secret) is True
@@ -409,7 +391,6 @@ def test_validate_base32_edge_cases() -> None:
 
 
 def test_parse_otpauth_url_edge_cases() -> None:
-    """Test parse_otpauth_url with edge cases."""
     # Test with missing issuer parameter
     result = helpers.parse_otpauth_url(
         "otpauth://totp/GitHub:octocat?secret=JBSWY3DPEHPK3PXP"
@@ -435,7 +416,6 @@ def test_parse_otpauth_url_edge_cases() -> None:
 
 
 def test_print_header(capsys: Any) -> None:
-    """Test print_header function."""
     helpers.print_header("Test message")
     out = capsys.readouterr().out
     assert "Test message" in out
@@ -444,7 +424,6 @@ def test_print_header(capsys: Any) -> None:
 def test_get_password_for_vault_password_file_read_error(
     tmp_path: Path, monkeypatch: Any
 ) -> None:
-    """Test password file read error handling."""
     # Create a file that will cause read error
     password_file = tmp_path / "password.txt"
     password_file.write_text("test")
@@ -465,7 +444,6 @@ def test_get_password_for_vault_password_file_read_error(
 
 
 def test_calculate_entropy() -> None:
-    """Test password entropy calculation."""
     # Test passphrase (4 words: 11*4 = 44)
     assert helpers.calculate_entropy("correct horse battery staple") == 44
 
@@ -477,7 +455,6 @@ def test_calculate_entropy() -> None:
 
 
 def test_enforce_password_strength_weak_reject(monkeypatch: Any) -> None:
-    """Test password strength enforcement with rejection."""
 
     # Mock load_config to return reject_weak=True and low min_entropy
     def mock_load_config() -> dict[str, Any]:
@@ -492,7 +469,6 @@ def test_enforce_password_strength_weak_reject(monkeypatch: Any) -> None:
 
 
 def test_enforce_password_strength_weak_warn(monkeypatch: Any) -> None:
-    """Test password strength enforcement with warning."""
 
     # Mock load_config and typer.confirm
     def mock_load_config() -> dict[str, Any]:
@@ -508,7 +484,6 @@ def test_enforce_password_strength_weak_warn(monkeypatch: Any) -> None:
 
 
 def test_enforce_password_strength_weak_warn_reject(monkeypatch: Any) -> None:
-    """Test password strength enforcement with warning and user rejection."""
 
     def mock_load_config() -> dict[str, Any]:
         return {
@@ -523,13 +498,11 @@ def test_enforce_password_strength_weak_warn_reject(monkeypatch: Any) -> None:
 
 
 def test_load_config_missing_file() -> None:
-    """Test load_config with missing config file."""
     config = helpers.load_config()
     assert config == {}
 
 
 def test_validate_base32_invalid_decode(monkeypatch: Any) -> None:
-    """Test validate_base32 with invalid decode."""
 
     # Mock base64.b32decode to raise exception
     def mock_b32decode(data: Any) -> None:
@@ -541,7 +514,6 @@ def test_validate_base32_invalid_decode(monkeypatch: Any) -> None:
 
 
 def test_get_password_for_vault_enforce_strength(monkeypatch: Any) -> None:
-    """Test password strength enforcement in get_password_for_vault."""
     # Mock to not skip password checks
     monkeypatch.setattr("os.getenv", lambda key: None)
 
@@ -566,7 +538,6 @@ def test_get_password_for_vault_enforce_strength(monkeypatch: Any) -> None:
 
 
 def test_print_prompt(capsys: Any) -> None:
-    """Test print_prompt function."""
     helpers.print_prompt("Test message")
     out = capsys.readouterr().out
     assert "Test message" in out

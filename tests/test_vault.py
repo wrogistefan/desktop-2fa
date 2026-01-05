@@ -61,7 +61,6 @@ def test_totp_entry_invalid_period() -> None:
 
 
 def test_vault_load_invalid_magic_header(tmp_path: Path) -> None:
-    """Test loading vault with invalid magic header."""
     path = tmp_path / "vault.bin"
 
     # Create a file with invalid magic header
@@ -75,7 +74,6 @@ def test_vault_load_invalid_magic_header(tmp_path: Path) -> None:
 
 
 def test_vault_load_unsupported_version(tmp_path: Path) -> None:
-    """Test loading vault with unsupported version."""
     path = tmp_path / "vault.bin"
 
     # Create a file with unsupported version
@@ -87,7 +85,6 @@ def test_vault_load_unsupported_version(tmp_path: Path) -> None:
 
 
 def test_vault_load_empty_encrypted_blob(tmp_path: Path) -> None:
-    """Test loading vault with empty encrypted blob."""
     path = tmp_path / "vault.bin"
 
     # Create a file with empty encrypted blob
@@ -99,7 +96,6 @@ def test_vault_load_empty_encrypted_blob(tmp_path: Path) -> None:
 
 
 def test_vault_load_corrupted_json_data(tmp_path: Path) -> None:
-    """Test loading vault with corrupted JSON data."""
     path = tmp_path / "vault.bin"
 
     # Create a valid vault structure but with corrupted JSON
@@ -122,7 +118,6 @@ def test_vault_load_corrupted_json_data(tmp_path: Path) -> None:
 
 
 def test_vault_save_io_error(tmp_path: Path, monkeypatch: Any) -> None:
-    """Test saving vault with IO error."""
     path = tmp_path / "vault.bin"
 
     vault = Vault()
@@ -139,7 +134,6 @@ def test_vault_save_io_error(tmp_path: Path, monkeypatch: Any) -> None:
 
 
 def test_vault_save_cleanup_on_error(tmp_path: Path, monkeypatch: Any) -> None:
-    """Test that temporary file is cleaned up when save fails."""
     path = tmp_path / "vault.bin"
     temp_path = path.with_suffix(".tmp")
 
@@ -164,7 +158,6 @@ def test_vault_save_cleanup_on_error(tmp_path: Path, monkeypatch: Any) -> None:
 
 
 def test_vault_load_malformed_json_edge_cases(tmp_path: Path) -> None:
-    """Test loading vault with malformed JSON edge cases."""
     path = tmp_path / "vault.bin"
 
     # Create a valid vault structure but with malformed JSON that passes basic validation
@@ -187,7 +180,6 @@ def test_vault_load_malformed_json_edge_cases(tmp_path: Path) -> None:
 
 
 def test_vault_save_os_level_errors(tmp_path: Path, monkeypatch: Any) -> None:
-    """Test saving vault with OS-level file errors."""
     path = tmp_path / "vault.bin"
 
     vault = Vault()
@@ -206,7 +198,6 @@ def test_vault_save_os_level_errors(tmp_path: Path, monkeypatch: Any) -> None:
 
 
 def test_vault_save_cleanup_on_os_error(tmp_path: Path, monkeypatch: Any) -> None:
-    """Test that temporary file is cleaned up when OS-level save fails."""
     path = tmp_path / "vault.bin"
     temp_path = path.with_suffix(".tmp")
 
@@ -231,7 +222,6 @@ def test_vault_save_cleanup_on_os_error(tmp_path: Path, monkeypatch: Any) -> Non
 
 
 def test_vault_load_json_validation_edge_cases(tmp_path: Path) -> None:
-    """Test loading vault with JSON that passes validation but fails model validation."""
     path = tmp_path / "vault.bin"
 
     # Create a valid vault structure but with JSON that has invalid field types
@@ -254,7 +244,6 @@ def test_vault_load_json_validation_edge_cases(tmp_path: Path) -> None:
 
 
 def test_vault_load_no_password_default(tmp_path: Path) -> None:
-    """Test loading vault with no password (uses default empty string)."""
     path = tmp_path / "vault.bin"
 
     vault = Vault()
@@ -268,7 +257,6 @@ def test_vault_load_no_password_default(tmp_path: Path) -> None:
 
 
 def test_vault_save_no_password_default(tmp_path: Path) -> None:
-    """Test saving vault with no password (uses default empty string)."""
     path = tmp_path / "vault.bin"
 
     vault = Vault()
@@ -287,7 +275,6 @@ def test_vault_save_no_password_default(tmp_path: Path) -> None:
 
 
 def test_vault_load_file_not_found(tmp_path: Path) -> None:
-    """Test loading vault from non-existent file."""
     path = tmp_path / "nonexistent.bin"
 
     with pytest.raises(Exception, match="Failed to read vault file"):
@@ -295,7 +282,6 @@ def test_vault_load_file_not_found(tmp_path: Path) -> None:
 
 
 def test_vault_load_file_too_short(tmp_path: Path) -> None:
-    """Test loading vault file that is too short."""
     path = tmp_path / "vault.bin"
 
     # Create a file that's too short
@@ -307,7 +293,6 @@ def test_vault_load_file_too_short(tmp_path: Path) -> None:
 
 
 def test_vault_add_entry_duplicate_name() -> None:
-    """Test that adding an entry with a duplicate name raises ValueError."""
     vault = Vault()
     vault.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP")
 
@@ -316,14 +301,19 @@ def test_vault_add_entry_duplicate_name() -> None:
 
 
 def test_vault_load_duplicate_names_warning(tmp_path: Path, capsys: Any) -> None:
-    """Test that loading a vault with duplicate names shows a warning but doesn't fail."""
     path = tmp_path / "vault.bin"
 
     # Create vault data with duplicate names manually
-    data = VaultData(entries=[
-        TotpEntry(account_name="GitHub", issuer="GitHub", secret="JBSWY3DPEHPK3PXP"),
-        TotpEntry(account_name="GitHub", issuer="GitHub", secret="JBSWY3DPEHPK3PXP"),
-    ])
+    data = VaultData(
+        entries=[
+            TotpEntry(
+                account_name="GitHub", issuer="GitHub", secret="JBSWY3DPEHPK3PXP"
+            ),
+            TotpEntry(
+                account_name="GitHub", issuer="GitHub", secret="JBSWY3DPEHPK3PXP"
+            ),
+        ]
+    )
     vault = Vault(data)
     vault.save(str(path))
 
@@ -332,7 +322,10 @@ def test_vault_load_duplicate_names_warning(tmp_path: Path, capsys: Any) -> None
 
     # Check that warning was printed
     captured = capsys.readouterr()
-    assert 'Warning: Your vault contains multiple entries with the same name: "GitHub"' in captured.out
+    assert (
+        'Warning: Your vault contains multiple entries with the same name: "GitHub"'
+        in captured.out
+    )
 
     # Vault should still load successfully
     assert len(loaded.entries) == 2

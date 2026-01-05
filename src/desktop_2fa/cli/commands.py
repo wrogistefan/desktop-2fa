@@ -20,7 +20,9 @@ def _path() -> Path:
     return Path(helpers.get_vault_path())
 
 
-def add_entry_interactive(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
+def add_entry_interactive(
+    name: str, issuer: str, secret: str, ctx: typer.Context
+) -> None:
     """Add entry in interactive mode with explicit name."""
     path = _path()
 
@@ -65,15 +67,13 @@ def list_entries(ctx: typer.Context) -> None:
     path = _path()
     interactive = ctx.obj.get("interactive", False)
     if not path.exists():
-        if interactive:
-            helpers.print_warning("No vault found.")
-            helpers.print_info("A new encrypted vault will be created.")
+        helpers.print_warning("No vault found.")
+        helpers.print_info("A new encrypted vault will be created.")
         password = helpers.get_password_for_vault(ctx, new_vault=True)
         vault = Vault()
         vault.save(path, password)
-        if interactive:
-            helpers.print_success("Vault created.")
-            helpers.print_info("No entries found.")
+        helpers.print_success("Vault created.")
+        helpers.print_info("No entries found.")
     else:
         password = helpers.get_password_for_vault(ctx, new_vault=False)
         try:

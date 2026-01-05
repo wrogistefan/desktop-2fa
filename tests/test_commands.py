@@ -59,6 +59,31 @@ def test_list_entries_empty(fake_vault_env: Path, capsys: Any, fake_ctx: Any) ->
     ]
 
 
+def test_list_entries_noninteractive_creates_vault_with_messages(
+    fake_vault_env: Path, capsys: Any
+) -> None:
+
+    class NonInteractiveCtx:
+        def __init__(self) -> None:
+            self.obj: dict[str, Any] = {"interactive": False, "password": TEST_PASSWORD}
+
+    # Ensure vault doesn't exist
+    if fake_vault_env.exists():
+        fake_vault_env.unlink()
+
+    commands.list_entries(NonInteractiveCtx())  # type: ignore[arg-type]
+    out = capsys.readouterr().out.strip().splitlines()
+
+    # Must print all required messages regardless of interactive mode
+    assert "No vault found." in out
+    assert "A new encrypted vault will be created." in out
+    assert "Vault created." in out
+    assert "No entries found." in out
+
+    # Verify vault was actually created
+    assert fake_vault_env.exists()
+
+
 def test_add_entry_and_list(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -> None:
     commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
 
@@ -80,6 +105,31 @@ def test_add_entry_and_list(fake_vault_env: Path, capsys: Any, fake_ctx: Any) ->
     assert vault.entries[0].issuer == "GitHub"
     assert vault.entries[0].account_name == "GitHub"
     assert vault.entries[0].secret == "JBSWY3DPEHPK3PXP"
+
+
+def test_add_entry_noninteractive_creates_vault_with_messages(
+    fake_vault_env: Path, capsys: Any
+) -> None:
+
+    class NonInteractiveCtx:
+        def __init__(self) -> None:
+            self.obj: dict[str, Any] = {"interactive": False, "password": TEST_PASSWORD}
+
+    # Ensure vault doesn't exist
+    if fake_vault_env.exists():
+        fake_vault_env.unlink()
+
+    commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", NonInteractiveCtx())  # type: ignore[arg-type]
+    out = capsys.readouterr().out.strip().splitlines()
+
+    # Must print all required messages regardless of interactive mode
+    assert "No vault found." in out
+    assert "A new encrypted vault will be created." in out
+    assert "Vault created." in out
+    assert "Entry added: GitHub" in out
+
+    # Verify vault was actually created
+    assert fake_vault_env.exists()
 
 
 def test_generate_code(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -> None:
@@ -380,7 +430,6 @@ def test_backup_vault_invalid_password(
 def test_add_entry_otpauth_url(
     fake_vault_env: Path, capsys: Any, fake_ctx: Any
 ) -> None:
-    """Test adding entry from otpauth URL."""
     otpauth_url = "otpauth://totp/GitHub:octocat?secret=JBSWY3DPEHPK3PXP&issuer=GitHub"
     commands.add_entry("GitHub", otpauth_url, "", fake_ctx)
 
@@ -391,7 +440,6 @@ def test_add_entry_otpauth_url(
 def test_add_entry_invalid_otpauth_url(
     fake_vault_env: Path, capsys: Any, fake_ctx: Any
 ) -> None:
-    """Test adding entry with invalid otpauth URL."""
     invalid_url = "otpauth://invalid"
     commands.add_entry("Test", invalid_url, "", fake_ctx)
 
@@ -402,7 +450,6 @@ def test_add_entry_invalid_otpauth_url(
 def test_add_entry_invalid_secret(
     fake_vault_env: Path, capsys: Any, fake_ctx: Any
 ) -> None:
-    """Test adding entry with invalid Base32 secret."""
     commands.add_entry("Test", "Test", "invalid_secret", fake_ctx)
 
     out = capsys.readouterr().out.strip()
@@ -412,7 +459,6 @@ def test_add_entry_invalid_secret(
 def test_list_entries_existing_vault_no_entries(
     fake_vault_env: Path, capsys: Any, fake_ctx: Any
 ) -> None:
-    """Test listing entries when vault exists but has no entries."""
     from desktop_2fa.vault import Vault
 
     vault = Vault()
@@ -427,7 +473,6 @@ def test_list_entries_existing_vault_no_entries(
 def test_generate_code_existing_vault_no_entries(
     fake_vault_env: Path, capsys: Any, fake_ctx: Any
 ) -> None:
-    """Test generating code when vault exists but has no entries."""
     from desktop_2fa.vault import Vault
 
     vault = Vault()
@@ -440,7 +485,6 @@ def test_generate_code_existing_vault_no_entries(
 def test_remove_entry_existing_vault_no_entries(
     fake_vault_env: Path, capsys: Any, fake_ctx: Any
 ) -> None:
-    """Test removing entry when vault exists but has no entries."""
     from desktop_2fa.vault import Vault
 
     vault = Vault()
@@ -453,7 +497,6 @@ def test_remove_entry_existing_vault_no_entries(
 def test_rename_entry_existing_vault_no_entries(
     fake_vault_env: Path, capsys: Any, fake_ctx: Any
 ) -> None:
-    """Test renaming entry when vault exists but has no entries."""
     from desktop_2fa.vault import Vault
 
     vault = Vault()
@@ -466,7 +509,6 @@ def test_rename_entry_existing_vault_no_entries(
 def test_export_vault_existing_vault_no_entries(
     fake_vault_env: Path, tmp_path: Path, capsys: Any, fake_ctx: Any
 ) -> None:
-    """Test exporting vault when it exists but has no entries."""
     from desktop_2fa.vault import Vault
 
     vault = Vault()
@@ -483,7 +525,6 @@ def test_export_vault_existing_vault_no_entries(
 def test_import_vault_corrupted_source(
     fake_vault_env: Path, tmp_path: Path, capsys: Any, fake_ctx: Any
 ) -> None:
-    """Test importing from corrupted vault file."""
     corrupted = tmp_path / "corrupted.bin"
     corrupted.write_text("corrupted data")
 
@@ -495,7 +536,6 @@ def test_import_vault_corrupted_source(
 def test_import_vault_unsupported_format(
     fake_vault_env: Path, tmp_path: Path, capsys: Any, fake_ctx: Any
 ) -> None:
-    """Test importing from unsupported format."""
     unsupported = tmp_path / "unsupported.bin"
     # Create a file that looks like a vault but has unsupported format
     unsupported.write_bytes(b"unsupported_format_data")
@@ -509,7 +549,6 @@ def test_import_vault_unsupported_format(
 def test_backup_vault_existing_vault_no_entries(
     fake_vault_env: Path, capsys: Any, fake_ctx: Any
 ) -> None:
-    """Test backing up vault when it exists but has no entries."""
     from desktop_2fa.vault import Vault
 
     vault = Vault()
@@ -526,7 +565,6 @@ def test_backup_vault_existing_vault_no_entries(
 def test_init_vault_existing_no_force(
     fake_vault_env: Path, capsys: Any, fake_ctx: Any
 ) -> None:
-    """Test initializing vault when it already exists without force."""
     from desktop_2fa.vault import Vault
 
     vault = Vault()
@@ -542,7 +580,6 @@ def test_init_vault_existing_no_force(
 def test_init_vault_existing_with_force(
     fake_vault_env: Path, capsys: Any, fake_ctx: Any
 ) -> None:
-    """Test initializing vault when it already exists with force."""
     from desktop_2fa.vault import Vault
 
     vault = Vault()
@@ -555,7 +592,6 @@ def test_init_vault_existing_with_force(
 
 
 def test_init_vault_new(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -> None:
-    """Test initializing new vault."""
     commands.init_vault(False, fake_ctx)
 
     out = capsys.readouterr().out.strip()
@@ -566,7 +602,6 @@ def test_init_vault_new(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -> Non
 def test_remove_entry_unsupported_format(
     fake_vault_env: Path, capsys: Any, fake_ctx: Any
 ) -> None:
-    """Test removing entry from unsupported vault format."""
     # Create a file with wrong magic header
     fake_vault_env.write_bytes(
         b"WRNG" + b"\x01" + b"16byte_salt_here" + b"encrypted_data"
@@ -581,7 +616,6 @@ def test_remove_entry_unsupported_format(
 def test_rename_entry_unsupported_format(
     fake_vault_env: Path, capsys: Any, fake_ctx: Any
 ) -> None:
-    """Test renaming entry in unsupported vault format."""
     # Create a file with wrong magic header
     fake_vault_env.write_bytes(
         b"WRNG" + b"\x01" + b"16byte_salt_here" + b"encrypted_data"
@@ -596,7 +630,6 @@ def test_rename_entry_unsupported_format(
 def test_export_vault_unsupported_format(
     fake_vault_env: Path, tmp_path: Path, capsys: Any, fake_ctx: Any
 ) -> None:
-    """Test exporting from unsupported vault format."""
     # Create a file with wrong magic header
     fake_vault_env.write_bytes(
         b"WRNG" + b"\x01" + b"16byte_salt_here" + b"encrypted_data"
@@ -612,7 +645,6 @@ def test_export_vault_unsupported_format(
 def test_backup_vault_unsupported_format(
     fake_vault_env: Path, capsys: Any, fake_ctx: Any
 ) -> None:
-    """Test backing up unsupported vault format."""
     # Create a file with wrong magic header
     fake_vault_env.write_bytes(
         b"WRNG" + b"\x01" + b"16byte_salt_here" + b"encrypted_data"
@@ -627,7 +659,6 @@ def test_backup_vault_unsupported_format(
 def test_add_entry_unsupported_format(
     fake_vault_env: Path, capsys: Any, fake_ctx: Any
 ) -> None:
-    """Test adding entry to unsupported vault format."""
     # Create a file with wrong magic header
     fake_vault_env.write_bytes(
         b"WRNG" + b"\x01" + b"16byte_salt_here" + b"encrypted_data"
@@ -642,7 +673,6 @@ def test_add_entry_unsupported_format(
 def test_list_entries_unsupported_format(
     fake_vault_env: Path, capsys: Any, fake_ctx: Any
 ) -> None:
-    """Test listing entries from unsupported vault format."""
     # Create a file with wrong magic header
     fake_vault_env.write_bytes(
         b"WRNG" + b"\x01" + b"16byte_salt_here" + b"encrypted_data"
@@ -657,7 +687,6 @@ def test_list_entries_unsupported_format(
 def test_generate_code_unsupported_format(
     fake_vault_env: Path, capsys: Any, fake_ctx: Any
 ) -> None:
-    """Test generating code from unsupported vault format."""
     # Create a file with wrong magic header
     fake_vault_env.write_bytes(
         b"WRNG" + b"\x01" + b"16byte_salt_here" + b"encrypted_data"
@@ -667,5 +696,3 @@ def test_generate_code_unsupported_format(
 
     out = capsys.readouterr().out.strip()
     assert "Vault file format is unsupported." in out
-
-

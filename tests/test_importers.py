@@ -13,7 +13,6 @@ from desktop_2fa.cli.importers import (
 
 
 def test_parse_aegis_json() -> None:
-    """Test parsing Aegis JSON format."""
     content = """{
         "entries": [
             {
@@ -58,7 +57,6 @@ def test_parse_aegis_json() -> None:
 
 
 def test_parse_bitwarden_csv() -> None:
-    """Test parsing Bitwarden CSV format."""
     content = """name,totp
 GitHub,user@github.com,JBSWY3DPEHPK3PXP
 Google,test@gmail.com,JBSWY3DPEHPK3PXS
@@ -85,7 +83,6 @@ Empty,"""
 
 
 def test_parse_1password_csv() -> None:
-    """Test parsing 1Password CSV format."""
     content = """title,otp
 GitHub,JBSWY3DPEHPK3PXP
 Google:test@gmail.com,JBSWY3DPEHPK3PXS
@@ -104,7 +101,6 @@ Empty,"""
 
 
 def test_parse_otpauth_uri() -> None:
-    """Test parsing otpauth URI."""
     uri = "otpauth://totp/GitHub:user@github.com?secret=JBSWY3DPEHPK3PXP&digits=6&period=30&algorithm=SHA1"
 
     entries = parse_otpauth_uri(uri)
@@ -119,7 +115,6 @@ def test_parse_otpauth_uri() -> None:
 
 
 def test_parse_otpauth_uri_no_issuer() -> None:
-    """Test parsing otpauth URI without issuer."""
     uri = "otpauth://totp/user@github.com?secret=JBSWY3DPEHPK3PXP"
 
     entries = parse_otpauth_uri(uri)
@@ -131,7 +126,6 @@ def test_parse_otpauth_uri_no_issuer() -> None:
 
 
 def test_parse_otpauth_uri_invalid() -> None:
-    """Test parsing invalid otpauth URI."""
     with pytest.raises(ValueError, match="Invalid otpauth URI"):
         parse_otpauth_uri("https://example.com")
 
@@ -143,7 +137,6 @@ def test_parse_otpauth_uri_invalid() -> None:
 
 
 def test_parse_freeotp_xml() -> None:
-    """Test parsing FreeOTP XML format."""
     content = """<?xml version="1.0" encoding="utf-8"?>
 <tokens>
     <token>
@@ -176,7 +169,6 @@ def test_parse_freeotp_xml() -> None:
 
 
 def test_import_from_format_aegis(tmp_path: pathlib.Path) -> None:
-    """Test import_from_format with Aegis JSON."""
     aegis_file = tmp_path / "aegis.json"
     aegis_file.write_text(
         '{"entries": [{"type": "totp", "issuer": "Test", "name": "test", "info": {"secret": "SECRET"}}]}'
@@ -188,7 +180,6 @@ def test_import_from_format_aegis(tmp_path: pathlib.Path) -> None:
 
 
 def test_import_from_format_bitwarden(tmp_path: pathlib.Path) -> None:
-    """Test import_from_format with Bitwarden CSV."""
     csv_file = tmp_path / "bitwarden.csv"
     csv_file.write_text("name,totp\nTest,SECRET")
 
@@ -198,7 +189,6 @@ def test_import_from_format_bitwarden(tmp_path: pathlib.Path) -> None:
 
 
 def test_import_from_format_1password(tmp_path: pathlib.Path) -> None:
-    """Test import_from_format with 1Password CSV."""
     csv_file = tmp_path / "1password.csv"
     csv_file.write_text("title,otp\nTest,SECRET")
 
@@ -208,7 +198,6 @@ def test_import_from_format_1password(tmp_path: pathlib.Path) -> None:
 
 
 def test_import_from_format_otpauth() -> None:
-    """Test import_from_format with otpauth URI."""
     uri = "otpauth://totp/Test:test?secret=SECRET"
     entries = import_from_format("otpauth", uri)
     assert len(entries) == 1
@@ -216,7 +205,6 @@ def test_import_from_format_otpauth() -> None:
 
 
 def test_import_from_format_freeotp(tmp_path: pathlib.Path) -> None:
-    """Test import_from_format with FreeOTP XML."""
     xml_file = tmp_path / "freeotp.xml"
     xml_file.write_text(
         """<?xml version="1.0"?>
@@ -235,6 +223,5 @@ def test_import_from_format_freeotp(tmp_path: pathlib.Path) -> None:
 
 
 def test_import_from_format_unsupported() -> None:
-    """Test import_from_format with unsupported format."""
     with pytest.raises(ValueError, match="Unsupported format"):
         import_from_format("unsupported", "dummy")

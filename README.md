@@ -144,7 +144,7 @@ Verify installation:
 python -c "import desktop_2fa; print(desktop_2fa.__version__)"
 ```
 
-Expected output: `0.6.5`
+Expected output: `0.6.6`
 
 ### From Source
 
