@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.6.6.1] — Security Fix
+
+- Fixed a CodeQL-reported issue where an exception message could leak sensitive information when reading a password file failed.
+- No functional changes. Safe patch release.
+
+---
+
 ## [0.6.6] - 2026-01-05
 
 ### 🐛 Fixed
