@@ -128,7 +128,7 @@ def get_password_for_vault(ctx: typer.Context, new_vault: bool = False) -> str:
             with open(password_file, "r") as f:
                 return f.read().strip()
         except FileNotFoundError:
-            print(f"Error: Password file '{password_file}' not found")
+            print("Error: Password file not found.")
             raise typer.Exit(1)
         except Exception:
             print("Error reading password file.")
@@ -163,7 +163,7 @@ def _read_password_file(password_file: str) -> str:
         with open(password_file, "r") as f:
             return f.read().strip()
     except FileNotFoundError:
-        print(f"Error: Password file '{password_file}' not found")
+        print("Error: Password file not found.")
         raise typer.Exit(1)
     except Exception:
         print("Error reading password file.")
