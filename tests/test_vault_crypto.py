@@ -9,7 +9,7 @@ def test_vault_roundtrip(tmp_path: Path) -> None:
     path = tmp_path / "vault.bin"
 
     vault = Vault()
-    vault.add_entry("GitHub", "JBSWY3DPEHPK3PXP")
+    vault.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP")
     vault.save(str(path))
 
     loaded = Vault.load(str(path))
@@ -20,7 +20,7 @@ def test_vault_is_binary(tmp_path: Path) -> None:
     path = tmp_path / "vault.bin"
 
     vault = Vault()
-    vault.add_entry("Test", "JBSWY3DPEHPK3PXP")
+    vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
     vault.save(str(path))
 
     raw = path.read_bytes()
@@ -33,10 +33,10 @@ def test_vault_backup_created(tmp_path: Path) -> None:
     path = tmp_path / "vault.bin"
 
     vault = Vault()
-    vault.add_entry("A", "JBSWY3DPEHPK3PXP")
+    vault.add_entry("A", "A", "JBSWY3DPEHPK3PXP")
     vault.save(str(path))
 
-    vault.add_entry("B", "JBSWY3DPEHPK3PXS")
+    vault.add_entry("B", "B", "JBSWY3DPEHPK3PXS")
     vault.save(str(path))
 
     # Note: New vault implementation does not create backups
@@ -48,7 +48,7 @@ def test_vault_tampering_detection(tmp_path: Path) -> None:
     path = tmp_path / "vault.bin"
 
     vault = Vault()
-    vault.add_entry("X", "JBSWY3DPEHPK3PXP")
+    vault.add_entry("X", "X", "JBSWY3DPEHPK3PXP")
     vault.save(str(path))
 
     raw = bytearray(path.read_bytes())
@@ -63,9 +63,9 @@ def test_multiple_entries(tmp_path: Path) -> None:
     path = tmp_path / "vault.bin"
 
     vault = Vault()
-    vault.add_entry("GitHub", "JBSWY3DPEHPK3PXP")
-    vault.add_entry("Google", "JBSWY3DPEHPK3PXS")
-    vault.add_entry("AWS", "JBSWY3DPEHPK3PXT")
+    vault.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP")
+    vault.add_entry("Google", "Google", "JBSWY3DPEHPK3PXS")
+    vault.add_entry("AWS", "AWS", "JBSWY3DPEHPK3PXT")
     vault.save(str(path))
 
     loaded = Vault.load(str(path))
@@ -80,8 +80,8 @@ def test_vault_encryption_with_password(tmp_path: Path) -> None:
     password = "test_password_123"
 
     vault = Vault()
-    vault.add_entry("GitHub", "JBSWY3DPEHPK3PXP")
-    vault.add_entry("Google", "JBSWY3DPEHPK3PXS")
+    vault.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP")
+    vault.add_entry("Google", "Google", "JBSWY3DPEHPK3PXS")
     vault.save(str(path), password=password)
 
     # Verify the file is encrypted (not plaintext)
@@ -103,7 +103,7 @@ def test_vault_wrong_password(tmp_path: Path) -> None:
     wrong_password = "wrong_pass"
 
     vault = Vault()
-    vault.add_entry("Test", "JBSWY3DPEHPK3PXP")
+    vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
     vault.save(str(path), password=correct_password)
 
     # Should fail with wrong password
@@ -121,11 +121,11 @@ def test_vault_password_roundtrip(tmp_path: Path) -> None:
     secret2 = "JBSWY3DPEHPK3PXS"
 
     vault1 = Vault()
-    vault1.add_entry("Entry1", secret1)
+    vault1.add_entry("Entry1", "Entry1", secret1)
     vault1.save(str(path), password=password)
 
     vault2 = Vault.load(str(path), password=password)
-    vault2.add_entry("Entry2", secret2)
+    vault2.add_entry("Entry2", "Entry2", secret2)
     vault2.save(str(path), password=password)
 
     vault3 = Vault.load(str(path), password=password)
@@ -140,7 +140,7 @@ def test_vault_no_password_vs_password(tmp_path: Path) -> None:
     password = "some_password"
 
     vault = Vault()
-    vault.add_entry("Test", "JBSWY3DPEHPK3PXP")
+    vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
 
     # Save without password
     vault.save(str(path_no_pass))

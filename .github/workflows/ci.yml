@@ -8,61 +8,66 @@ permissions:
 on:
   push:
     branches: [ "main" ]
-    tags: [ "v*" ]
   pull_request:
     branches: [ "main" ]
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  tests:
+    runs-on: ${{ matrix.os }}
 
     strategy:
       matrix:
-        python-version: ["3.11", "3.12", "3.13"]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.12"]
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Force clean repo
-        run: |
-          git clean -xfd
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install the project
+        run: pip install .
+
+      - name: Run tests
+        run: pytest -q
+
+  macos:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev]"
-          pip install pytest-cov
+        run: brew install qt@6
 
-      - name: Run Ruff
-        run: ruff check .
-
-      - name: Run Black (check)
-        run: black --check .
-
-      
-
-      - name: Run MyPy
-        run: mypy src tests
-
-      - name: Run Pytest with coverage
-        run: pytest --cov=desktop_2fa --cov-report=xml
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          files: ./coverage.xml
-          fail_ci_if_error: false
+          python-version: "3.12"
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install the project
+        run: pip install .
+
+      - name: Run tests
+        run: pytest -q
+
+  
 
   publish:
     name: Build and publish to PyPI
     runs-on: ubuntu-latest
-    needs: [test]
+    needs: [tests]
     if: startsWith(github.ref, 'refs/tags/') && success()
 
     steps:

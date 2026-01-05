@@ -39,7 +39,7 @@ def test_cli_list_empty(fake_vault_env_cli: Path) -> None:
 def test_cli_add_and_list(fake_vault_env_cli: Path) -> None:
     result = runner.invoke(
         app,
-        ["--password", TEST_PASSWORD, "add", "GitHub", "JBSWY3DPEHPK3PXP"],
+        ["--password", TEST_PASSWORD, "add", "GitHub", "GitHub", "JBSWY3DPEHPK3PXP"],
     )
     assert result.exit_code == 0
     assert "Entry added: GitHub" in result.output
@@ -52,7 +52,7 @@ def test_cli_add_and_list(fake_vault_env_cli: Path) -> None:
 def test_cli_code(fake_vault_env_cli: Path) -> None:
     runner.invoke(
         app,
-        ["--password", TEST_PASSWORD, "add", "GitHub", "JBSWY3DPEHPK3PXP"],
+        ["--password", TEST_PASSWORD, "add", "GitHub", "GitHub", "JBSWY3DPEHPK3PXP"],
     )
     result = runner.invoke(app, ["--password", TEST_PASSWORD, "code", "GitHub"])
     assert result.exit_code == 0
@@ -64,7 +64,7 @@ def test_cli_code(fake_vault_env_cli: Path) -> None:
 def test_cli_remove(fake_vault_env_cli: Path) -> None:
     runner.invoke(
         app,
-        ["--password", TEST_PASSWORD, "add", "GitHub", "JBSWY3DPEHPK3PXP"],
+        ["--password", TEST_PASSWORD, "add", "GitHub", "GitHub", "JBSWY3DPEHPK3PXP"],
     )
     result = runner.invoke(app, ["--password", TEST_PASSWORD, "remove", "GitHub"])
     assert result.exit_code == 0
@@ -74,7 +74,7 @@ def test_cli_remove(fake_vault_env_cli: Path) -> None:
 def test_cli_rename(fake_vault_env_cli: Path) -> None:
     runner.invoke(
         app,
-        ["--password", TEST_PASSWORD, "add", "GitHub", "JBSWY3DPEHPK3PXP"],
+        ["--password", TEST_PASSWORD, "add", "GitHub", "GitHub", "JBSWY3DPEHPK3PXP"],
     )
     result = runner.invoke(
         app,
@@ -87,7 +87,7 @@ def test_cli_rename(fake_vault_env_cli: Path) -> None:
 def test_cli_export(fake_vault_env_cli: Path, tmp_path: Path) -> None:
     runner.invoke(
         app,
-        ["--password", TEST_PASSWORD, "add", "GitHub", "JBSWY3DPEHPK3PXP"],
+        ["--password", TEST_PASSWORD, "add", "GitHub", "GitHub", "JBSWY3DPEHPK3PXP"],
     )
     export_path = tmp_path / "export.json"
     result = runner.invoke(
@@ -102,7 +102,7 @@ def test_cli_export(fake_vault_env_cli: Path, tmp_path: Path) -> None:
 def test_cli_import(fake_vault_env_cli: Path, tmp_path: Path) -> None:
     runner.invoke(
         app,
-        ["--password", TEST_PASSWORD, "add", "GitHub", "JBSWY3DPEHPK3PXP"],
+        ["--password", TEST_PASSWORD, "add", "GitHub", "GitHub", "JBSWY3DPEHPK3PXP"],
     )
     export_path = tmp_path / "export.json"
     runner.invoke(
@@ -126,7 +126,7 @@ def test_cli_import(fake_vault_env_cli: Path, tmp_path: Path) -> None:
 def test_cli_backup(fake_vault_env_cli: Path) -> None:
     runner.invoke(
         app,
-        ["--password", TEST_PASSWORD, "add", "GitHub", "JBSWY3DPEHPK3PXP"],
+        ["--password", TEST_PASSWORD, "add", "GitHub", "GitHub", "JBSWY3DPEHPK3PXP"],
     )
     result = runner.invoke(app, ["--password", TEST_PASSWORD, "backup"])
     assert result.exit_code == 0
@@ -149,15 +149,15 @@ def test_cli_add_missing_arguments(fake_vault_env_cli: Path) -> None:
     """Test add command with missing arguments."""
     result = runner.invoke(app, ["--password", TEST_PASSWORD, "add"])
     assert result.exit_code == 1
-    assert "Missing argument: ISSUER and SECRET are required" in result.output
-    assert "Usage: d2fa add ISSUER SECRET" in result.output
-    assert "Example: d2fa add GitHub ABCDEFGHIJKL1234" in result.output
+    assert "Missing arguments: NAME, ISSUER and SECRET are required" in result.output
+    assert "Usage: d2fa add NAME ISSUER SECRET" in result.output
+    assert "Example: d2fa add GitHub GitHub ABCDEFGHIJKL1234" in result.output
 
 
 def test_cli_add_missing_issuer(fake_vault_env_cli: Path) -> None:
     """Test add command with missing issuer."""
     result = runner.invoke(
-        app, ["--password", TEST_PASSWORD, "add", "", "JBSWY3DPEHPK3PXP"]
+        app, ["--password", TEST_PASSWORD, "add", "Test", "", "JBSWY3DPEHPK3PXP"]
     )
     assert result.exit_code == 0  # Empty issuer is accepted
     assert "Entry added:" in result.output
@@ -165,7 +165,7 @@ def test_cli_add_missing_issuer(fake_vault_env_cli: Path) -> None:
 
 def test_cli_add_missing_secret(fake_vault_env_cli: Path) -> None:
     """Test add command with missing secret."""
-    result = runner.invoke(app, ["--password", TEST_PASSWORD, "add", "GitHub", ""])
+    result = runner.invoke(app, ["--password", TEST_PASSWORD, "add", "GitHub", "GitHub", ""])
     assert result.exit_code == 0  # Empty secret is accepted
     assert "Entry added:" in result.output
 
@@ -247,7 +247,7 @@ def test_cli_interactive_empty_input(
 
     # This should handle empty input gracefully
     result = runner.invoke(
-        app, ["--password", TEST_PASSWORD, "add", "GitHub", "JBSWY3DPEHPK3PXP"]
+        app, ["--password", TEST_PASSWORD, "add", "GitHub", "GitHub", "JBSWY3DPEHPK3PXP"]
     )
     assert result.exit_code == 0  # Should not crash
 
@@ -265,7 +265,7 @@ def test_cli_interactive_whitespace_input(
 
     # This should handle whitespace input gracefully
     result = runner.invoke(
-        app, ["--password", TEST_PASSWORD, "add", "GitHub", "JBSWY3DPEHPK3PXP"]
+        app, ["--password", TEST_PASSWORD, "add", "GitHub", "GitHub", "JBSWY3DPEHPK3PXP"]
     )
     assert result.exit_code == 0  # Should not crash
 
@@ -277,13 +277,13 @@ def test_cli_add_interactive_prompts(
     # Force interactive mode
     monkeypatch.setenv("DESKTOP_2FA_FORCE_INTERACTIVE", "1")
 
-    # Mock typer.prompt to return values for issuer and secret
-    responses = ["TestIssuer", "JBSWY3DPEHPK3PXP"]
+    # Mock typer.prompt to return values for name, issuer and secret
+    responses = ["TestName", "TestIssuer", "JBSWY3DPEHPK3PXP"]
     monkeypatch.setattr("typer.prompt", lambda text, hide_input=False: responses.pop(0))
 
     result = runner.invoke(app, ["--password", TEST_PASSWORD, "add"])
     assert result.exit_code == 0
-    assert "Entry added: TestIssuer" in result.output
+    assert "Entry added: TestName" in result.output
 
 
 def test_no_rich_markup_in_prompts() -> None:

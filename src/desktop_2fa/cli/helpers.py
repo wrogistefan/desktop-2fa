@@ -3,7 +3,6 @@
 import base64
 import math
 import os
-import time
 import tomllib
 import urllib.parse
 from pathlib import Path
@@ -18,9 +17,6 @@ from desktop_2fa.vault import Vault
 if TYPE_CHECKING:
     from desktop_2fa.vault.models import TotpEntry
 
-# Vault unlock timeout in seconds (default 15 minutes)
-UNLOCK_TIMEOUT_SECONDS = 900
-
 
 def list_entries(path: Path, password: str) -> None:
     """List all entries in the vault."""
@@ -34,9 +30,9 @@ def add_entry(
 ) -> None:
     """Add a new entry to the vault."""
     vault = Vault.load(path, password)
-    vault.add_entry(issuer=issuer, account_name=account, secret=secret)
+    vault.add_entry(name=account, issuer=issuer, secret=secret)
     vault.save(path, password)
-    print(f"Added entry: {issuer}")
+    print(f"Added entry: {account}")
 
 
 def generate_code(path: Path, name: str, password: str) -> None:
@@ -156,19 +152,8 @@ def get_password_for_vault(ctx: typer.Context, new_vault: bool = False) -> str:
         if not _should_skip_password_checks(ctx):
             _enforce_password_strength(pwd)
     else:
-        if is_vault_unlocked():
-            rprint(
-                Text(
-                    "Vault session active. Please enter your master password to decrypt the vault.",
-                    style="cyan",
-                )
-            )
-            pwd = typer.prompt("", hide_input=True)
-        else:
-            rprint(Text("Enter vault password:", style="cyan"))
-            pwd = typer.prompt("", hide_input=True)
-        # Mark vault as unlocked after successful prompt
-        mark_vault_unlocked()
+        rprint(Text("Enter vault password:", style="cyan"))
+        pwd = typer.prompt("", hide_input=True)
     return pwd  # type: ignore[no-any-return]
 
 
@@ -254,10 +239,6 @@ def _enforce_password_strength(password: str) -> None:
 def get_password_from_cli(ctx: typer.Context) -> str:
     """Legacy alias for backward compatibility."""
     return get_password_for_vault(ctx, new_vault=False)
-
-
-def timestamp() -> str:
-    return str(int(time.time()))
 
 
 # Rich-based output helpers
@@ -351,36 +332,3 @@ def parse_otpauth_url(url: str) -> dict[str, str]:
     }
 
 
-def get_unlock_file_path() -> Path:
-    """Get the path to the vault unlock file."""
-    return Path(get_vault_path()).parent / ".vault-unlocked"
-
-
-def mark_vault_unlocked() -> None:
-    """Mark the vault as unlocked by creating the timestamp file."""
-    path = get_unlock_file_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.touch()
-
-
-def clear_vault_unlock() -> None:
-    """Clear the vault unlock status."""
-    path = get_unlock_file_path()
-    if path.exists():
-        path.unlink()
-
-
-def is_vault_unlocked() -> bool:
-    """Check if the vault is currently unlocked (within timeout)."""
-    # Bypass unlock timeout for tests or weak password allowance
-    if (
-        os.getenv("PYTEST_CURRENT_TEST")
-        or os.getenv("D2FA_ALLOW_WEAK_PASSWORDS") == "1"
-    ):
-        return False
-    path = get_unlock_file_path()
-    if not path.exists():
-        return False
-    mtime = path.stat().st_mtime
-    now = time.time()
-    return (now - mtime) < UNLOCK_TIMEOUT_SECONDS

@@ -60,7 +60,7 @@ def test_list_entries_empty(fake_vault_env: Path, capsys: Any, fake_ctx: Any) ->
 
 
 def test_add_entry_and_list(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -> None:
-    commands.add_entry("GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+    commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
 
     # po add_entry:
     out = capsys.readouterr().out.strip().splitlines()
@@ -83,7 +83,7 @@ def test_add_entry_and_list(fake_vault_env: Path, capsys: Any, fake_ctx: Any) ->
 
 
 def test_generate_code(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -> None:
-    commands.add_entry("GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+    commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
     capsys.readouterr()  # czyścimy output po add_entry
 
     commands.generate_code("GitHub", fake_ctx)
@@ -109,7 +109,7 @@ def test_generate_code_missing_entry_raises(
 
 
 def test_remove_entry(fake_vault_env: Path, fake_ctx: Any) -> None:
-    commands.add_entry("GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+    commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
     commands.remove_entry("GitHub", fake_ctx)
 
     vault = helpers.load_vault(fake_vault_env, TEST_PASSWORD)
@@ -127,7 +127,7 @@ def test_remove_entry_missing_raises(fake_vault_env: Path, fake_ctx: Any) -> Non
 
 
 def test_rename_entry(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -> None:
-    commands.add_entry("GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+    commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
     capsys.readouterr()  # czyścimy output po add_entry
 
     commands.rename_entry("GitHub", "NewGitHub", fake_ctx)
@@ -152,7 +152,7 @@ def test_rename_entry_missing_raises(fake_vault_env: Path, fake_ctx: Any) -> Non
 def test_export_vault(
     fake_vault_env: Path, tmp_path: Path, capsys: Any, fake_ctx: Any
 ) -> None:
-    commands.add_entry("GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+    commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
     capsys.readouterr()  # wyczyść output po add_entry
 
     export_path = tmp_path / "export.bin"
@@ -186,7 +186,7 @@ def test_import_vault(
 ) -> None:
     src = tmp_path / "src.bin"
 
-    commands.add_entry("GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+    commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
     capsys.readouterr()  # output po add_entry
 
     commands.export_vault(str(src), fake_ctx)
@@ -219,7 +219,7 @@ def test_import_vault_refuses_overwrite_without_force(
     fake_vault_env: Path, tmp_path: Path, capsys: Any, fake_ctx: Any
 ) -> None:
     # Create existing vault
-    commands.add_entry("GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+    commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
     capsys.readouterr()  # clear output
 
     # Create source vault
@@ -238,7 +238,7 @@ def test_import_vault_refuses_overwrite_without_force(
 
 
 def test_backup_vault(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -> None:
-    commands.add_entry("GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+    commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
     capsys.readouterr()  # output po add_entry
 
     # First backup creates backup.bin
@@ -300,7 +300,7 @@ def test_add_entry_invalid_password(
     vault = Vault()
     vault.save(fake_vault_env, TEST_PASSWORD)
 
-    commands.add_entry("Test", "JBSWY3DPEHPK3PXP", fake_ctx_wrong_password)
+    commands.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP", fake_ctx_wrong_password)
     out = capsys.readouterr().out.strip()
     assert out == "Invalid vault password."
 
@@ -382,10 +382,10 @@ def test_add_entry_otpauth_url(
 ) -> None:
     """Test adding entry from otpauth URL."""
     otpauth_url = "otpauth://totp/GitHub:octocat?secret=JBSWY3DPEHPK3PXP&issuer=GitHub"
-    commands.add_entry(otpauth_url, "", fake_ctx)
+    commands.add_entry("GitHub", otpauth_url, "", fake_ctx)
 
     out = capsys.readouterr().out.strip().splitlines()
-    assert "Entry added: GitHub" in out
+    assert "Entry added: octocat" in out
 
 
 def test_add_entry_invalid_otpauth_url(
@@ -393,7 +393,7 @@ def test_add_entry_invalid_otpauth_url(
 ) -> None:
     """Test adding entry with invalid otpauth URL."""
     invalid_url = "otpauth://invalid"
-    commands.add_entry(invalid_url, "", fake_ctx)
+    commands.add_entry("Test", invalid_url, "", fake_ctx)
 
     out = capsys.readouterr().out.strip()
     assert "Invalid otpauth URL:" in out
@@ -403,7 +403,7 @@ def test_add_entry_invalid_secret(
     fake_vault_env: Path, capsys: Any, fake_ctx: Any
 ) -> None:
     """Test adding entry with invalid Base32 secret."""
-    commands.add_entry("Test", "invalid_secret", fake_ctx)
+    commands.add_entry("Test", "Test", "invalid_secret", fake_ctx)
 
     out = capsys.readouterr().out.strip()
     assert "Invalid secret: not valid Base32." in out
@@ -633,7 +633,7 @@ def test_add_entry_unsupported_format(
         b"WRNG" + b"\x01" + b"16byte_salt_here" + b"encrypted_data"
     )
 
-    commands.add_entry("GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+    commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
 
     out = capsys.readouterr().out.strip()
     assert "Vault file format is unsupported." in out
@@ -669,36 +669,3 @@ def test_generate_code_unsupported_format(
     assert "Vault file format is unsupported." in out
 
 
-def test_unlock_file_never_contains_password(
-    fake_vault_env: Path, fake_ctx: Any
-) -> None:
-    """Test that .vault-unlocked file never contains the password."""
-    # Create and unlock vault
-    commands.add_entry("GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
-
-    # Check that unlock file exists and is empty
-    unlock_file = fake_vault_env.parent / ".vault-unlocked"
-    assert unlock_file.exists()
-    assert unlock_file.stat().st_size == 0
-
-    # Ensure password is not in the file
-    content = unlock_file.read_text()
-    assert TEST_PASSWORD not in content
-    assert len(content) == 0
-
-
-def test_unlock_timeout_does_not_bypass_password(
-    fake_vault_env: Path, fake_ctx: Any
-) -> None:
-    """Test that unlock timeout does not allow passwordless access."""
-    # Create vault
-    commands.add_entry("GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
-
-    # Modify context to not have password and not be interactive
-    fake_ctx.obj["password"] = None
-    fake_ctx.obj["password_file"] = None
-    fake_ctx.obj["interactive"] = False
-
-    # Even with unlock file present, should still require password
-    with pytest.raises(typer.Exit):
-        commands.generate_code("GitHub", fake_ctx)

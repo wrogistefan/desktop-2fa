@@ -4,14 +4,14 @@ from typing import Any
 import pytest
 
 from desktop_2fa.vault import Vault
-from desktop_2fa.vault.models import TotpEntry
+from desktop_2fa.vault.models import TotpEntry, VaultData
 
 
 def test_vault_roundtrip(tmp_path: Path) -> None:
     path = tmp_path / "vault.bin"
 
     vault = Vault()
-    vault.add_entry("GitHub", "JBSWY3DPEHPK3PXP")
+    vault.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP")
     vault.save(str(path))
 
     loaded = Vault.load(str(path))
@@ -23,7 +23,7 @@ def test_vault_file_is_binary(tmp_path: Path) -> None:
     path = tmp_path / "vault.bin"
 
     vault = Vault()
-    vault.add_entry("Test", "JBSWY3DPEHPK3PXP")
+    vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
     vault.save(str(path))
 
     raw = path.read_bytes()
@@ -37,7 +37,7 @@ def test_vault_tampering_detection(tmp_path: Path) -> None:
     path = tmp_path / "vault.bin"
 
     vault = Vault()
-    vault.add_entry("X", "JBSWY3DPEHPK3PXP")
+    vault.add_entry("X", "X", "JBSWY3DPEHPK3PXP")
     vault.save(str(path))
 
     raw = bytearray(path.read_bytes())
@@ -126,7 +126,7 @@ def test_vault_save_io_error(tmp_path: Path, monkeypatch: Any) -> None:
     path = tmp_path / "vault.bin"
 
     vault = Vault()
-    vault.add_entry("Test", "JBSWY3DPEHPK3PXP")
+    vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
 
     # Mock os.open to raise an exception
     def mock_open(*args: Any, **kwargs: Any) -> None:
@@ -144,7 +144,7 @@ def test_vault_save_cleanup_on_error(tmp_path: Path, monkeypatch: Any) -> None:
     temp_path = path.with_suffix(".tmp")
 
     vault = Vault()
-    vault.add_entry("Test", "JBSWY3DPEHPK3PXP")
+    vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
 
     # Mock os.open to succeed but os.fdopen to fail
     def mock_open(*args: Any, **kwargs: Any) -> int:
@@ -191,7 +191,7 @@ def test_vault_save_os_level_errors(tmp_path: Path, monkeypatch: Any) -> None:
     path = tmp_path / "vault.bin"
 
     vault = Vault()
-    vault.add_entry("Test", "JBSWY3DPEHPK3PXP")
+    vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
 
     # Mock os.open to raise a specific OS error
     def mock_open(*args: Any, **kwargs: Any) -> None:
@@ -211,7 +211,7 @@ def test_vault_save_cleanup_on_os_error(tmp_path: Path, monkeypatch: Any) -> Non
     temp_path = path.with_suffix(".tmp")
 
     vault = Vault()
-    vault.add_entry("Test", "JBSWY3DPEHPK3PXP")
+    vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
 
     # Mock os.open to succeed but os.fsync to fail with OS error
     def mock_open(*args: Any, **kwargs: Any) -> int:
@@ -258,7 +258,7 @@ def test_vault_load_no_password_default(tmp_path: Path) -> None:
     path = tmp_path / "vault.bin"
 
     vault = Vault()
-    vault.add_entry("Test", "JBSWY3DPEHPK3PXP")
+    vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
     vault.save(str(path), password=None)  # Save with no password
 
     # Load with no password (should use default empty string)
@@ -272,7 +272,7 @@ def test_vault_save_no_password_default(tmp_path: Path) -> None:
     path = tmp_path / "vault.bin"
 
     vault = Vault()
-    vault.add_entry("Test", "JBSWY3DPEHPK3PXP")
+    vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
 
     # Save with no password (should use default empty string)
     vault.save(str(path), password=None)
@@ -304,3 +304,35 @@ def test_vault_load_file_too_short(tmp_path: Path) -> None:
 
     with pytest.raises(Exception, match="Vault file is too short or invalid format"):
         Vault.load(str(path))
+
+
+def test_vault_add_entry_duplicate_name() -> None:
+    """Test that adding an entry with a duplicate name raises ValueError."""
+    vault = Vault()
+    vault.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP")
+
+    with pytest.raises(ValueError, match='An entry with name "GitHub" already exists'):
+        vault.add_entry("GitHub", "GitHub", "ABCDEFGHIJKL1234")
+
+
+def test_vault_load_duplicate_names_warning(tmp_path: Path, capsys: Any) -> None:
+    """Test that loading a vault with duplicate names shows a warning but doesn't fail."""
+    path = tmp_path / "vault.bin"
+
+    # Create vault data with duplicate names manually
+    data = VaultData(entries=[
+        TotpEntry(account_name="GitHub", issuer="GitHub", secret="JBSWY3DPEHPK3PXP"),
+        TotpEntry(account_name="GitHub", issuer="GitHub", secret="JBSWY3DPEHPK3PXP"),
+    ])
+    vault = Vault(data)
+    vault.save(str(path))
+
+    # Load the vault - should show warning but succeed
+    loaded = Vault.load(str(path))
+
+    # Check that warning was printed
+    captured = capsys.readouterr()
+    assert 'Warning: Your vault contains multiple entries with the same name: "GitHub"' in captured.out
+
+    # Vault should still load successfully
+    assert len(loaded.entries) == 2

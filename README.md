@@ -76,7 +76,7 @@ A secure, offline two-factor authentication (2FA) manager designed for desktop e
 - **📋 Clipboard Integration**: Automatic copying of generated codes for convenience.
 - **🖥️ Desktop-First Design**: Native desktop application with no internet connectivity required.
 - **💻 Command-Line Interface**: Full CLI for managing 2FA tokens without a GUI.
-- **🔓 Vault Unlock Timeout**: 15-minute session allowing passwordless CLI usage.
+- **🔓 Stateless Design**: Every command requires explicit password authentication.
 - **🛡️ Password Strength Enforcement**: Configurable entropy checking with warnings/rejection.
 - **🧠 Modular Architecture**: Clean separation of concerns across crypto, vault, UI, and utility modules.
 - **🧪 Comprehensive Testing**: Full test coverage using pytest with security regression tests.
@@ -87,7 +87,6 @@ A secure, offline two-factor authentication (2FA) manager designed for desktop e
 - **Critical Security Fix**: Removed password storage from unlock file - vault always requires real master password for decryption.
 - **Interactive CLI Improvements**: Visible secret input in `add` command, Rich-formatted cyan issuer prompts.
 - **Password Strength Enforcement**: Configurable entropy checking via `~/.config/d2fa/config.toml` with warnings/rejection.
-- **Vault Unlock Timeout**: 15-minute session timeout allowing passwordless CLI usage when password provided via options.
 - **CLI Bypass Options**: `--allow-weak-passwords` flag and `D2FA_ALLOW_WEAK_PASSWORDS` env var for testing/legacy scenarios.
 - **Enhanced Security Testing**: Added regression tests ensuring unlock never bypasses password requirements.
 
@@ -117,10 +116,10 @@ The vault encryption is backed by a user-provided passphrase for strong security
 - The salt is stored securely alongside the ciphertext in the vault file.
 - A passphrase is mandatory for vault decryption and must be provided via CLI options or interactive prompt.
 - Password strength can be enforced via configuration with entropy checking.
-- Vault unlock timeout (15 minutes) allows temporary session-based access when password provided via options.
+- Every command requires explicit password authentication - no session-based access.
 
 **Security Implications:**
-This implementation provides robust protection against unauthorized access. An attacker with access to the vault file cannot decrypt it without the passphrase, offering strong cryptographic security. The unlock timeout provides convenience without compromising security.
+This implementation provides robust protection against unauthorized access. An attacker with access to the vault file cannot decrypt it without the passphrase, offering strong cryptographic security. Every command requires explicit password authentication, ensuring no session-based vulnerabilities.
 
 **Important Note:**
 While the vault is encrypted, it is important to understand that the security of the vault depends entirely on the strength of the user-provided passphrase. Additionally, the vault is stored locally on the same device, which means that if the device is compromised, the vault could be accessed. For maximum security, consider using a dedicated device for storing sensitive information.
@@ -145,7 +144,7 @@ Verify installation:
 python -c "import desktop_2fa; print(desktop_2fa.__version__)"
 ```
 
-Expected output: `0.6.3`
+Expected output: `0.6.5`
 
 ### From Source
 

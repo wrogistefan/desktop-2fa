@@ -4,7 +4,6 @@ import os
 import sys
 
 import typer
-from rich import print as rich_print
 from rich import print as rprint
 from rich.text import Text
 
@@ -76,26 +75,35 @@ def list_cmd(ctx: typer.Context) -> None:
 @app.command("add")
 def add_cmd(
     ctx: typer.Context,
+    name: str = typer.Argument(None, help="Unique name identifier"),
     issuer: str = typer.Argument(None, help="Issuer name or otpauth:// URL"),
     secret: str = typer.Argument(None, help="TOTP secret (Base32)"),
 ) -> None:
     # Interactive mode: prompt for missing arguments
     interactive = ctx.obj.get("interactive", False)
-    if interactive and (issuer is None or secret is None):
+    if interactive and (name is None or issuer is None or secret is None):
+        if name is None:
+            rprint(Text("Name (unique identifier):", style="cyan"))
+            name = typer.prompt("")
+
         if issuer is None:
-            rich_print(Text("Issuer", style="cyan"), end=": ")
+            rprint(Text("Issuer:", style="cyan"))
             issuer = typer.prompt("")
+
         if secret is None:
-            rich_print(Text("Secret", style="cyan"), end=": ")
+            rprint(Text("Secret:", style="cyan"))
             secret = typer.prompt("")
 
-    if issuer is None or secret is None:
-        helpers.print_error("Missing argument: ISSUER and SECRET are required")
-        rprint("Usage: d2fa add ISSUER SECRET")
-        rprint("Example: d2fa add GitHub ABCDEFGHIJKL1234")
+        commands.add_entry_interactive(name, issuer, secret, ctx)
+        return
+
+    if name is None or issuer is None or secret is None:
+        helpers.print_error("Missing arguments: NAME, ISSUER and SECRET are required")
+        rprint("Usage: d2fa add NAME ISSUER SECRET")
+        rprint("Example: d2fa add GitHub GitHub ABCDEFGHIJKL1234")
         raise typer.Exit(1)
 
-    commands.add_entry(issuer, secret, ctx)
+    commands.add_entry(name, issuer, secret, ctx)
 
 
 @app.command("code")

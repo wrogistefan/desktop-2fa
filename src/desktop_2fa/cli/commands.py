@@ -20,6 +20,47 @@ def _path() -> Path:
     return Path(helpers.get_vault_path())
 
 
+def add_entry_interactive(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
+    """Add entry in interactive mode with explicit name."""
+    path = _path()
+
+    # Validate Base32 secret
+    if not helpers.validate_base32(secret):
+        helpers.print_error("Invalid secret: not valid Base32.")
+        helpers.print_info("Example: ABCDEFGHIJKL2345")
+        return
+
+    if not path.exists():
+        helpers.print_warning("No vault found.")
+        helpers.print_info("A new encrypted vault will be created.")
+        password = helpers.get_password_for_vault(ctx, new_vault=True)
+        vault = Vault()
+        vault.add_entry(name=name, issuer=issuer, secret=secret)
+        vault.save(path, password)
+        helpers.print_success("Vault created.")
+        helpers.print_success(f"Entry added: {name}")
+    else:
+        password = helpers.get_password_for_vault(ctx, new_vault=False)
+        try:
+            vault = Vault.load(path, password)
+            vault.add_entry(name=name, issuer=issuer, secret=secret)
+            vault.save(path, password)
+            helpers.print_success(f"Entry added: {name}")
+        except ValueError as e:
+            if "already exists" in str(e):
+                helpers.print_error(str(e))
+            else:
+                helpers.print_error("Invalid vault password.")
+        except InvalidPassword:
+            helpers.print_error("Invalid vault password.")
+        except CorruptedVault:
+            helpers.print_error("Vault file is corrupted.")
+        except UnsupportedFormat:
+            helpers.print_error("Vault file format is unsupported.")
+        except VaultIOError:
+            helpers.print_error("Failed to access vault file.")
+
+
 def list_entries(ctx: typer.Context) -> None:
     path = _path()
     interactive = ctx.obj.get("interactive", False)
@@ -30,7 +71,6 @@ def list_entries(ctx: typer.Context) -> None:
         password = helpers.get_password_for_vault(ctx, new_vault=True)
         vault = Vault()
         vault.save(path, password)
-        helpers.mark_vault_unlocked()
         if interactive:
             helpers.print_success("Vault created.")
             helpers.print_info("No entries found.")
@@ -61,17 +101,15 @@ def list_entries(ctx: typer.Context) -> None:
                 helpers.print_info("No entries found.")
 
 
-def add_entry(issuer: str, secret: str, ctx: typer.Context) -> None:
+def add_entry(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
     path = _path()
-
-    account_name = issuer  # Default account_name to issuer
 
     # Parse otpauth URL if provided
     if issuer.startswith("otpauth://"):
         try:
             parsed = helpers.parse_otpauth_url(issuer)
             issuer = parsed["issuer"]
-            account_name = parsed["label"]
+            name = parsed["label"]
             secret = parsed["secret"]
         except ValueError as e:
             helpers.print_error(f"Invalid otpauth URL: {e}")
@@ -88,18 +126,22 @@ def add_entry(issuer: str, secret: str, ctx: typer.Context) -> None:
         helpers.print_info("A new encrypted vault will be created.")
         password = helpers.get_password_for_vault(ctx, new_vault=True)
         vault = Vault()
-        vault.add_entry(issuer=issuer, account_name=account_name, secret=secret)
+        vault.add_entry(name=name, issuer=issuer, secret=secret)
         vault.save(path, password)
-        helpers.mark_vault_unlocked()
         helpers.print_success("Vault created.")
-        helpers.print_success(f"Entry added: {issuer}")
+        helpers.print_success(f"Entry added: {name}")
     else:
         password = helpers.get_password_for_vault(ctx, new_vault=False)
         try:
             vault = Vault.load(path, password)
-            vault.add_entry(issuer=issuer, account_name=account_name, secret=secret)
+            vault.add_entry(name=name, issuer=issuer, secret=secret)
             vault.save(path, password)
-            helpers.print_success(f"Entry added: {issuer}")
+            helpers.print_success(f"Entry added: {name}")
+        except ValueError as e:
+            if "already exists" in str(e):
+                helpers.print_error(str(e))
+            else:
+                helpers.print_error("Invalid vault password.")
         except InvalidPassword:
             helpers.print_error("Invalid vault password.")
         except CorruptedVault:
@@ -285,5 +327,4 @@ def init_vault(force: bool, ctx: typer.Context) -> None:
     password = helpers.get_password_for_vault(ctx, new_vault=True)
     vault = Vault()
     vault.save(path, password)
-    helpers.mark_vault_unlocked()
     helpers.print_success("Vault created.")

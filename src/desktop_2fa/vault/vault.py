@@ -69,26 +69,32 @@ class Vault:
 
     def add_entry(
         self,
+        name: str,
         issuer: str,
         secret: str,
-        account_name: Optional[str] = None,
     ) -> None:
         """Add a new TOTP entry to the vault.
 
         Args:
+            name: The unique account name.
             issuer: The issuer name.
             secret: The base32-encoded secret.
-            account_name: The account name (defaults to issuer).
         """
-        if account_name is None:
-            account_name = issuer
+        # Check for duplicate names
+        for entry in self.entries:
+            if entry.account_name == name:
+                raise ValueError(f"An entry with name \"{name}\" already exists. Names must be unique.")
 
         entry = TotpEntry(
+            account_name=name,
             issuer=issuer,
-            account_name=account_name,
             secret=secret,
         )
         self.data.entries.append(entry)
+
+    def rename_entry(self, old: str, new: str) -> None:
+        """Rename an entry (placeholder for future implementation)."""
+        raise NotImplementedError("rename will be implemented in a future version")
 
     def get_entry(self, issuer: str) -> TotpEntry:
         """Get a TOTP entry by issuer or account name.
@@ -172,7 +178,17 @@ class Vault:
             # If Pydantic validation fails, it's corrupted data (not a password issue)
             # because the decryption succeeded but the data structure is wrong
             raise CorruptedVault("Vault contains invalid data") from e
-        return cls(data)
+
+        vault = cls(data)
+
+        # Check for duplicate account names and warn
+        names = [entry.account_name for entry in vault.entries if entry.account_name]
+        duplicates = [name for name in set(names) if names.count(name) > 1]
+        if duplicates:
+            print(f"Warning: Your vault contains multiple entries with the same name: {', '.join(chr(34) + name + chr(34) for name in duplicates)}.")
+            print("This was allowed in older versions. You can resolve this by renaming entries using the rename command.")
+
+        return vault
 
     def save(self, path: str | Path, password: Optional[str] = None) -> None:
         """Save the vault to a file.

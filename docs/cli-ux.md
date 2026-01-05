@@ -41,14 +41,15 @@ d2fa add
 Interactive prompts:
 
 ```
-[cyan]Issuer:[/cyan] 
-[cyan]Secret:[/cyan] 
+[cyan]Name (unique identifier):[/cyan]
+[cyan]Issuer:[/cyan]
+[cyan]Secret:[/cyan]
 ```
 
 If user provides arguments:
 
 ```
-d2fa add GitHub ABC123
+d2fa add GitHub GitHub ABC123
 ```
 
 → No interactivity  
@@ -74,7 +75,7 @@ A new encrypted vault will be created.
 [blue]No entries found.[/blue]
 ```
 
-### d2fa add ISSUER SECRET
+### d2fa add NAME ISSUER SECRET
 
 ```
 [yellow]No vault found.[/yellow]
@@ -110,7 +111,7 @@ Nothing to generate.
 - AWS (Amazon)
 ```
 
-### d2fa add ISSUER SECRET
+### d2fa add NAME ISSUER SECRET
 
 ```
 [cyan]Enter vault password:[/cyan]
@@ -208,10 +209,10 @@ Missing argument 'ISSUER'.
 [red]Missing argument: ISSUER[/red]
 
 Usage:
-  d2fa add ISSUER SECRET
+  d2fa add NAME ISSUER SECRET
 
 Example:
-  d2fa add GitHub ABCDEFGHIJKL1234
+  d2fa add GitHub GitHub ABCDEFGHIJKL1234
 ```
 
 Still deterministic.  

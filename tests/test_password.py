@@ -111,7 +111,7 @@ def fake_vault_env(tmp_path: pathlib.Path, monkeypatch: Any) -> pathlib.Path:
 def test_cli_password_flag(fake_vault_env: pathlib.Path) -> None:
     """Test --password flag in CLI."""
     result = runner.invoke(
-        app, ["--password", "testpass", "add", "GitHub", "JBSWY3DPEHPK3PXP"]
+        app, ["--password", "testpass", "add", "GitHub", "GitHub", "JBSWY3DPEHPK3PXP"]
     )
     assert result.exit_code == 0
     assert "Entry added: GitHub" in result.output
@@ -125,7 +125,7 @@ def test_cli_password_file_flag(
     password_file.write_text("filepass")
     result = runner.invoke(
         app,
-        ["--password-file", str(password_file), "add", "GitHub", "JBSWY3DPEHPK3PXP"],
+        ["--password-file", str(password_file), "add", "GitHub", "GitHub", "JBSWY3DPEHPK3PXP"],
     )
     assert result.exit_code == 0
     assert "Entry added: GitHub" in result.output
@@ -168,13 +168,13 @@ def test_cli_interactive_password_prompt(fake_vault_env: pathlib.Path) -> None:
 
     try:
         with patch("typer.prompt") as mock_prompt:
-            mock_prompt.side_effect = ["interpass", "interpass"]
-            result = runner.invoke(app, ["add", "GitHub", "JBSWY3DPEHPK3PXP"])
+            mock_prompt.side_effect = ["JBSWY3DPEHPK3PXP", "interpass", "interpass"]
+            result = runner.invoke(app, ["add", "GitHub", "GitHub"])
             assert (
                 result.exit_code == 0
             ), f"Exit code was {result.exit_code}, output: {result.output}"
             assert "Entry added: GitHub" in result.output
-            assert mock_prompt.call_count == 2
+            assert mock_prompt.call_count == 3
     finally:
         # Restore original environment
         if original_env is None:

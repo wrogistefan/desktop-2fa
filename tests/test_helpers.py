@@ -1,6 +1,4 @@
-import os
 import shutil
-import time
 from pathlib import Path
 from typing import Any
 
@@ -159,12 +157,6 @@ def test_helpers_backup(fake_vault_env_helpers: Path) -> None:
 
     assert backup_path.exists()
     assert backup_path.stat().st_size > 0
-
-
-def test_helpers_timestamp() -> None:
-    ts = helpers.timestamp()
-    assert isinstance(ts, str)
-    assert ts.isdigit()
 
 
 def test_helpers_export_vault_missing(
@@ -534,37 +526,6 @@ def test_load_config_missing_file() -> None:
     """Test load_config with missing config file."""
     config = helpers.load_config()
     assert config == {}
-
-
-def test_clear_vault_unlock() -> None:
-    """Test clearing vault unlock status."""
-    # Create unlock file
-    path = helpers.get_unlock_file_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.touch()
-
-    assert path.exists()
-    helpers.clear_vault_unlock()
-    assert not path.exists()
-
-
-def test_is_vault_unlocked_expired(monkeypatch: Any) -> None:
-    """Test is_vault_unlocked with expired timestamp."""
-    # Create old unlock file
-    path = helpers.get_unlock_file_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.touch()
-
-    # Set old mtime
-    old_time = time.time() - 1000
-    os.utime(path, (old_time, old_time))
-
-    # Mock to not bypass
-    monkeypatch.setattr(
-        "os.getenv", lambda key: None if key != "PYTEST_CURRENT_TEST" else None
-    )
-
-    assert not helpers.is_vault_unlocked()
 
 
 def test_validate_base32_invalid_decode(monkeypatch: Any) -> None:

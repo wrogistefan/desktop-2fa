@@ -21,7 +21,7 @@ d2fa init-vault
 
 2. Add your first TOTP token:
 ```bash
-d2fa add GitHub JBSWY3DPEHPK3PXP
+d2fa add GitHub GitHub JBSWY3DPEHPK3PXP
 ```
 
 3. Generate a code:
@@ -37,7 +37,7 @@ All commands support these options:
 
 - `--password PASSWORD`: Provide password directly
 - `--password-file FILE`: Read password from file
-- `--allow-weak-passwords`: Allow weak passwords (bypasses strength checks and unlock timeout)
+- `--allow-weak-passwords`: Allow weak passwords (bypasses strength checks)
 - `--help`: Show help for the command
 
 ### `init-vault` - Initialize New Vault
@@ -85,17 +85,19 @@ d2fa list
 Adds a new TOTP token to the vault.
 
 ```bash
-d2fa add [ISSUER] [SECRET]
+d2fa add [NAME] [ISSUER] [SECRET]
 ```
 
 **Parameters:**
+- `NAME`: Unique identifier for the entry (optional in interactive mode)
 - `ISSUER`: Name of the service/provider (optional in interactive mode)
 - `SECRET`: Base32-encoded secret key (optional in interactive mode)
 
 **Interactive Mode:**
-When run in a terminal without arguments, prompts for issuer and secret:
+When run in a terminal without arguments, prompts for name, issuer and secret:
 ```bash
 d2fa add
+Name (unique identifier): GitHub
 Issuer: GitHub
 Secret: JBSWY3DPEHPK3PXP
 ```
@@ -106,16 +108,21 @@ Secret: JBSWY3DPEHPK3PXP
 d2fa add
 
 # Add with arguments
-d2fa add GitHub JBSWY3DPEHPK3PXP
+d2fa add GitHub GitHub JBSWY3DPEHPK3PXP
 
 # Add using otpauth URL
 d2fa add "otpauth://totp/GitHub:user?secret=JBSWY3DPEHPK3PXP&issuer=GitHub"
 
 # Add with password from command line
-d2fa add GitHub JBSWY3DPEHPK3PXP --password mypassword
+d2fa add GitHub GitHub JBSWY3DPEHPK3PXP --password mypassword
 ```
 
 **Notes:**
+- `name` is the unique identifier used in CLI commands (e.g., `d2fa code GitHub`)
+- `issuer` is a display label and may repeat across entries
+- Names must be unique within the vault
+- Older versions allowed duplicate names; you may see warnings about this when loading existing vaults
+- Use the `rename` command to resolve duplicate names
 - Secrets must be valid Base32
 - otpauth URLs are automatically parsed
 - If vault doesn't exist, it will be created automatically
@@ -162,7 +169,7 @@ d2fa remove "AWS:root"
 
 ### `rename` - Rename Entry
 
-Changes the name of an existing entry.
+Changes the name and issuer of an existing entry. Both the unique identifier (account name) and display label (issuer) are updated to the new name.
 
 ```bash
 d2fa rename OLD_NAME NEW_NAME
@@ -170,7 +177,7 @@ d2fa rename OLD_NAME NEW_NAME
 
 **Parameters:**
 - `OLD_NAME`: Current issuer/account name
-- `NEW_NAME`: New name
+- `NEW_NAME`: New name (will update both account name and issuer)
 
 **Examples:**
 ```bash
@@ -260,22 +267,6 @@ Desktop-2FA supports multiple ways to provide passwords:
    d2fa list --password-file ~/.vault_pass
    ```
 
-### Vault Unlock Timeout
-
-After successfully entering the vault password, the vault remains "unlocked" for 15 minutes. During this period, the unlock state is tracked via a timestamp file (`.vault-unlocked`) in the vault directory. However, password authentication is mandated for every vault access, even during the unlock window.
-
-- The `.vault-unlocked` file contains only a timestamp and no sensitive data
-- Password must be explicitly provided via `--password` or `--password-file` options for all vault operations
-- No passwords are stored on disk - only the unlock timestamp
-
-```bash
-# All commands require explicit password provision during unlock window
-d2fa list --password mypassword
-d2fa code GitHub --password mypassword
-d2fa add AWS ABCDEF123456 --password mypassword
-```
-
-**Security Note:** The vault always requires the real master password for decryption. The unlock timeout does not bypass password requirements; it only allows password provision via command-line options instead of interactive prompts.
 
 ### Password Strength Enforcement
 
@@ -302,9 +293,8 @@ Entropy calculation:
 - Use strong, unique passwords
 - Consider using password managers for vault passwords
 - The vault is encrypted with AES-256-GCM + Argon2
-- The unlock file contains only a timestamp, no sensitive data
 - The vault always requires the real master password for decryption
-- Password authentication is mandated for every vault access, even during the unlock window
+- Password authentication is mandated for every vault access
 
 ## Configuration
 
@@ -330,8 +320,6 @@ By default, the vault is stored at:
 - Windows: `C:\Users\<username>\.desktop-2fa\vault`
 
 The vault file is automatically created on first use.
-
-**Unlock File:** A `.vault-unlocked` file in the same directory tracks unlock state (contains only a timestamp).
 
 ## Error Handling
 
@@ -371,9 +359,6 @@ The vault file is automatically created on first use.
 - No password source available in non-interactive environment
 - Provide `--password` or `--password-file`, or run in a terminal
 
-**"Error: Vault is unlocked but password not provided. Use --password or --password-file."**
-- The vault unlock timeout has not expired, but no password was provided via options
-- Provide the password using `--password` or `--password-file`
 
 ## Advanced Usage
 
@@ -381,9 +366,9 @@ The vault file is automatically created on first use.
 
 ```bash
 # Add multiple entries
-d2fa add GitHub JBSWY3DPEHPK3PXP
-d2fa add AWS ABCDEFGHIJKLMNOP
-d2fa add Google QRSTUVWXYZ123456
+d2fa add GitHub GitHub JBSWY3DPEHPK3PXP
+d2fa add AWS Amazon ABCDEFGHIJKLMNOP
+d2fa add Google Google QRSTUVWXYZ123456
 
 # List all
 d2fa list
@@ -456,6 +441,31 @@ If you forget your password:
 - Vaults created with desktop-2fa 0.6.0+ are forward compatible
 - Older vaults (pre-0.6.0) are not compatible and must be recreated
 
+### Duplicate Names in Vault
+
+If you have a vault created with an older version of desktop-2fa that allowed duplicate names, you may see a warning when loading the vault:
+
+```
+Warning: Your vault contains multiple entries with the same name: "GitHub", "AWS".
+This was allowed in older versions. You can resolve this by renaming entries using the rename command.
+```
+
+**Resolution:**
+Use the `rename` command to give unique names to conflicting entries:
+
+```bash
+# List current entries
+d2fa list
+
+# Rename duplicates
+d2fa rename GitHub GitHub-personal
+d2fa rename GitHub GitHub-work
+d2fa rename AWS AWS-root
+d2fa rename AWS AWS-admin
+```
+
+**Note:** The rename command updates both the account name (unique identifier) and issuer (display label) to the new name. After resolving duplicates, the warning will no longer appear.
+
 ## Command Reference
 
 ```bash
@@ -473,7 +483,7 @@ d2fa                         # Show version (no args)
 4. **Verify secrets** when adding entries
 5. **Use password files** for automation (with proper file permissions)
 6. **Keep vault file secure** - don't share or store in insecure locations
-7. **Be aware of unlock timeout** - vault remains accessible for 15 minutes after unlock
+7. **Stateless design** - every command requires explicit password authentication
 8. **Use `--allow-weak-passwords`** only when necessary (testing, legacy systems)
 9. **Configure password policies** in `~/.config/d2fa/config.toml` for your security requirements
 
@@ -487,4 +497,4 @@ For issues and questions:
 
 ---
 
-*This manual covers desktop-2fa version 0.6.3*
+*This manual covers desktop-2fa version 0.6.5*

@@ -49,7 +49,7 @@ Confirm vault password:
 Vault created.
 No entries found.
 
-d2fa add ISSUER SECRET
+d2fa add NAME ISSUER SECRET
 
 No vault found.
 A new encrypted vault will be created.
@@ -58,7 +58,7 @@ Enter new vault password:
 Confirm vault password:
 
 Vault created.
-Entry added: ISSUER
+Entry added: NAME
 
 d2fa generate
 
@@ -76,10 +76,10 @@ d2fa list
 Enter vault password:
 - EntryName (Issuer)
 
-d2fa add ISSUER SECRET
+d2fa add NAME ISSUER SECRET
 
 Enter vault password:
-Entry added: ISSUER
+Entry added: NAME
 
 ---
 

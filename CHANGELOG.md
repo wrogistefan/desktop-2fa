@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.6.5] - 2026-01-04
+
+### 🔄 Vault Entry Identification
+- **Unique Identifier**: Established `account_name` as the unique identifier for TOTP entries
+- **Rename Command**: Implemented `d2fa rename <old> <new>` to rename entries, updating both account name and issuer
+- **Migration Warning**: Added detection and warning for vaults with duplicate names from older versions
+- **Double Naming Resolution**: Users can now resolve naming conflicts using the rename command
+
+### 🛡️ Security Cleanup
+- **Removed Unlock Timeout**: Eliminated misleading unlock timeout feature that had no effect in stateless CLI
+- **Stateless Design**: Enforced that every command requires explicit password authentication
+- **Codebase Cleanup**: Removed all unlock-related logic, variables, and dead code
+- **Test Cleanup**: Removed tests referencing unlock timeout behavior
+
+###  Documentation
+- Updated user manual to reflect current vault logic and entry identification
+- Documented the rename command and its usage
+- Explained migration implications for vaults with duplicate names
+- Removed all references to unlock timeout and session-based behavior
+- Updated manual version to 0.6.5
+
+### 🛠️ CI Improvements
+- Added full matrix CI workflow for Linux, macOS, and Windows with Python 3.12
+- Added dedicated macOS job with Qt6 installation for GUI testing
+- Streamlined CI steps for faster, deterministic builds
+
 ## [0.6.4] - 2026-01-04
 
 ### 🎨 CLI Output Standardization
