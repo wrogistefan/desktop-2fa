@@ -185,6 +185,13 @@ d2fa rename GitHub GitHub-work
 # Output: Renamed 'GitHub' → 'GitHub-work'
 ```
 
+**Duplicate Detection:**
+If multiple entries match the `OLD_NAME` (same issuer or account_name), the rename operation is aborted with an error:
+```
+Error: Multiple entries named '<name>' exist. Operation aborted. Resolve duplicates first.
+```
+This ensures deterministic behavior when duplicate names exist in older vaults.
+
 ### `export` - Export Vault
 
 Exports the vault to a file (for backup or transfer).
@@ -497,4 +504,4 @@ For issues and questions:
 
 ---
 
-*This manual covers desktop-2fa version 0.6.5*
+*This manual covers desktop-2fa version 0.7.0*

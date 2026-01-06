@@ -541,3 +541,118 @@ def test_print_prompt(capsys: Any) -> None:
     helpers.print_prompt("Test message")
     out = capsys.readouterr().out
     assert "Test message" in out
+
+
+# =============================================================================
+# Regression tests for vault lifecycle (Issue #5)
+# =============================================================================
+
+
+def test_create_vault_new(fake_vault_env_helpers: Path, capsys: Any) -> None:
+    """Test that create_vault creates a new vault and prints the path."""
+    # Ensure no vault exists
+    if fake_vault_env_helpers.exists():
+        fake_vault_env_helpers.unlink()
+
+    helpers.create_vault(fake_vault_env_helpers, TEST_PASSWORD)
+
+    out = capsys.readouterr().out.strip()
+    # Check that the message contains the path (may be split across lines on Windows)
+    assert "Vault created at" in out
+    assert str(fake_vault_env_helpers) in out
+
+    # Verify vault was created
+    assert fake_vault_env_helpers.exists()
+
+    # Verify it's a valid vault
+    vault = helpers.load_vault(fake_vault_env_helpers, TEST_PASSWORD)
+    assert len(vault.entries) == 0
+
+
+def test_create_vault_overwrites_existing(
+    fake_vault_env_helpers: Path, capsys: Any
+) -> None:
+    """Test that create_vault overwrites an existing vault."""
+    from desktop_2fa.vault import Vault
+    from desktop_2fa.vault.models import TotpEntry
+
+    # Create existing vault with an entry (bypass duplicate check)
+    vault = Vault()
+    entry = TotpEntry(account_name="GitHub", issuer="GitHub", secret="JBSWY3DPEHPK3PXP")
+    vault.data.entries.append(entry)
+    vault.save(fake_vault_env_helpers, TEST_PASSWORD)
+
+    # Create new vault (should overwrite)
+    helpers.create_vault(fake_vault_env_helpers, TEST_PASSWORD)
+
+    out = capsys.readouterr().out.strip()
+    assert "Vault created at" in out
+
+    # Verify vault was overwritten (empty)
+    vault = helpers.load_vault(fake_vault_env_helpers, TEST_PASSWORD)
+    assert len(vault.entries) == 0
+
+
+def test_vault_find_entries_single_match(fake_vault_env_helpers: Path) -> None:
+    """Test find_entries returns single entry when one matches."""
+    from desktop_2fa.vault import Vault
+
+    helpers.save_vault(fake_vault_env_helpers, Vault(), TEST_PASSWORD)
+    helpers.add_entry(
+        fake_vault_env_helpers,
+        "GitHub",
+        "GitHub",
+        "JBSWY3DPEHPK3PXP",
+        TEST_PASSWORD,
+    )
+
+    vault = helpers.load_vault(fake_vault_env_helpers, TEST_PASSWORD)
+    matches = vault.find_entries("GitHub")
+
+    assert len(matches) == 1
+    assert matches[0].account_name == "GitHub"
+
+
+def test_vault_find_entries_multiple_matches(fake_vault_env_helpers: Path) -> None:
+    """Test find_entries returns multiple entries when multiple match."""
+    from desktop_2fa.vault import Vault
+    from desktop_2fa.vault.models import TotpEntry
+
+    helpers.save_vault(fake_vault_env_helpers, Vault(), TEST_PASSWORD)
+
+    # Load vault and directly add entries with duplicate names (bypass check)
+    vault = helpers.load_vault(fake_vault_env_helpers, TEST_PASSWORD)
+    entry1 = TotpEntry(
+        account_name="GitHub", issuer="GitHub", secret="JBSWY3DPEHPK3PXP"
+    )
+    entry2 = TotpEntry(
+        account_name="GitHub", issuer="GitHub2", secret="JBSWY3DPEHPK3PXP"
+    )
+    vault.data.entries.append(entry1)
+    vault.data.entries.append(entry2)
+    vault.save(fake_vault_env_helpers, TEST_PASSWORD)
+
+    # Reload and find
+    vault = helpers.load_vault(fake_vault_env_helpers, TEST_PASSWORD)
+    matches = vault.find_entries("GitHub")
+
+    assert len(matches) == 2
+
+
+def test_vault_find_entries_no_match(fake_vault_env_helpers: Path) -> None:
+    """Test find_entries returns empty list when no matches."""
+    from desktop_2fa.vault import Vault
+
+    helpers.save_vault(fake_vault_env_helpers, Vault(), TEST_PASSWORD)
+    helpers.add_entry(
+        fake_vault_env_helpers,
+        "GitHub",
+        "GitHub",
+        "JBSWY3DPEHPK3PXP",
+        TEST_PASSWORD,
+    )
+
+    vault = helpers.load_vault(fake_vault_env_helpers, TEST_PASSWORD)
+    matches = vault.find_entries("Nonexistent")
+
+    assert len(matches) == 0

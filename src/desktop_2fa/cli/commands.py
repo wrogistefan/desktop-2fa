@@ -39,8 +39,8 @@ def add_entry_interactive(
         vault = Vault()
         vault.add_entry(name=name, issuer=issuer, secret=secret)
         vault.save(path, password)
-        helpers.print_success("Vault created.")
-        helpers.print_success(f"Entry added: {name}")
+        print(f"Vault created at {path}")
+        print(f"Entry added: {name}")
     else:
         password = helpers.get_password_for_vault(ctx, new_vault=False)
         try:
@@ -72,8 +72,8 @@ def list_entries(ctx: typer.Context) -> None:
         password = helpers.get_password_for_vault(ctx, new_vault=True)
         vault = Vault()
         vault.save(path, password)
-        helpers.print_success("Vault created.")
-        helpers.print_info("No entries found.")
+        print(f"Vault created at {path}")
+        print("No entries found.")
     else:
         password = helpers.get_password_for_vault(ctx, new_vault=False)
         try:
@@ -128,8 +128,8 @@ def add_entry(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
         vault = Vault()
         vault.add_entry(name=name, issuer=issuer, secret=secret)
         vault.save(path, password)
-        helpers.print_success("Vault created.")
-        helpers.print_success(f"Entry added: {name}")
+        print(f"Vault created at {path}")
+        print(f"Entry added: {name}")
     else:
         password = helpers.get_password_for_vault(ctx, new_vault=False)
         try:
@@ -218,6 +218,13 @@ def rename_entry(old: str, new: str, ctx: typer.Context) -> None:
     password = helpers.get_password_for_vault(ctx, new_vault=False)
     try:
         vault = Vault.load(path, password)
+        # Check for duplicates before renaming
+        old_matches = vault.find_entries(old)
+        if len(old_matches) > 1:
+            print(
+                f"Multiple entries named '{old}' exist. Operation aborted. Resolve duplicates first."
+            )
+            return
         entry = vault.get_entry(old)
         entry.account_name = new
         entry.issuer = new
@@ -327,4 +334,4 @@ def init_vault(force: bool, ctx: typer.Context) -> None:
     password = helpers.get_password_for_vault(ctx, new_vault=True)
     vault = Vault()
     vault.save(path, password)
-    helpers.print_success("Vault created.")
+    print(f"Vault created at {path}")

@@ -108,7 +108,18 @@ def save_vault(path: Path, vault: Vault, password: str) -> None:
 
 
 def get_password_for_vault(ctx: typer.Context, new_vault: bool = False) -> str:
-    """Get the password for vault operations."""
+    """Get the password for vault operations.
+
+    Args:
+        ctx: Typer context with password options.
+        new_vault: Whether creating a new vault (affects prompts).
+
+    Returns:
+        The password string.
+
+    Raises:
+        typer.Exit: If password cannot be obtained.
+    """
     password = ctx.obj.get("password")
     password_file = ctx.obj.get("password_file")
     interactive = ctx.obj.get("interactive")
@@ -155,6 +166,20 @@ def get_password_for_vault(ctx: typer.Context, new_vault: bool = False) -> str:
         rprint(Text("Enter vault password:", style="cyan"))
         pwd = typer.prompt("", hide_input=True)
     return pwd  # type: ignore[no-any-return]
+
+
+def create_vault(path: Path, password: str) -> None:
+    """Create a new vault at the specified path.
+
+    Args:
+        path: Path where the vault will be created.
+        password: Password to encrypt the vault.
+    """
+    from desktop_2fa.vault import Vault
+
+    vault = Vault()
+    vault.save(path, password)
+    print(f"Vault created at {path}")
 
 
 def _read_password_file(password_file: str) -> str:

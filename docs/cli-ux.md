@@ -71,7 +71,7 @@ A new encrypted vault will be created.
 [cyan]Enter new vault password:[/cyan]
 [cyan]Confirm vault password:[/cyan]
 
-[green]Vault created.[/green]
+[green]Vault created at <path>.[/green]
 [blue]No entries found.[/blue]
 ```
 
@@ -84,7 +84,7 @@ A new encrypted vault will be created.
 [cyan]Enter new vault password:[/cyan]
 [cyan]Confirm vault password:[/cyan]
 
-[green]Vault created.[/green]
+[green]Vault created at <path>.[/green]
 [green]Entry added:[/green] GitHub
 ```
 
@@ -253,3 +253,16 @@ To implement this UX, you can use:
 Starting with desktop‑2fa 0.6.0, vaults created with versions prior to 0.6.0 are not compatible and will be rejected as "unsupported format".  
 Users must initialize a new vault using `d2fa init-vault`.  
 See README.md for full details.
+
+---
+
+# 🔄 Rename Command — Duplicate Detection
+
+The `rename` command enforces deterministic behavior when multiple entries match the target name:
+
+- If **multiple entries** match the provided name (issuer or account_name), the rename is **aborted**
+- Error message: `[red]Error: Multiple entries named '<name>' exist. Operation aborted. Resolve duplicates first.[/red]`
+- No entry is renamed in this case
+- This check occurs **before** any mutation
+
+This ensures predictable behavior when working with vaults that contain duplicate names from older versions.

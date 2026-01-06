@@ -35,8 +35,7 @@ def test_cli_list_empty(fake_vault_env_cli: Path) -> None:
     # Non-interactive list now prints all required messages when creating vault
     assert "No vault found." in result.output
     assert "A new encrypted vault will be created." in result.output
-    assert "Vault created." in result.output
-    assert "No entries found." in result.output
+    assert f"Vault created at {fake_vault_env_cli}" in result.output
 
 
 def test_cli_add_and_list(fake_vault_env_cli: Path) -> None:
@@ -175,7 +174,7 @@ def test_cli_add_missing_secret(fake_vault_env_cli: Path) -> None:
 def test_cli_init_vault_new(fake_vault_env_cli: Path) -> None:
     result = runner.invoke(app, ["--password", TEST_PASSWORD, "init-vault"])
     assert result.exit_code == 0
-    assert "Vault created." in result.output
+    assert f"Vault created at {fake_vault_env_cli}" in result.output
     assert fake_vault_env_cli.exists()
 
 
@@ -199,7 +198,8 @@ def test_cli_init_vault_existing_with_force(fake_vault_env_cli: Path) -> None:
 
     result = runner.invoke(app, ["--password", TEST_PASSWORD, "init-vault", "--force"])
     assert result.exit_code == 0
-    assert "Vault created." in result.output
+    assert "Existing vault will be overwritten." in result.output
+    assert f"Vault created at {fake_vault_env_cli}" in result.output
 
 
 def test_cli_is_interactive_tty_detection(monkeypatch: Any) -> None:

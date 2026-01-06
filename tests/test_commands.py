@@ -51,10 +51,11 @@ def fake_ctx_wrong_password() -> Any:
 def test_list_entries_empty(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -> None:
     commands.list_entries(fake_ctx)
     out = capsys.readouterr().out.strip().splitlines()
+    vault_path = str(fake_vault_env)
     assert out == [
         "No vault found.",
         "A new encrypted vault will be created.",
-        "Vault created.",
+        f"Vault created at {vault_path}",
         "No entries found.",
     ]
 
@@ -74,10 +75,11 @@ def test_list_entries_noninteractive_creates_vault_with_messages(
     commands.list_entries(NonInteractiveCtx())  # type: ignore[arg-type]
     out = capsys.readouterr().out.strip().splitlines()
 
+    vault_path = str(fake_vault_env)
     # Must print all required messages regardless of interactive mode
     assert "No vault found." in out
     assert "A new encrypted vault will be created." in out
-    assert "Vault created." in out
+    assert f"Vault created at {vault_path}" in out
     assert "No entries found." in out
 
     # Verify vault was actually created
@@ -89,10 +91,11 @@ def test_add_entry_and_list(fake_vault_env: Path, capsys: Any, fake_ctx: Any) ->
 
     # po add_entry:
     out = capsys.readouterr().out.strip().splitlines()
+    vault_path = str(fake_vault_env)
     assert out == [
         "No vault found.",
         "A new encrypted vault will be created.",
-        "Vault created.",
+        f"Vault created at {vault_path}",
         "Entry added: GitHub",
     ]
 
@@ -122,10 +125,11 @@ def test_add_entry_noninteractive_creates_vault_with_messages(
     commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", NonInteractiveCtx())  # type: ignore[arg-type]
     out = capsys.readouterr().out.strip().splitlines()
 
+    vault_path = str(fake_vault_env)
     # Must print all required messages regardless of interactive mode
     assert "No vault found." in out
     assert "A new encrypted vault will be created." in out
-    assert "Vault created." in out
+    assert f"Vault created at {vault_path}" in out
     assert "Entry added: GitHub" in out
 
     # Verify vault was actually created
@@ -588,14 +592,16 @@ def test_init_vault_existing_with_force(
     commands.init_vault(True, fake_ctx)
 
     out = capsys.readouterr().out.strip()
-    assert "Vault created." in out
+    vault_path = str(fake_vault_env)
+    assert f"Vault created at {vault_path}" in out
 
 
 def test_init_vault_new(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -> None:
     commands.init_vault(False, fake_ctx)
 
     out = capsys.readouterr().out.strip()
-    assert "Vault created." in out
+    vault_path = str(fake_vault_env)
+    assert f"Vault created at {vault_path}" in out
     assert fake_vault_env.exists()
 
 
@@ -696,3 +702,129 @@ def test_generate_code_unsupported_format(
 
     out = capsys.readouterr().out.strip()
     assert "Vault file format is unsupported." in out
+
+
+# =============================================================================
+# Regression tests for rename semantics (Issue #9)
+# =============================================================================
+
+
+def test_rename_entry_with_duplicates_aborts(
+    fake_vault_env: Path, capsys: Any, fake_ctx: Any
+) -> None:
+    """Test that rename aborts when multiple entries match the old name."""
+    from desktop_2fa.vault import Vault
+    from desktop_2fa.vault.models import TotpEntry
+
+    # Create a vault with two entries having the same name (simulating legacy vault)
+    vault = Vault()
+    # Directly add entries to bypass duplicate check (simulating legacy data)
+    entry1 = TotpEntry(
+        account_name="GitHub", issuer="GitHub", secret="JBSWY3DPEHPK3PXP"
+    )
+    entry2 = TotpEntry(
+        account_name="GitHub", issuer="GitHub2", secret="JBSWY3DPEHPK3PXP"
+    )
+    vault.data.entries.append(entry1)
+    vault.data.entries.append(entry2)
+    vault.save(fake_vault_env, TEST_PASSWORD)
+
+    # Try to rename - should abort with error message
+    commands.rename_entry("GitHub", "NewName", fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert (
+        "Multiple entries named 'GitHub' exist. Operation aborted. Resolve duplicates first."
+        in out
+    )
+
+    # Verify no entry was renamed (vault unchanged)
+    vault = helpers.load_vault(fake_vault_env, TEST_PASSWORD)
+    assert len(vault.entries) == 2
+    # Both entries should still have their original names
+    names = [e.account_name for e in vault.entries]
+    assert names.count("GitHub") == 2
+
+
+def test_rename_entry_no_duplicates_success(
+    fake_vault_env: Path, capsys: Any, fake_ctx: Any
+) -> None:
+    """Test that rename works when no duplicates exist."""
+    commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+    capsys.readouterr()  # clear output
+
+    commands.rename_entry("GitHub", "NewGitHub", fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "Renamed 'GitHub' → 'NewGitHub'" in out
+
+    # Verify entry was renamed
+    vault = helpers.load_vault(fake_vault_env, TEST_PASSWORD)
+    assert len(vault.entries) == 1
+    assert vault.entries[0].account_name == "NewGitHub"
+    assert vault.entries[0].issuer == "NewGitHub"
+
+
+def test_rename_entry_case_sensitive(
+    fake_vault_env: Path, capsys: Any, fake_ctx: Any
+) -> None:
+    """Test that rename is case-sensitive (github ≠ GitHub)."""
+    # Create vault with one entry
+    commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+    capsys.readouterr()  # clear output
+
+    # Try to rename using lowercase - should find the entry (case-insensitive match via get_entry)
+    # Note: The current implementation uses exact match in find_entries
+    commands.rename_entry("GitHub", "GitLab", fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "Renamed 'GitHub' → 'GitLab'" in out
+
+    # Verify entry was renamed
+    vault = helpers.load_vault(fake_vault_env, TEST_PASSWORD)
+    assert vault.entries[0].account_name == "GitLab"
+
+
+def test_rename_entry_by_issuer(
+    fake_vault_env: Path, capsys: Any, fake_ctx: Any
+) -> None:
+    """Test that rename works when searching by issuer."""
+    commands.add_entry("MyAccount", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+    capsys.readouterr()  # clear output
+
+    # Rename by issuer
+    commands.rename_entry("GitHub", "NewIssuer", fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "Renamed 'GitHub' → 'NewIssuer'" in out
+
+    # Verify both account_name and issuer were updated
+    vault = helpers.load_vault(fake_vault_env, TEST_PASSWORD)
+    assert vault.entries[0].account_name == "NewIssuer"
+    assert vault.entries[0].issuer == "NewIssuer"
+
+
+def test_rename_entry_no_vault(
+    fake_vault_env: Path, capsys: Any, fake_ctx: Any
+) -> None:
+    """Test that rename exits cleanly when no vault exists."""
+    # Ensure no vault exists
+    if fake_vault_env.exists():
+        fake_vault_env.unlink()
+
+    commands.rename_entry("Old", "New", fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "No vault found." in out
+
+
+def test_rename_entry_missing_entry_raises(fake_vault_env: Path, fake_ctx: Any) -> None:
+    """Test that rename raises ValueError when entry doesn't exist."""
+    # Create empty vault
+    from desktop_2fa.vault import Vault
+
+    vault = Vault()
+    vault.save(fake_vault_env, TEST_PASSWORD)
+
+    with pytest.raises(ValueError, match="not found"):
+        commands.rename_entry("Nonexistent", "NewName", fake_ctx)

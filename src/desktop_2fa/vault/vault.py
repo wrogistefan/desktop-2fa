@@ -115,6 +115,21 @@ class Vault:
                 return entry
         raise ValueError(f"Entry '{issuer}' not found")
 
+    def find_entries(self, name: str) -> list[TotpEntry]:
+        """Find all entries matching the given name (issuer or account_name).
+
+        Args:
+            name: The issuer or account name to search for.
+
+        Returns:
+            List of matching entries.
+        """
+        matches = []
+        for entry in self.entries:
+            if entry.issuer == name or entry.account_name == name:
+                matches.append(entry)
+        return matches
+
     def remove_entry(self, issuer: str) -> None:
         """Remove a TOTP entry by issuer or account name.
 

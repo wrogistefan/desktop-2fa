@@ -11,16 +11,24 @@ A secure, offline two-factor authentication (2FA) manager for desktop environmen
 ![Build](https://github.com/wrogistefan/desktop-2fa/actions/workflows/ci.yml/badge.svg)
 [![codecov](https://codecov.io/gh/wrogistefan/desktop-2fa/branch/main/graph/badge.svg)](https://codecov.io/gh/wrogistefan/desktop-2fa)
 
-## Features
+---
 
-- **🔐 Vault**: AES-256-GCM encryption with Argon2 key derivation
-- **⏱️ TOTP**: RFC 6238 compliant code generation
-- **💻 CLI**: Full command-line interface for managing tokens
-- **🔓 Stateless**: Every command requires explicit password authentication
-- **🛡️ Security**: Configurable password strength enforcement
-- **🧪 Testing**: 176 tests with 90% coverage
+## ✨ Features
 
-## Installation
+| Feature | Description |
+|---------|-------------|
+| 🔐 **Vault Security** | AES-256-GCM encryption with Argon2id key derivation |
+| ⏱️ **TOTP Generation** | RFC 6238 compliant code generation |
+| 💻 **Full CLI** | Complete command-line interface for managing tokens |
+| 🔓 **Stateless Design** | Every command requires explicit password authentication |
+| 🛡️ **Password Policy** | Configurable password strength enforcement |
+| 🧪 **Well Tested** | 180+ tests passing with comprehensive coverage |
+
+---
+
+## 🚀 Quick Start
+
+### Installation
 
 ```bash
 pip install desktop-2fa
@@ -30,10 +38,10 @@ Verify installation:
 
 ```bash
 python -c "import desktop_2fa; print(desktop_2fa.__version__)"
-# Output: 0.6.6
+# Output: 0.7.0
 ```
 
-## Quick Start
+### Basic Usage
 
 ```bash
 # Add a new TOTP token
@@ -59,7 +67,40 @@ d2fa --password mypassphrase add GitHub GitHub JBSWY3DPEHPK3PXP
 d2fa --password-file /path/to/passphrase.txt add GitHub GitHub JBSWY3DPEHPK3PXP
 ```
 
-## CLI Commands
+---
+
+## 📁 Vault Lifecycle
+
+The vault is an encrypted storage file located at `~/.desktop-2fa/vault`.
+
+### Vault Creation
+
+When a command requires a vault and none exists:
+
+1. The CLI prompts for a new password (interactive mode) or requires `--password`/`--password-file` (non-interactive mode)
+2. An empty encrypted vault is created
+3. **A confirmation message is always printed:** `Vault created at <path>`
+
+### Vault Loading
+
+When a command requires a vault and it exists:
+
+1. The CLI prompts for the existing password (interactive mode) or requires credentials (non-interactive mode)
+2. The vault is decrypted and loaded
+3. If the password is invalid, the CLI exits with `typer.Exit(1)`
+
+### Duplicate Entry Handling
+
+The `rename` command enforces deterministic behavior when multiple entries match the target name:
+
+- If **multiple entries** match the provided name (issuer or account_name), the rename is **aborted**
+- Error message: `Error: Multiple entries named '<name>' exist. Operation aborted. Resolve duplicates first.`
+- No entry is renamed in this case
+- This check occurs **before** any mutation
+
+---
+
+## 📖 CLI Commands
 
 | Command | Description |
 |---------|-------------|
@@ -73,7 +114,9 @@ d2fa --password-file /path/to/passphrase.txt add GitHub GitHub JBSWY3DPEHPK3PXP
 | `d2fa backup` | Create a backup |
 | `d2fa init-vault` | Initialize new vault |
 
-## Security
+---
+
+## 🔒 Security
 
 The vault uses:
 - **AES-256-GCM** for authenticated encryption
@@ -82,20 +125,28 @@ The vault uses:
 
 Every command requires explicit password authentication. No session-based access.
 
-## Documentation
+---
 
-- [User Manual](docs/user_manual.md) - Complete usage guide
-- [CLI UX Specification](docs/ux.md) - UX contract and behavior
-- [Cryptography](docs/crypto.md) - Security details
+## 📚 Documentation
 
-## Testing
+| Document | Description |
+|----------|-------------|
+| [User Manual](docs/user_manual.md) | Complete usage guide |
+| [CLI UX Specification](docs/ux.md) | UX contract and behavior |
+| [Cryptography](docs/crypto.md) | Security details |
+
+---
+
+## 🧪 Testing
 
 ```bash
-pytest tests/  # Run all tests
+pytest tests/              # Run all tests
 pytest --cov=src/desktop_2fa  # Run with coverage
 ```
 
-## Project Structure
+---
+
+## 🏗️ Project Structure
 
 ```
 src/desktop_2fa/
@@ -107,10 +158,14 @@ src/desktop_2fa/
 └── utils/         # Utilities
 ```
 
-## License
+---
+
+## 📄 License
 
 Apache License 2.0. See [LICENSE](LICENSE) file.
 
-## Author
+---
+
+## 👤 Author
 
 Łukasz Perek

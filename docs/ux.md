@@ -47,7 +47,7 @@ A new encrypted vault will be created.
 Enter new vault password:
 Confirm vault password:
 
-Vault created.
+Vault created at <path>.
 No entries found.
 
 d2fa add NAME ISSUER SECRET
@@ -58,7 +58,7 @@ A new encrypted vault will be created.
 Enter new vault password:
 Confirm vault password:
 
-Vault created.
+Vault created at <path>.
 Entry added: NAME
 
 d2fa generate
@@ -113,3 +113,16 @@ for future refactors and GUI development.
 
 ### ⚠️ Vault Format Change (0.6.0)
 Starting with desktop‑2fa 0.6.0, vaults created with versions prior to 0.6.0 are not compatible and will be rejected as "unsupported format". Users must initialize a new vault using `d2fa init-vault`. See README.md for full details.
+
+---
+
+## Rename Command — Duplicate Detection
+
+The `rename` command enforces deterministic behavior when multiple entries match the target name:
+
+- If **multiple entries** match the provided name (issuer or account_name), the rename is **aborted**
+- Error message: `Error: Multiple entries named '<name>' exist. Operation aborted. Resolve duplicates first.`
+- No entry is renamed in this case
+- This check occurs **before** any mutation
+
+This ensures predictable behavior when working with vaults that contain duplicate names from older versions.

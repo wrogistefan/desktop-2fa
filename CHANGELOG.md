@@ -4,6 +4,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.7.0] — Vault Semantics & Deterministic UX
+
+### ✨ New Features
+- **Explicit Vault Initialization**: Introduced clear separation between vault creation and loading
+- **Deterministic Vault Creation Messages**: Vault creation now always prints `Vault created at <path>` regardless of interactive mode
+- **Rename Safety**: Added duplicate detection to `rename` command to prevent ambiguous operations
+
+### 🛡️ Security & UX Improvements
+- Removed silent vault creation in all modes
+- Vault creation is now explicitly announced with the vault path
+- Rename command aborts when multiple entries match the target name, ensuring deterministic behavior
+- Missing or invalid password now exits cleanly with `typer.Exit(1)`
+
+### 🐛 Fixed
+- **#9**: Rename semantics now abort when duplicate entries exist
+- **#5**: Explicit vault initialization with clear user feedback
+
+### 🧪 Testing
+- Added regression tests for rename with duplicates (abort)
+- Added regression tests for rename with no duplicates (success)
+- Added regression tests for vault lifecycle (creation, loading, password handling)
+
+### 📚 Documentation
+- Added "Vault Lifecycle" section to README
+- Documented vault creation and loading behavior
+- Documented duplicate entry handling
+- Updated CHANGELOG with 0.7.0 release notes
+
+---
+
 ## [0.6.6.2] — Security Fix
 
 ### 🛡️ Security Hardening
