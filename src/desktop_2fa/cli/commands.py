@@ -38,6 +38,7 @@ def add_entry_interactive(
         password = helpers.get_password_for_vault(ctx, new_vault=True)
         vault = Vault()
         vault.add_entry(name=name, issuer=issuer, secret=secret)
+        secret = None
         vault.save(path, password)
         print(f"Vault created at {path}")
         print(f"Entry added: {name}")
