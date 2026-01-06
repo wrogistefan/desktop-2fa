@@ -250,10 +250,11 @@ class Vault:
                 raise
 
             os.replace(temp_path, path)
-        except OSError:
+        except OSError as e:
             if temp_path.exists():
                 try:
                     temp_path.unlink()
                 except OSError:
                     pass
-            raise VaultIOError("Failed to save vault") from None
+            error_msg = e.strerror if e.strerror else str(e)
+            raise VaultIOError(f"Failed to save vault: {error_msg}") from None
