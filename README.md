@@ -26,6 +26,22 @@ A secure, offline two-factor authentication (2FA) manager for desktop environmen
 
 ---
 
+## 📸 Screenshots
+
+![Add entry interactively](assets/screenshots/add_interactive.png)
+*Adding a new TOTP entry interactively*
+
+![Code generation](assets/screenshots/codegen_ss.png)
+*Generating a TOTP code for an entry*
+
+![Rename and duplicate error](assets/screenshots/rename_add_duplicate.png)
+*Renaming an entry with duplicate detection*
+
+![Version and list](assets/screenshots/version_list_ss.png)
+*Viewing version info and listing all entries*
+
+---
+
 ## 🚀 Quick Start
 
 ### Installation
@@ -172,3 +188,14 @@ Apache License 2.0. See [LICENSE](LICENSE) file.
 ## 👤 Author
 
 Łukasz Perek
+
+---
+
+## 💖 Support the Project
+
+Desktop‑2FA is an independent open‑source tool built with a focus on autonomy, transparency, and offline security.
+If you find it useful and want to support ongoing development, you can do so through the platforms below:
+
+- **Ko‑fi**: https://ko-fi.com/lukaszperek
+- **Buy Me a Coffee**: https://buymeacoffee.com/lukaszperek
+- **AirTM**: https://airtm.me/lukper
