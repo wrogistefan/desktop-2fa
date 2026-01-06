@@ -130,14 +130,14 @@ def add_entry(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
         vault.add_entry(name=name, issuer=issuer, secret=secret)
         vault.save(path, password)
         print(f"Vault created at {path}")
-        print(f"Entry added: {name}")
+        print("Entry added.")
     else:
         password = helpers.get_password_for_vault(ctx, new_vault=False)
         try:
             vault = Vault.load(path, password)
             vault.add_entry(name=name, issuer=issuer, secret=secret)
             vault.save(path, password)
-            helpers.print_success(f"Entry added: {name}")
+            helpers.print_success("Entry added.")
         except ValueError as e:
             if "already exists" in str(e):
                 helpers.print_error(str(e))
