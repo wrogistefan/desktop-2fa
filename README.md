@@ -38,7 +38,7 @@ Verify installation:
 
 ```bash
 python -c "import desktop_2fa; print(desktop_2fa.__version__)"
-# Output: 0.7.0
+# Output: 0.7.1
 ```
 
 ### Basic Usage
@@ -124,6 +124,9 @@ The vault uses:
 - **Versioned header** for forward compatibility
 
 Every command requires explicit password authentication. No session-based access.
+
+### Security Hardening (v0.7.1)
+Version 0.7.1 includes a security patch that prevents sensitive information from being exposed through error messages and logging. Exception details are sanitized to ensure no secrets or password-related data appear in CLI output.
 
 ---
 

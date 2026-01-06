@@ -1,3 +1,32 @@
+# Release Notes for Desktop-2FA 0.7.1
+
+## Security Patch
+
+This release is a security patch addressing a CodeQL-reported issue where sensitive information could be exposed through error messages and logging.
+
+### Security Fixes
+
+- **Clear-text Logging Prevention**: Fixed an issue where exception details could be included in error messages, potentially exposing sensitive file paths or system information
+- **Output Sanitization**: Improved error handling to ensure no secrets, passwords, or sensitive data appear in logs or CLI messages
+- **Bare Exception Handling**: Replaced broad `except Exception:` blocks with more specific `except OSError:` to reduce the risk of catching and exposing unexpected exceptions
+
+### Changes
+
+- `vault.py`: Removed exception message from `VaultIOError` messages to prevent information disclosure
+- `helpers.py`: Replaced bare `except Exception:` with `except OSError:` in password file reading functions
+
+### Compatibility
+
+- This release maintains full backward compatibility with existing vaults
+- No changes to the vault file format
+- No functional changes to user-facing behavior
+
+### Reference
+
+- CodeQL Alert: Clear-text logging of sensitive information
+
+---
+
 # Release Notes for Desktop-2FA 0.7.0
 
 ## Vault Semantics & Deterministic UX

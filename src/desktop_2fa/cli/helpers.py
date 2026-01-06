@@ -141,7 +141,7 @@ def get_password_for_vault(ctx: typer.Context, new_vault: bool = False) -> str:
         except FileNotFoundError:
             print("Error: Password file not found.")
             raise typer.Exit(1)
-        except Exception:
+        except OSError:
             print("Error reading password file.")
             raise typer.Exit(1)
 
@@ -190,7 +190,7 @@ def _read_password_file(password_file: str) -> str:
     except FileNotFoundError:
         print("Error: Password file not found.")
         raise typer.Exit(1)
-    except Exception:
+    except OSError:
         print("Error reading password file.")
         raise typer.Exit(1)
 

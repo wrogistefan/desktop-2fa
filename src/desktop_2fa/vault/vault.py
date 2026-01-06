@@ -1,7 +1,6 @@
 """Vault implementation for storing and managing TOTP entries."""
 
 import os
-import re
 from pathlib import Path
 from typing import Optional
 
@@ -160,8 +159,8 @@ class Vault:
         try:
             with open(path, "rb") as f:
                 blob = f.read()
-        except OSError as e:
-            raise VaultIOError(f"Failed to read vault file: {e}") from e
+        except OSError:
+            raise VaultIOError("Failed to read vault file") from None
 
         if len(blob) < HEADER_LEN + 16:
             raise UnsupportedFormat("Vault file is too short or invalid format")
@@ -246,22 +245,15 @@ class Vault:
                     f.write(header + salt + encrypted)
                     f.flush()
                     os.fsync(fd)
-            except:
+            except OSError:
                 os.close(fd)
                 raise
 
             os.replace(temp_path, path)
-        except OSError as e:
+        except OSError:
             if temp_path.exists():
                 try:
                     temp_path.unlink()
                 except OSError:
                     pass
-            # Extract just the error message without errno prefix
-            error_msg = str(e)
-            if error_msg.startswith("[Errno"):
-                # Extract the message part after the errno
-                match = re.search(r"\] (.+)$", error_msg)
-                if match:
-                    error_msg = match.group(1)
-            raise VaultIOError(f"Failed to save vault: {error_msg}") from e
+            raise VaultIOError("Failed to save vault") from None
