@@ -1,3 +1,54 @@
+# Release Notes for Desktop-2FA 0.7.2
+
+## Security & Reliability Patch
+
+This release addresses security and reliability issues identified in the security test report, improving password validation and error handling for filesystem permission errors.
+
+### Security Fixes
+
+#### DEF-01: Empty Password Hard-Rejection (CRITICAL)
+
+Empty passwords are now immediately rejected with a clear error message. Previously, empty passwords could be accepted during vault creation, bypassing entropy calculations and confirmation prompts.
+
+**Changes:**
+- Added immediate validation for empty passwords in `get_password_for_vault()` function
+- Empty passwords are rejected before any entropy calculation
+- Error message: `Password cannot be empty.`
+- Applies to all password input methods: interactive prompts, `--password` flag, and `--password-file`
+
+#### DEF-02: PermissionError Handling (HIGH)
+
+Permission errors are now properly distinguished from vault-not-found errors. The application no longer treats permission denied errors as missing vault files, preventing unnecessary password prompts and vault creation attempts.
+
+**Changes:**
+- Added `PermissionDenied` and `VaultNotFound` exception classes for precise error handling
+- `Vault.load()` now distinguishes between `FileNotFoundError` and `PermissionError`
+- `Vault.save()` properly handles `PermissionError` with user-friendly messages
+- On permission errors, the CLI:
+  - Does NOT prompt for password
+  - Does NOT attempt to create a vault
+  - Shows: `Error: Cannot access vault directory (permission denied).`
+  - No Python stack traces are shown to users
+
+### UX Improvements
+
+- All error messages are now user-friendly without exposing internal implementation details
+- Mutating operations (save, import, backup) are blocked when permissions are insufficient
+- Atomic write behavior is preserved for vault operations
+
+### Compatibility
+
+- This release maintains full backward compatibility with existing vaults
+- No changes to the vault file format
+- Existing data is preserved
+
+### Reference
+
+- Security Test Report: DEF-01 (Empty Password Rejection)
+- Security Test Report: DEF-02 (PermissionError Handling)
+
+---
+
 # Release Notes for Desktop-2FA 0.7.1
 
 ## Security Patch

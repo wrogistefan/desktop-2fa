@@ -46,6 +46,18 @@ class VaultIOError(VaultError):
     pass
 
 
+class PermissionDenied(VaultIOError):
+    """Raised when the user lacks permission to access the vault."""
+
+    pass
+
+
+class VaultNotFound(VaultIOError):
+    """Raised when the vault file does not exist."""
+
+    pass
+
+
 class Vault:
     """Vault using Pydantic models for validation and structure."""
 
@@ -159,8 +171,14 @@ class Vault:
         try:
             with open(path, "rb") as f:
                 blob = f.read()
-        except OSError:
-            raise VaultIOError("Failed to read vault file") from None
+        except PermissionError:
+            raise PermissionDenied(
+                "Cannot access vault file (permission denied)"
+            ) from None
+        except FileNotFoundError:
+            raise VaultNotFound("Vault file not found") from None
+        except OSError as e:
+            raise VaultIOError(f"Failed to read vault file: {e}") from None
 
         if len(blob) < HEADER_LEN + 16:
             raise UnsupportedFormat("Vault file is too short or invalid format")
@@ -187,7 +205,7 @@ class Vault:
         except ValueError as e:
             raise InvalidPassword("Invalid password or corrupted vault") from e
 
-        # decrypt() zwraca bytes; Pydantic v2 akceptuje bytes jako JSON input.
+        # decrypt() returns bytes; Pydantic v2 accepts bytes as JSON input.
         try:
             data = VaultData.model_validate_json(raw_json)
         except ValidationError as e:
@@ -250,6 +268,15 @@ class Vault:
                 raise
 
             os.replace(temp_path, path)
+        except PermissionError:
+            if temp_path.exists():
+                try:
+                    temp_path.unlink()
+                except OSError:
+                    pass
+            raise PermissionDenied(
+                "Cannot access vault directory (permission denied)"
+            ) from None
         except OSError as e:
             if temp_path.exists():
                 try:

@@ -19,7 +19,12 @@ if TYPE_CHECKING:
 
 
 def list_entries(path: Path, password: str) -> None:
-    """List all entries in the vault."""
+    """List all entries in the vault.
+
+    Args:
+        path: Path to the vault file.
+        password: Password to decrypt the vault.
+    """
     vault = Vault.load(path, password)
     for entry in vault.entries:
         print(f"- {entry.account_name} ({entry.issuer})")
@@ -28,7 +33,15 @@ def list_entries(path: Path, password: str) -> None:
 def add_entry(
     path: Path, issuer: str, account: str, secret: str, password: str
 ) -> None:
-    """Add a new entry to the vault."""
+    """Add a new entry to the vault.
+
+    Args:
+        path: Path to the vault file.
+        issuer: The issuer name.
+        account: The account name.
+        secret: The Base32-encoded TOTP secret.
+        password: Password to encrypt the vault.
+    """
     vault = Vault.load(path, password)
     vault.add_entry(name=account, issuer=issuer, secret=secret)
     vault.save(path, password)
@@ -36,7 +49,13 @@ def add_entry(
 
 
 def generate_code(path: Path, name: str, password: str) -> None:
-    """Generate and print the TOTP code for the given issuer."""
+    """Generate and print the TOTP code for the given entry.
+
+    Args:
+        path: Path to the vault file.
+        name: The name of the entry.
+        password: Password to decrypt the vault.
+    """
     vault = Vault.load(path, password)
     entry = vault.get_entry(name)
 
@@ -53,7 +72,13 @@ def generate_code(path: Path, name: str, password: str) -> None:
 
 
 def remove_entry(path: Path, name: str, password: str) -> None:
-    """Remove an entry from the vault."""
+    """Remove an entry from the vault.
+
+    Args:
+        path: Path to the vault file.
+        name: The name of the entry to remove.
+        password: Password to decrypt the vault.
+    """
     vault = Vault.load(path, password)
     vault.remove_entry(name)
     vault.save(path, password)
@@ -61,7 +86,14 @@ def remove_entry(path: Path, name: str, password: str) -> None:
 
 
 def rename_entry(path: Path, old: str, new: str, password: str) -> None:
-    """Rename an entry."""
+    """Rename an entry in the vault.
+
+    Args:
+        path: Path to the vault file.
+        old: The current name of the entry.
+        new: The new name for the entry.
+        password: Password to decrypt the vault.
+    """
     vault = Vault.load(path, password)
     entry = vault.get_entry(old)
     entry.account_name = new
@@ -72,38 +104,74 @@ def rename_entry(path: Path, old: str, new: str, password: str) -> None:
 
 
 def export_vault(path: Path, export_path: Path, password: str) -> None:
-    """Export the vault file."""
+    """Export the vault to a new file.
+
+    Args:
+        path: Path to the source vault file.
+        export_path: Path where the vault will be exported.
+        password: Password to decrypt the vault.
+    """
     vault = Vault.load(path, password)
     vault.save(export_path, password)
     print(f"Exported vault to: {export_path}")
 
 
 def import_vault(path: Path, import_path: Path, password: str) -> None:
-    """Import the vault file."""
+    """Import a vault from a source file.
+
+    Args:
+        path: Path to the destination vault file.
+        import_path: Path to the source vault file.
+        password: Password to encrypt the destination vault.
+    """
     vault = Vault.load(import_path, password=password)
     vault.save(path, password)
     print("Vault imported from")
 
 
 def backup_vault(path: Path, backup_path: Path, password: str) -> None:
-    """Create a backup of the vault file."""
+    """Create a backup of the vault file.
+
+    Args:
+        path: Path to the source vault file.
+        backup_path: Path where the backup will be created.
+        password: Password to decrypt the vault.
+    """
     vault = Vault.load(path, password)
     vault.save(backup_path, password)
     print("Backup created:")
 
 
 def get_vault_path() -> str:
-    """Get the default path for the vault file."""
+    """Get the default path for the vault file.
+
+    Returns:
+        Path to the vault file as a string.
+    """
     return str(Path.home() / ".desktop-2fa" / "vault")
 
 
 def load_vault(path: Path, password: str) -> Vault:
-    """Load the vault from the specified path."""
+    """Load the vault from the specified path.
+
+    Args:
+        path: Path to the vault file.
+        password: Password to decrypt the vault.
+
+    Returns:
+        The loaded Vault instance.
+    """
     return Vault.load(path, password)
 
 
 def save_vault(path: Path, vault: Vault, password: str) -> None:
-    """Save the vault to the specified path."""
+    """Save the vault to the specified path.
+
+    Args:
+        path: Path to save the vault file.
+        vault: The Vault instance to save.
+        password: Password to encrypt the vault.
+    """
     vault.save(path, password)
 
 
@@ -118,7 +186,7 @@ def get_password_for_vault(ctx: typer.Context, new_vault: bool = False) -> str:
         The password string.
 
     Raises:
-        typer.Exit: If password cannot be obtained.
+        typer.Exit: If password cannot be obtained or is empty.
     """
     password = ctx.obj.get("password")
     password_file = ctx.obj.get("password_file")
@@ -131,13 +199,22 @@ def get_password_for_vault(ctx: typer.Context, new_vault: bool = False) -> str:
 
     # Direct password
     if password:
+        # DEF-01: Immediately reject empty passwords
+        if not password:
+            print_error("Password cannot be empty.")
+            raise typer.Exit(1)
         return password  # type: ignore[no-any-return]
 
     # Password from file
     if password_file:
         try:
             with open(password_file, "r") as f:
-                return f.read().strip()
+                pwd = f.read().strip()
+                # DEF-01: Immediately reject empty passwords
+                if not pwd:
+                    print_error("Password cannot be empty.")
+                    raise typer.Exit(1)
+                return pwd
         except FileNotFoundError:
             print("Error: Password file not found.")
             raise typer.Exit(1)
@@ -154,6 +231,10 @@ def get_password_for_vault(ctx: typer.Context, new_vault: bool = False) -> str:
     if new_vault:
         rprint(Text("Enter new vault password:", style="cyan"))
         pwd = typer.prompt("", hide_input=True)
+        # DEF-01: Immediately reject empty passwords
+        if not pwd:
+            print_error("Password cannot be empty.")
+            raise typer.Exit(1)
         rprint(Text("Confirm vault password:", style="cyan"))
         confirm = typer.prompt("", hide_input=True)
         if pwd != confirm:
@@ -183,7 +264,17 @@ def create_vault(path: Path, password: str) -> None:
 
 
 def _read_password_file(password_file: str) -> str:
-    """Read password from file."""
+    """Read password from a file.
+
+    Args:
+        password_file: Path to the file containing the password.
+
+    Returns:
+        The password read from the file.
+
+    Raises:
+        typer.Exit: If the file cannot be read.
+    """
     try:
         with open(password_file, "r") as f:
             return f.read().strip()
@@ -196,7 +287,11 @@ def _read_password_file(password_file: str) -> str:
 
 
 def load_config() -> dict[str, Any]:
-    """Load configuration from ~/.config/d2fa/config.toml."""
+    """Load configuration from ~/.config/d2fa/config.toml.
+
+    Returns:
+        Dictionary containing the configuration.
+    """
     config_path = Path.home() / ".config" / "d2fa" / "config.toml"
     if not config_path.exists():
         return {}
@@ -205,7 +300,14 @@ def load_config() -> dict[str, Any]:
 
 
 def calculate_entropy(password: str) -> float:
-    """Calculate the entropy of a password."""
+    """Calculate the entropy of a password.
+
+    Args:
+        password: The password to analyze.
+
+    Returns:
+        The estimated entropy in bits.
+    """
     words = password.split()
     if len(words) >= 4:
         return 11 * len(words)
@@ -229,7 +331,14 @@ def calculate_entropy(password: str) -> float:
 
 
 def _should_skip_password_checks(ctx: typer.Context) -> bool:
-    """Check if password strength checks should be skipped."""
+    """Check if password strength checks should be skipped.
+
+    Args:
+        ctx: Typer context with options.
+
+    Returns:
+        True if checks should be skipped, False otherwise.
+    """
     return (
         ctx.obj.get("allow_weak_passwords", False)
         or os.getenv("D2FA_ALLOW_WEAK_PASSWORDS") == "1"
@@ -238,7 +347,14 @@ def _should_skip_password_checks(ctx: typer.Context) -> bool:
 
 
 def _enforce_password_strength(password: str) -> None:
-    """Enforce password strength requirements."""
+    """Enforce password strength requirements.
+
+    Args:
+        password: The password to validate.
+
+    Raises:
+        typer.Exit: If password is too weak and rejection is enabled.
+    """
     config = load_config()
     security = config.get("security", {})
     min_entropy = security.get("min_password_entropy", 60)
@@ -262,7 +378,17 @@ def _enforce_password_strength(password: str) -> None:
 
 
 def get_password_from_cli(ctx: typer.Context) -> str:
-    """Legacy alias for backward compatibility."""
+    """Get the password for vault operations from CLI context.
+
+    Args:
+        ctx: Typer context with password options.
+
+    Returns:
+        The password string.
+
+    Raises:
+        typer.Exit: If password cannot be obtained.
+    """
     return get_password_for_vault(ctx, new_vault=False)
 
 

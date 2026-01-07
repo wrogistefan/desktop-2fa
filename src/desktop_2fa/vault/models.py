@@ -7,7 +7,16 @@ from pydantic import BaseModel, Field, field_validator
 
 
 class TotpEntry(BaseModel):
-    """Model for a TOTP entry in the vault."""
+    """Model representing a TOTP entry in the vault.
+
+    Attributes:
+        issuer: The service provider name (e.g., "GitHub").
+        account_name: The account identifier (e.g., "user@example.com").
+        secret: The Base32-encoded TOTP secret key.
+        digits: Number of digits in the generated code (6, 7, or 8).
+        period: Time period in seconds between code changes (default 30).
+        algorithm: Hash algorithm used for TOTP generation (SHA1, SHA256, SHA512).
+    """
 
     issuer: Optional[str] = Field(None)
     account_name: Optional[str] = Field(None)
@@ -56,7 +65,12 @@ class TotpEntry(BaseModel):
 
 
 class VaultData(BaseModel):
-    """Model for the vault data structure."""
+    """Model representing the vault data structure.
+
+    Attributes:
+        version: Vault format version (default 1).
+        entries: List of TOTP entries in the vault.
+    """
 
     version: int = 1
     entries: list[TotpEntry] = Field(default_factory=list)

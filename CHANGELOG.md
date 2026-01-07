@@ -4,6 +4,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.7.2] — Security & Reliability Patch
+
+### 🛡️ Security Fixes
+
+#### DEF-01: Empty Password Hard-Rejection (CRITICAL)
+
+Empty passwords are now immediately rejected with a clear error message. Previously, empty passwords could be accepted during vault creation, bypassing entropy calculations and confirmation prompts.
+
+- Added immediate validation for empty passwords in `get_password_for_vault()` function
+- Empty passwords are rejected before any entropy calculation
+- Error message: `Password cannot be empty.`
+- Applies to all password input methods: interactive prompts, `--password` flag, and `--password-file`
+
+#### DEF-02: PermissionError Handling (HIGH)
+
+Permission errors are now properly distinguished from vault-not-found errors. The application no longer treats permission denied errors as missing vault files, preventing unnecessary password prompts and vault creation attempts.
+
+- Added `PermissionDenied` and `VaultNotFound` exception classes for precise error handling
+- `Vault.load()` now distinguishes between `FileNotFoundError` and `PermissionError`
+- `Vault.save()` properly handles `PermissionError` with user-friendly messages
+- On permission errors, the CLI:
+  - Does NOT prompt for password
+  - Does NOT attempt to create a vault
+  - Shows: `Error: Cannot access vault directory (permission denied).`
+  - No Python stack traces are shown to users
+
+### 📚 Documentation
+- Updated RELEASE_NOTES.md with detailed security fix documentation
+- Updated README.md for version 0.7.2
+- Added password validation rules section to user manual
+- Added permission denied error handling documentation
+
+### 🧪 Testing
+- Updated `test_vault_load_file_not_found` to expect new error message
+- All 187 tests pass
+
+---
+
 ## [0.7.1] — Security Patch
 
 ### 🛡️ Security Hardening

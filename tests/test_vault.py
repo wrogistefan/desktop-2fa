@@ -277,7 +277,7 @@ def test_vault_save_no_password_default(tmp_path: Path) -> None:
 def test_vault_load_file_not_found(tmp_path: Path) -> None:
     path = tmp_path / "nonexistent.bin"
 
-    with pytest.raises(Exception, match="Failed to read vault file"):
+    with pytest.raises(Exception, match="Vault file not found"):
         Vault.load(str(path))
 
 
@@ -329,3 +329,160 @@ def test_vault_load_duplicate_names_warning(tmp_path: Path, capsys: Any) -> None
 
     # Vault should still load successfully
     assert len(loaded.entries) == 2
+
+
+def test_vault_rename_entry_not_implemented() -> None:
+    vault = Vault()
+    vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
+
+    with pytest.raises(NotImplementedError, match="rename will be implemented"):
+        vault.rename_entry("Test", "NewName")
+
+
+def test_vault_load_permission_error(tmp_path: Path) -> None:
+    path = tmp_path / "vault.bin"
+
+    # Create a mock that raises PermissionError
+    import builtins
+
+    original_open = builtins.open
+
+    def mock_open(*args: Any, **kwargs: Any) -> None:
+        raise PermissionError("Permission denied")
+
+    builtins.open = mock_open  # type: ignore[assignment]
+    try:
+        with pytest.raises(Exception, match="Cannot access vault file"):
+            Vault.load(str(path))
+    finally:
+        builtins.open = original_open
+
+
+def test_vault_load_os_error(tmp_path: Path) -> None:
+    path = tmp_path / "vault.bin"
+
+    # Create a mock that raises OSError
+    import builtins
+
+    original_open = builtins.open
+
+    def mock_open(*args: Any, **kwargs: Any) -> None:
+        raise OSError("Disk error")
+
+    builtins.open = mock_open  # type: ignore[assignment]
+    try:
+        with pytest.raises(Exception, match="Failed to read vault file"):
+            Vault.load(str(path))
+    finally:
+        builtins.open = original_open
+
+
+def test_vault_save_permission_error_cleanup(tmp_path: Path, monkeypatch: Any) -> None:
+    from desktop_2fa.vault.vault import PermissionDenied
+
+    path = tmp_path / "vault.bin"
+    temp_path = path.with_suffix(".tmp")
+
+    vault = Vault()
+    vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
+
+    # Mock os.replace to raise PermissionError after temp file is written
+    def mock_replace(src: Any, dst: Any) -> None:
+        raise PermissionError("Permission denied")
+
+    monkeypatch.setattr("os.replace", mock_replace)
+
+    with pytest.raises(PermissionDenied):
+        vault.save(str(path))
+
+    # Temp file should be cleaned up
+    assert not temp_path.exists()
+
+
+def test_vault_save_os_error_cleanup(tmp_path: Path, monkeypatch: Any) -> None:
+    from desktop_2fa.vault.vault import VaultIOError
+
+    path = tmp_path / "vault.bin"
+    temp_path = path.with_suffix(".tmp")
+
+    vault = Vault()
+    vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
+
+    # Mock os.open to return a fake fd, then fail on fdopen
+    def mock_open(*args: Any, **kwargs: Any) -> int:
+        return 1  # fake file descriptor
+
+    def mock_fdopen(fd: int, mode: str = "w") -> Any:
+        raise OSError(28, "No space left on device")
+
+    monkeypatch.setattr("os.open", mock_open)
+    monkeypatch.setattr("os.fdopen", mock_fdopen)
+
+    with pytest.raises(VaultIOError):
+        vault.save(str(path))
+
+    # Temp file should be cleaned up
+    assert not temp_path.exists()
+
+
+def test_vault_save_os_error_cleanup_on_unlink_failure(
+    tmp_path: Path, monkeypatch: Any
+) -> None:
+    from desktop_2fa.vault.vault import VaultIOError
+
+    path = tmp_path / "vault.bin"
+
+    vault = Vault()
+    vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
+
+    # First mock os.open to succeed, then os.fsync to fail with OS error
+    # Then mock unlink to also fail
+    call_count = [0]
+
+    def mock_open(*args: Any, **kwargs: Any) -> int:
+        call_count[0] += 1
+        return 1  # fake file descriptor
+
+    def mock_fsync(fd: int) -> None:
+        raise OSError(28, "No space left on device")
+
+    # Make unlink fail with OSError (covers lines 278-281)
+    def mock_unlink(path: Any) -> None:
+        raise OSError("Cannot remove temp file")
+
+    monkeypatch.setattr("os.open", mock_open)
+    monkeypatch.setattr("os.fsync", mock_fsync)
+    monkeypatch.setattr("pathlib.Path.unlink", mock_unlink)
+
+    with pytest.raises(VaultIOError):
+        vault.save(str(path))
+
+    # The test passes if VaultIOError is raised (unlink failure doesn't propagate)
+
+
+def test_vault_save_permission_error_cleanup_on_unlink_failure(
+    tmp_path: Path, monkeypatch: Any
+) -> None:
+    from desktop_2fa.vault.vault import PermissionDenied
+
+    path = tmp_path / "vault.bin"
+
+    vault = Vault()
+    vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
+
+    # Mock os.replace to raise PermissionError
+    # Then mock unlink to also fail with OSError (covers lines 273-274)
+    def mock_replace(src: Any, dst: Any) -> None:
+        raise PermissionError("Permission denied")
+
+    # Make unlink fail with OSError
+    def mock_unlink(path: Any) -> None:
+        raise OSError("Cannot remove temp file")
+
+    monkeypatch.setattr("os.replace", mock_replace)
+    monkeypatch.setattr("pathlib.Path.unlink", mock_unlink)
+
+    with pytest.raises(PermissionDenied):
+        vault.save(str(path))
+
+    # The test passes if PermissionDenied is raised (unlink failure doesn't propagate)

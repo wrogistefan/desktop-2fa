@@ -50,8 +50,7 @@ def main(
     - `desktop-2fa` (no command) → prints version, exit 0
     - any command → ctx.obj must be initialized and no early exit
     """
-
-    # ZAWSZE inicjalizujemy ctx.obj – niezależnie od komendy / opcji
+    # ALWAYS initialize ctx.obj - regardless of command/options
     ctx.obj = {
         "password": password,
         "password_file": password_file,
@@ -59,9 +58,9 @@ def main(
         "allow_weak_passwords": allow_weak_passwords,
     }
 
-    # Jeśli użytkownik podał --version LUB nie podał żadnej komendy,
-    # zachowujemy się jak "print version and exit".
-    # invoke_without_command=True gwarantuje, że callback jest wywołany także bez komendy.
+    # If user provided --version OR no command was given,
+    # behave like "print version and exit".
+    # invoke_without_command=True guarantees callback is called even without a command.
     if version or ctx.invoked_subcommand is None:
         print(f"Desktop-2FA v{__version__}")
         raise typer.Exit()
@@ -69,6 +68,7 @@ def main(
 
 @app.command("list")
 def list_cmd(ctx: typer.Context) -> None:
+    """List all TOTP entries in the vault."""
     commands.list_entries(ctx)
 
 
@@ -79,6 +79,14 @@ def add_cmd(
     issuer: str = typer.Argument(None, help="Issuer name or otpauth:// URL"),
     secret: str = typer.Argument(None, help="TOTP secret (Base32)"),
 ) -> None:
+    """Add a new TOTP entry to the vault.
+
+    Args:
+        ctx: Typer context object containing configuration.
+        name: Unique name identifier for the entry.
+        issuer: Issuer name or otpauth:// URL.
+        secret: TOTP secret in Base32 format.
+    """
     # Interactive mode: prompt for missing arguments
     interactive = ctx.obj.get("interactive", False)
     if interactive and (name is None or issuer is None or secret is None):
@@ -108,21 +116,46 @@ def add_cmd(
 
 @app.command("code")
 def code_cmd(ctx: typer.Context, name: str) -> None:
+    """Generate and display the TOTP code for an entry.
+
+    Args:
+        ctx: Typer context object containing configuration.
+        name: Name of the entry to generate code for.
+    """
     commands.generate_code(name, ctx)
 
 
 @app.command("remove")
 def remove_cmd(ctx: typer.Context, name: str) -> None:
+    """Remove a TOTP entry from the vault.
+
+    Args:
+        ctx: Typer context object containing configuration.
+        name: Name of the entry to remove.
+    """
     commands.remove_entry(name, ctx)
 
 
 @app.command("rename")
 def rename_cmd(ctx: typer.Context, old: str, new: str) -> None:
+    """Rename a TOTP entry in the vault.
+
+    Args:
+        ctx: Typer context object containing configuration.
+        old: Current name of the entry.
+        new: New name for the entry.
+    """
     commands.rename_entry(old, new, ctx)
 
 
 @app.command("export")
 def export_cmd(ctx: typer.Context, path: str) -> None:
+    """Export the vault to a JSON file.
+
+    Args:
+        ctx: Typer context object containing configuration.
+        path: File path to export the vault to.
+    """
     commands.export_vault(path, ctx)
 
 
@@ -132,11 +165,19 @@ def import_cmd(
     source: str,
     force: bool = typer.Option(False, "--force", help="Overwrite existing vault"),
 ) -> None:
+    """Import entries from an external source.
+
+    Args:
+        ctx: Typer context object containing configuration.
+        source: File path or URI to import from.
+        force: Whether to overwrite existing vault.
+    """
     commands.import_vault(source, force, ctx)
 
 
 @app.command("backup")
 def backup_cmd(ctx: typer.Context) -> None:
+    """Create a backup of the vault."""
     commands.backup_vault(ctx)
 
 
@@ -145,5 +186,10 @@ def init_vault_cmd(
     ctx: typer.Context,
     force: bool = typer.Option(False, "--force", help="Overwrite existing vault"),
 ) -> None:
-    """Initialize a new encrypted vault."""
+    """Initialize a new encrypted vault.
+
+    Args:
+        ctx: Typer context object containing configuration.
+        force: Whether to overwrite existing vault.
+    """
     commands.init_vault(force, ctx)

@@ -712,7 +712,6 @@ def test_generate_code_unsupported_format(
 def test_rename_entry_with_duplicates_aborts(
     fake_vault_env: Path, capsys: Any, fake_ctx: Any
 ) -> None:
-    """Test that rename aborts when multiple entries match the old name."""
     from desktop_2fa.vault import Vault
     from desktop_2fa.vault.models import TotpEntry
 
@@ -749,7 +748,6 @@ def test_rename_entry_with_duplicates_aborts(
 def test_rename_entry_no_duplicates_success(
     fake_vault_env: Path, capsys: Any, fake_ctx: Any
 ) -> None:
-    """Test that rename works when no duplicates exist."""
     commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
     capsys.readouterr()  # clear output
 
@@ -768,7 +766,6 @@ def test_rename_entry_no_duplicates_success(
 def test_rename_entry_case_sensitive(
     fake_vault_env: Path, capsys: Any, fake_ctx: Any
 ) -> None:
-    """Test that rename is case-sensitive (github ≠ GitHub)."""
     # Create vault with one entry
     commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
     capsys.readouterr()  # clear output
@@ -788,7 +785,6 @@ def test_rename_entry_case_sensitive(
 def test_rename_entry_by_issuer(
     fake_vault_env: Path, capsys: Any, fake_ctx: Any
 ) -> None:
-    """Test that rename works when searching by issuer."""
     commands.add_entry("MyAccount", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
     capsys.readouterr()  # clear output
 
@@ -807,7 +803,6 @@ def test_rename_entry_by_issuer(
 def test_rename_entry_no_vault(
     fake_vault_env: Path, capsys: Any, fake_ctx: Any
 ) -> None:
-    """Test that rename exits cleanly when no vault exists."""
     # Ensure no vault exists
     if fake_vault_env.exists():
         fake_vault_env.unlink()
@@ -819,7 +814,6 @@ def test_rename_entry_no_vault(
 
 
 def test_rename_entry_missing_entry_raises(fake_vault_env: Path, fake_ctx: Any) -> None:
-    """Test that rename raises ValueError when entry doesn't exist."""
     # Create empty vault
     from desktop_2fa.vault import Vault
 
@@ -828,3 +822,706 @@ def test_rename_entry_missing_entry_raises(fake_vault_env: Path, fake_ctx: Any) 
 
     with pytest.raises(ValueError, match="not found"):
         commands.rename_entry("Nonexistent", "NewName", fake_ctx)
+
+
+# =============================================================================
+# Tests for uncovered exception handlers in commands.py
+# =============================================================================
+
+
+def test_add_entry_interactive_invalid_base32(
+    fake_vault_env: Path, capsys: Any, fake_ctx: Any
+) -> None:
+    # Create a vault first so add_entry_interactive path is taken
+    from desktop_2fa.vault import Vault
+
+    vault = Vault()
+    vault.save(fake_vault_env, TEST_PASSWORD)
+
+    commands.add_entry_interactive("Test", "Test", "invalid_secret!@#", fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "Invalid secret: not valid Base32" in out
+    assert "Example: ABCDEFGHIJKL2345" in out
+
+
+def test_list_entries_permission_error_directory(
+    fake_vault_env: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
+) -> None:
+    # Create a vault first
+    from desktop_2fa.vault import Vault
+
+    vault = Vault()
+    vault.save(fake_vault_env, TEST_PASSWORD)
+
+    # Mock mkdir to raise PermissionError
+    def mock_mkdir(*args: Any, **kwargs: Any) -> None:
+        raise PermissionError("Permission denied")
+
+    monkeypatch.setattr("pathlib.Path.mkdir", mock_mkdir)
+
+    commands.list_entries(fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "Cannot access vault directory (permission denied)" in out
+
+
+def test_list_entries_corrupted_vault(
+    fake_vault_env: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
+) -> None:
+    # Mock Vault.load to raise CorruptedVault
+    from desktop_2fa.vault.vault import CorruptedVault
+
+    def mock_load(*args: Any, **kwargs: Any) -> None:
+        raise CorruptedVault("Vault file is corrupted")
+
+    monkeypatch.setattr("desktop_2fa.vault.Vault.load", mock_load)
+
+    # Create a dummy file so the path exists
+    fake_vault_env.write_bytes(b"dummy")
+
+    commands.list_entries(fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "Vault file is corrupted" in out
+
+
+def test_list_entries_io_error(
+    fake_vault_env: Path, capsys: Any, fake_ctx: Any
+) -> None:
+    # Create a valid-looking vault that will fail on read
+    from desktop_2fa.vault import Vault
+
+    vault = Vault()
+    vault.save(fake_vault_env, TEST_PASSWORD)
+
+    # Mock open to raise OSError
+    import builtins
+
+    original_open = builtins.open
+
+    def mock_open(*args: Any, **kwargs: Any) -> None:
+        raise OSError("Disk error")
+
+    builtins.open = mock_open  # type: ignore[assignment]
+    try:
+        commands.list_entries(fake_ctx)
+        out = capsys.readouterr().out.strip()
+        assert "Failed to access vault file" in out
+    finally:
+        builtins.open = original_open
+
+
+def test_add_entry_permission_error_directory(
+    fake_vault_env: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
+) -> None:
+    # Create a vault first
+    from desktop_2fa.vault import Vault
+
+    vault = Vault()
+    vault.save(fake_vault_env, TEST_PASSWORD)
+
+    # Mock mkdir to raise PermissionError
+    def mock_mkdir(*args: Any, **kwargs: Any) -> None:
+        raise PermissionError("Permission denied")
+
+    monkeypatch.setattr("pathlib.Path.mkdir", mock_mkdir)
+
+    commands.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP", fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "Cannot access vault directory (permission denied)" in out
+
+
+def test_add_entry_vault_not_found_creates_new(
+    fake_vault_env: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
+) -> None:
+    # Create a vault first
+    from desktop_2fa.vault import Vault
+
+    vault = Vault()
+    vault.save(fake_vault_env, TEST_PASSWORD)
+
+    # Mock Vault.load to raise VaultNotFound
+    from desktop_2fa.vault.vault import VaultNotFound
+
+    def mock_load(*args: Any, **kwargs: Any) -> None:
+        raise VaultNotFound("Vault file not found")
+
+    monkeypatch.setattr("desktop_2fa.vault.Vault.load", mock_load)
+
+    commands.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP", fake_ctx)
+
+    out_lines = capsys.readouterr().out.strip().splitlines()
+    out_text = " ".join(out_lines)  # Join for substring checking
+    assert "No vault found" in out_text
+    assert "new encrypted vault will be created" in out_text
+    assert "Vault created at" in out_text
+    assert "Entry added: Test" in out_text
+
+
+def test_generate_code_no_vault_warns(
+    fake_vault_env: Path, capsys: Any, fake_ctx: Any
+) -> None:
+    # Ensure no vault exists
+    if fake_vault_env.exists():
+        fake_vault_env.unlink()
+
+    commands.generate_code("Test", fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "No vault found" in out
+    assert "Nothing to generate" in out
+
+
+def test_rename_entry_permission_denied(
+    fake_vault_env: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
+) -> None:
+    # Create a vault first
+    from desktop_2fa.vault import Vault
+
+    vault = Vault()
+    vault.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP")
+    vault.save(fake_vault_env, TEST_PASSWORD)
+
+    # Mock Vault.load to raise PermissionDenied
+    from desktop_2fa.vault.vault import PermissionDenied
+
+    def mock_load(*args: Any, **kwargs: Any) -> None:
+        raise PermissionDenied("Permission denied")
+
+    monkeypatch.setattr("desktop_2fa.vault.Vault.load", mock_load)
+
+    commands.rename_entry("GitHub", "NewGitHub", fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "Cannot access vault directory (permission denied)" in out
+
+
+def test_rename_entry_io_error(
+    fake_vault_env: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
+) -> None:
+    # Create a vault first
+    from desktop_2fa.vault import Vault
+
+    vault = Vault()
+    vault.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP")
+    vault.save(fake_vault_env, TEST_PASSWORD)
+
+    # Mock Vault.save to raise VaultIOError
+    from desktop_2fa.vault.vault import VaultIOError
+
+    def mock_save(self: Vault, *args: Any, **kwargs: Any) -> None:
+        raise VaultIOError("Disk error")
+
+    monkeypatch.setattr("desktop_2fa.vault.Vault.save", mock_save)
+
+    commands.rename_entry("GitHub", "NewGitHub", fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "Failed to access vault file" in out
+
+
+def test_backup_vault_permission_denied(
+    fake_vault_env: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
+) -> None:
+    # Create a vault first
+    from desktop_2fa.vault import Vault
+
+    vault = Vault()
+    vault.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP")
+    vault.save(fake_vault_env, TEST_PASSWORD)
+
+    # Mock Vault.load to raise PermissionDenied
+    from desktop_2fa.vault.vault import PermissionDenied
+
+    def mock_load(*args: Any, **kwargs: Any) -> None:
+        raise PermissionDenied("Permission denied")
+
+    monkeypatch.setattr("desktop_2fa.vault.Vault.load", mock_load)
+
+    commands.backup_vault(fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "Cannot access vault directory (permission denied)" in out
+
+
+def test_backup_vault_permission_error_io(
+    fake_vault_env: Path, capsys: Any, fake_ctx: Any
+) -> None:
+    # Create a corrupted vault file
+    fake_vault_env.write_bytes(b"WRNG\x01" + b"16byte_salt_here" + b"encrypted_data")
+
+    commands.backup_vault(fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "Vault file format is unsupported" in out
+
+
+def test_backup_vault_io_error(
+    fake_vault_env: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
+) -> None:
+    # Create a vault first
+    from desktop_2fa.vault import Vault
+
+    vault = Vault()
+    vault.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP")
+    vault.save(fake_vault_env, TEST_PASSWORD)
+
+    # Mock Vault.save to raise VaultIOError
+    from desktop_2fa.vault.vault import VaultIOError
+
+    def mock_save(self: Vault, *args: Any, **kwargs: Any) -> None:
+        raise VaultIOError("Disk full")
+
+    monkeypatch.setattr("desktop_2fa.vault.Vault.save", mock_save)
+
+    commands.backup_vault(fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "Failed to access vault file" in out
+
+
+def test_init_vault_permission_error(
+    fake_vault_env: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
+) -> None:
+    # Ensure no vault exists
+    if fake_vault_env.exists():
+        fake_vault_env.unlink()
+
+    # Mock mkdir to raise PermissionError
+    def mock_mkdir(*args: Any, **kwargs: Any) -> None:
+        raise PermissionError("Permission denied")
+
+    monkeypatch.setattr("pathlib.Path.mkdir", mock_mkdir)
+
+    commands.init_vault(False, fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "Cannot access vault directory (permission denied)" in out
+
+
+def test_init_vault_permission_denied_on_save(
+    fake_vault_env: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
+) -> None:
+    from desktop_2fa.vault import Vault
+
+    # Ensure no vault exists
+    if fake_vault_env.exists():
+        fake_vault_env.unlink()
+
+    # Mock Vault.save to raise PermissionDenied
+    from desktop_2fa.vault.vault import PermissionDenied
+
+    def mock_save(self: Vault, *args: Any, **kwargs: Any) -> None:
+        raise PermissionDenied("Permission denied")
+
+    monkeypatch.setattr("desktop_2fa.vault.Vault.save", mock_save)
+
+    commands.init_vault(False, fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "Cannot access vault directory (permission denied)" in out
+
+
+def test_init_vault_io_error_on_save(
+    fake_vault_env: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
+) -> None:
+    from desktop_2fa.vault import Vault
+
+    # Ensure no vault exists
+    if fake_vault_env.exists():
+        fake_vault_env.unlink()
+
+    # Mock Vault.save to raise VaultIOError
+    from desktop_2fa.vault.vault import VaultIOError
+
+    def mock_save(self: Vault, *args: Any, **kwargs: Any) -> None:
+        raise VaultIOError("Failed to create vault file")
+
+    monkeypatch.setattr("desktop_2fa.vault.Vault.save", mock_save)
+
+    commands.init_vault(False, fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "Failed to create vault file" in out
+
+
+# =============================================================================
+# Additional tests for remaining exception handlers
+# =============================================================================
+
+
+def test_list_entries_permission_denied(
+    fake_vault_env: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
+) -> None:
+    # Create a vault first
+    from desktop_2fa.vault import Vault
+    from desktop_2fa.vault.vault import PermissionDenied
+
+    vault = Vault()
+    vault.save(fake_vault_env, TEST_PASSWORD)
+
+    # Mock Vault.load to raise PermissionDenied
+    def mock_load(*args: Any, **kwargs: Any) -> None:
+        raise PermissionDenied("Permission denied")
+
+    monkeypatch.setattr("desktop_2fa.vault.Vault.load", mock_load)
+
+    commands.list_entries(fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "Cannot access vault directory (permission denied)" in out
+
+
+def test_list_entries_vault_not_found_creates_new(
+    fake_vault_env: Path, capsys: Any, fake_ctx: Any
+) -> None:
+    # Create a vault first
+    from desktop_2fa.vault import Vault
+
+    vault = Vault()
+    vault.save(fake_vault_env, TEST_PASSWORD)
+
+    # Now mock Vault.load to raise VaultNotFound
+    from desktop_2fa.vault.vault import VaultNotFound
+
+    original_load = Vault.load
+
+    def mock_load(*args: Any, **kwargs: Any) -> None:
+        raise VaultNotFound("Vault file not found")
+
+    Vault.load = staticmethod(mock_load)  # type: ignore[assignment]
+    try:
+        commands.list_entries(fake_ctx)
+        out = capsys.readouterr().out.strip()
+        assert "No vault found" in out
+        assert "new encrypted vault will be created" in out
+    finally:
+        Vault.load = original_load  # type: ignore[method-assign]
+
+
+def test_add_entry_interactive_value_error(
+    fake_vault_env: Path, capsys: Any, fake_ctx: Any
+) -> None:
+    # Create a vault with an entry first
+    from desktop_2fa.vault import Vault
+
+    vault = Vault()
+    vault.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP")
+    vault.save(fake_vault_env, TEST_PASSWORD)
+
+    # Try to add a duplicate entry using add_entry_interactive
+    commands.add_entry_interactive("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "already exists" in out
+
+
+def test_add_entry_corrupted_vault(
+    fake_vault_env: Path, capsys: Any, fake_ctx: Any
+) -> None:
+    # Create a corrupted vault file
+    fake_vault_env.write_bytes(b"WRNG\x01" + b"16byte_salt_here" + b"encrypted_data")
+
+    commands.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP", fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "Vault file format is unsupported" in out
+
+
+def test_add_entry_vault_io_error(
+    fake_vault_env: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
+) -> None:
+    # Create a vault first
+    from desktop_2fa.vault import Vault
+
+    vault = Vault()
+    vault.save(fake_vault_env, TEST_PASSWORD)
+
+    # Mock Vault.save to raise VaultIOError
+    from desktop_2fa.vault.vault import VaultIOError
+
+    def mock_save(self: Vault, *args: Any, **kwargs: Any) -> None:
+        raise VaultIOError("Disk full")
+
+    monkeypatch.setattr("desktop_2fa.vault.Vault.save", mock_save)
+
+    commands.add_entry("Test", "Test2", "JBSWY3DPEHPK3PXP", fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "Failed to access vault file" in out
+
+
+def test_generate_code_permission_denied(
+    fake_vault_env: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
+) -> None:
+    # Create a vault with an entry
+    from desktop_2fa.vault import Vault
+    from desktop_2fa.vault.vault import PermissionDenied
+
+    vault = Vault()
+    vault.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP")
+    vault.save(fake_vault_env, TEST_PASSWORD)
+
+    # Mock Vault.load to raise PermissionDenied
+    def mock_load(*args: Any, **kwargs: Any) -> None:
+        raise PermissionDenied("Permission denied")
+
+    monkeypatch.setattr("desktop_2fa.vault.Vault.load", mock_load)
+
+    commands.generate_code("GitHub", fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "Cannot access vault directory (permission denied)" in out
+
+
+def test_generate_code_value_error_invalid(
+    fake_vault_env: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
+) -> None:
+    # Create a vault with an entry
+    from desktop_2fa.vault import Vault
+    from desktop_2fa.vault.vault import InvalidPassword
+
+    vault = Vault()
+    vault.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP")
+    vault.save(fake_vault_env, TEST_PASSWORD)
+
+    # Mock Vault.load to raise InvalidPassword
+    def mock_load(*args: Any, **kwargs: Any) -> None:
+        raise InvalidPassword("Invalid password")
+
+    monkeypatch.setattr("desktop_2fa.vault.Vault.load", mock_load)
+
+    commands.generate_code("GitHub", fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "Invalid vault password" in out
+
+
+def test_generate_code_corrupted_vault(
+    fake_vault_env: Path, capsys: Any, fake_ctx: Any
+) -> None:
+    # Create a corrupted vault file
+    fake_vault_env.write_bytes(b"WRNG\x01" + b"16byte_salt_here" + b"encrypted_data")
+
+    commands.generate_code("GitHub", fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "Vault file format is unsupported" in out
+
+
+def test_generate_code_vault_io_error(
+    fake_vault_env: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
+) -> None:
+    # Create a vault with an entry
+    from desktop_2fa.vault import Vault
+
+    vault = Vault()
+    vault.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP")
+    vault.save(fake_vault_env, TEST_PASSWORD)
+
+    # Mock Vault.load to raise VaultIOError
+    from desktop_2fa.vault.vault import VaultIOError
+
+    def mock_load(*args: Any, **kwargs: Any) -> None:
+        raise VaultIOError("Disk error")
+
+    monkeypatch.setattr("desktop_2fa.vault.Vault.load", mock_load)
+
+    commands.generate_code("GitHub", fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "Failed to access vault file" in out
+
+
+def test_remove_entry_no_vault(
+    fake_vault_env: Path, capsys: Any, fake_ctx: Any
+) -> None:
+    # Ensure no vault exists
+    if fake_vault_env.exists():
+        fake_vault_env.unlink()
+
+    commands.remove_entry("GitHub", fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "No vault found" in out
+
+
+def test_remove_entry_value_error_invalid(
+    fake_vault_env: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
+) -> None:
+    # Create a vault
+    from desktop_2fa.vault import Vault
+    from desktop_2fa.vault.vault import InvalidPassword
+
+    vault = Vault()
+    vault.save(fake_vault_env, TEST_PASSWORD)
+
+    # Mock Vault.load to raise InvalidPassword
+    def mock_load(*args: Any, **kwargs: Any) -> None:
+        raise InvalidPassword("Invalid password")
+
+    monkeypatch.setattr("desktop_2fa.vault.Vault.load", mock_load)
+
+    commands.remove_entry("GitHub", fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "Invalid vault password" in out
+
+
+def test_remove_entry_corrupted_vault(
+    fake_vault_env: Path, capsys: Any, fake_ctx: Any
+) -> None:
+    # Create a corrupted vault file
+    fake_vault_env.write_bytes(b"WRNG\x01" + b"16byte_salt_here" + b"encrypted_data")
+
+    commands.remove_entry("GitHub", fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "Vault file format is unsupported" in out
+
+
+def test_remove_entry_vault_io_error(
+    fake_vault_env: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
+) -> None:
+    # Create a vault
+    from desktop_2fa.vault import Vault
+
+    vault = Vault()
+    vault.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP")
+    vault.save(fake_vault_env, TEST_PASSWORD)
+
+    # Mock Vault.save to raise VaultIOError
+    from desktop_2fa.vault.vault import VaultIOError
+
+    def mock_save(self: Vault, *args: Any, **kwargs: Any) -> None:
+        raise VaultIOError("Disk full")
+
+    monkeypatch.setattr("desktop_2fa.vault.Vault.save", mock_save)
+
+    commands.remove_entry("GitHub", fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "Failed to access vault file" in out
+
+
+def test_rename_entry_value_error_invalid(
+    fake_vault_env: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
+) -> None:
+    # Create a vault
+    from desktop_2fa.vault import Vault
+    from desktop_2fa.vault.vault import InvalidPassword
+
+    vault = Vault()
+    vault.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP")
+    vault.save(fake_vault_env, TEST_PASSWORD)
+
+    # Mock Vault.load to raise InvalidPassword
+    def mock_load(*args: Any, **kwargs: Any) -> None:
+        raise InvalidPassword("Invalid password")
+
+    monkeypatch.setattr("desktop_2fa.vault.Vault.load", mock_load)
+
+    commands.rename_entry("GitHub", "NewGitHub", fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "Invalid vault password" in out
+
+
+def test_rename_entry_corrupted_vault(
+    fake_vault_env: Path, capsys: Any, fake_ctx: Any
+) -> None:
+    # Create a corrupted vault file
+    fake_vault_env.write_bytes(b"WRNG\x01" + b"16byte_salt_here" + b"encrypted_data")
+
+    commands.rename_entry("GitHub", "NewGitHub", fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "Vault file format is unsupported" in out
+
+
+def test_rename_entry_vault_io_error(
+    fake_vault_env: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
+) -> None:
+    # Create a vault
+    from desktop_2fa.vault import Vault
+
+    vault = Vault()
+    vault.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP")
+    vault.save(fake_vault_env, TEST_PASSWORD)
+
+    # Mock Vault.save to raise VaultIOError
+    from desktop_2fa.vault.vault import VaultIOError
+
+    def mock_save(self: Vault, *args: Any, **kwargs: Any) -> None:
+        raise VaultIOError("Disk full")
+
+    monkeypatch.setattr("desktop_2fa.vault.Vault.save", mock_save)
+
+    commands.rename_entry("GitHub", "NewGitHub", fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "Failed to access vault file" in out
+
+
+def test_export_vault_permission_denied(
+    fake_vault_env: Path, tmp_path: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
+) -> None:
+    # Create a vault
+    from desktop_2fa.vault import Vault
+    from desktop_2fa.vault.vault import PermissionDenied
+
+    vault = Vault()
+    vault.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP")
+    vault.save(fake_vault_env, TEST_PASSWORD)
+
+    # Mock Vault.load to raise PermissionDenied
+    def mock_load(*args: Any, **kwargs: Any) -> None:
+        raise PermissionDenied("Permission denied")
+
+    monkeypatch.setattr("desktop_2fa.vault.Vault.load", mock_load)
+
+    export_path = tmp_path / "export.bin"
+    commands.export_vault(str(export_path), fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "Cannot access vault directory (permission denied)" in out
+
+
+def test_export_vault_corrupted_vault(
+    fake_vault_env: Path, tmp_path: Path, capsys: Any, fake_ctx: Any
+) -> None:
+    # Create a corrupted vault file
+    fake_vault_env.write_bytes(b"WRNG\x01" + b"16byte_salt_here" + b"encrypted_data")
+
+    export_path = tmp_path / "export.bin"
+    commands.export_vault(str(export_path), fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "Vault file format is unsupported" in out
+
+
+def test_export_vault_vault_io_error(
+    fake_vault_env: Path, tmp_path: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
+) -> None:
+    # Create a vault
+    from desktop_2fa.vault import Vault
+
+    vault = Vault()
+    vault.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP")
+    vault.save(fake_vault_env, TEST_PASSWORD)
+
+    # Mock Vault.save to raise VaultIOError
+    from desktop_2fa.vault.vault import VaultIOError
+
+    def mock_save(self: Vault, *args: Any, **kwargs: Any) -> None:
+        raise VaultIOError("Disk full")
+
+    monkeypatch.setattr("desktop_2fa.vault.Vault.save", mock_save)
+
+    export_path = tmp_path / "export.bin"
+    commands.export_vault(str(export_path), fake_ctx)
+
+    out = capsys.readouterr().out.strip()
+    assert "Failed to access vault file" in out

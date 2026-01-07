@@ -9,7 +9,14 @@ from xml.etree import ElementTree as ET
 
 
 def parse_aegis_json(content: str) -> List[Dict[str, Any]]:
-    """Parse Aegis JSON format."""
+    """Parse Aegis JSON export format.
+
+    Args:
+        content: JSON string content of the Aegis export.
+
+    Returns:
+        List of entry dictionaries with parsed TOTP data.
+    """
     data = json.loads(content)
     entries = []
     for entry in data.get("entries", []):
@@ -39,14 +46,13 @@ def parse_aegis_json(content: str) -> List[Dict[str, Any]]:
 
 
 def parse_bitwarden_csv(content: str) -> List[Dict[str, Any]]:
-    """Parse Bitwarden-like CSV format used in tests.
+    """Parse Bitwarden CSV export format.
 
-    Expected minimal format:
-        header: name,totp
-        rows:
-            issuer,account,secret
-            issuer,account,secret
-            issuer,secret
+    Args:
+        content: CSV string content of the Bitwarden export.
+
+    Returns:
+        List of entry dictionaries with parsed TOTP data.
     """
     reader = csv.DictReader(content.splitlines())
     entries: List[Dict[str, Any]] = []
@@ -58,11 +64,11 @@ def parse_bitwarden_csv(content: str) -> List[Dict[str, Any]]:
 
         issuer = name or ""
 
-        # Jeśli są 3 wartości → name, totp, extra
+        # If there are 3 values → name, totp, extra
         #   issuer  = name
         #   account = totp
         #   secret  = extra
-        # Jeśli są 2 wartości → name, totp
+        # If there are 2 values → name, totp
         #   issuer  = name
         #   account = name
         #   secret  = totp
@@ -91,7 +97,14 @@ def parse_bitwarden_csv(content: str) -> List[Dict[str, Any]]:
 
 
 def parse_1password_csv(content: str) -> List[Dict[str, Any]]:
-    """Parse 1Password CSV format."""
+    """Parse 1Password CSV export format.
+
+    Args:
+        content: CSV string content of the 1Password export.
+
+    Returns:
+        List of entry dictionaries with parsed TOTP data.
+    """
     reader = csv.DictReader(content.splitlines())
     entries = []
 
@@ -117,7 +130,17 @@ def parse_1password_csv(content: str) -> List[Dict[str, Any]]:
 
 
 def parse_otpauth_uri(uri: str) -> List[Dict[str, Any]]:
-    """Parse otpauth URI."""
+    """Parse otpauth:// URI format.
+
+    Args:
+        uri: The otpauth:// URI string.
+
+    Returns:
+        List of entry dictionaries with parsed TOTP data.
+
+    Raises:
+        ValueError: If the URI is invalid or not a TOTP URI.
+    """
     if not uri.startswith("otpauth://"):
         raise ValueError("Invalid otpauth URI")
 
@@ -157,7 +180,14 @@ def parse_otpauth_uri(uri: str) -> List[Dict[str, Any]]:
 
 
 def parse_freeotp_xml(content: str) -> List[Dict[str, Any]]:
-    """Parse FreeOTP XML format."""
+    """Parse FreeOTP XML export format.
+
+    Args:
+        content: XML string content of the FreeOTP export.
+
+    Returns:
+        List of entry dictionaries with parsed TOTP data.
+    """
     root = ET.fromstring(content)
     entries = []
 
@@ -191,7 +221,18 @@ def parse_freeotp_xml(content: str) -> List[Dict[str, Any]]:
 
 
 def import_from_format(format_name: str, source: str) -> List[Dict[str, Any]]:
-    """Import entries from the given format and source."""
+    """Import entries from the given format and source.
+
+    Args:
+        format_name: The format name (aegis, bitwarden, 1password, otpauth, freeotp).
+        source: File path or URI string depending on format.
+
+    Returns:
+        List of entry dictionaries with parsed TOTP data.
+
+    Raises:
+        ValueError: If the format is unsupported.
+    """
     fmt = format_name.lower()
 
     if fmt == "aegis":

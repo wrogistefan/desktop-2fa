@@ -11,19 +11,33 @@ from desktop_2fa.vault import Vault
 from desktop_2fa.vault.vault import (
     CorruptedVault,
     InvalidPassword,
+    PermissionDenied,
     UnsupportedFormat,
     VaultIOError,
+    VaultNotFound,
 )
 
 
 def _path() -> Path:
+    """Get the path to the vault file.
+
+    Returns:
+        Path to the vault file.
+    """
     return Path(helpers.get_vault_path())
 
 
 def add_entry_interactive(
     name: str, issuer: str, secret: str, ctx: typer.Context
 ) -> None:
-    """Add entry in interactive mode with explicit name."""
+    """Add an entry to the vault in interactive mode.
+
+    Args:
+        name: The unique account name.
+        issuer: The issuer name or otpauth:// URL.
+        secret: The Base32-encoded TOTP secret.
+        ctx: Typer context with password options.
+    """
     path = _path()
 
     # Validate Base32 secret
@@ -38,7 +52,6 @@ def add_entry_interactive(
         password = helpers.get_password_for_vault(ctx, new_vault=True)
         vault = Vault()
         vault.add_entry(name=name, issuer=issuer, secret=secret)
-        secret = None
         vault.save(path, password)
         print(f"Vault created at {path}")
         print(f"Entry added: {name}")
@@ -65,8 +78,26 @@ def add_entry_interactive(
 
 
 def list_entries(ctx: typer.Context) -> None:
+    """List all entries in the vault.
+
+    Args:
+        ctx: Typer context with password options.
+    """
     path = _path()
     interactive = ctx.obj.get("interactive", False)
+
+    # DEF-02: Check for permission issues before trying to create vault
+    if path.exists():
+        # Check if we can read the vault directory
+        try:
+            # Try to access the parent directory
+            path.parent.mkdir(parents=True, exist_ok=True)
+        except PermissionError:
+            helpers.print_error(
+                "Error: Cannot access vault directory (permission denied)."
+            )
+            return
+
     if not path.exists():
         helpers.print_warning("No vault found.")
         helpers.print_info("A new encrypted vault will be created.")
@@ -79,6 +110,20 @@ def list_entries(ctx: typer.Context) -> None:
         password = helpers.get_password_for_vault(ctx, new_vault=False)
         try:
             vault = Vault.load(path, password)
+        except PermissionDenied:
+            helpers.print_error(
+                "Error: Cannot access vault directory (permission denied)."
+            )
+            return
+        except VaultNotFound:
+            helpers.print_warning("No vault found.")
+            helpers.print_info("A new encrypted vault will be created.")
+            password = helpers.get_password_for_vault(ctx, new_vault=True)
+            vault = Vault()
+            vault.save(path, password)
+            print(f"Vault created at {path}")
+            print("No entries found.")
+            return
         except InvalidPassword:
             if interactive:
                 helpers.print_error("Invalid vault password.")
@@ -103,6 +148,14 @@ def list_entries(ctx: typer.Context) -> None:
 
 
 def add_entry(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
+    """Add an entry to the vault.
+
+    Args:
+        name: The unique account name.
+        issuer: The issuer name or otpauth:// URL.
+        secret: The Base32-encoded TOTP secret.
+        ctx: Typer context with password options.
+    """
     path = _path()
 
     # Parse otpauth URL if provided
@@ -122,6 +175,16 @@ def add_entry(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
         helpers.print_info("Example: ABCDEFGHIJKL2345")
         return
 
+    # DEF-02: Check for permission issues before trying to create vault
+    if path.exists():
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+        except PermissionError:
+            helpers.print_error(
+                "Error: Cannot access vault directory (permission denied)."
+            )
+            return
+
     if not path.exists():
         helpers.print_warning("No vault found.")
         helpers.print_info("A new encrypted vault will be created.")
@@ -138,6 +201,19 @@ def add_entry(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
             vault.add_entry(name=name, issuer=issuer, secret=secret)
             vault.save(path, password)
             helpers.print_success(f"Entry added: {name}")
+        except PermissionDenied:
+            helpers.print_error(
+                "Error: Cannot access vault directory (permission denied)."
+            )
+        except VaultNotFound:
+            helpers.print_warning("No vault found.")
+            helpers.print_info("A new encrypted vault will be created.")
+            password = helpers.get_password_for_vault(ctx, new_vault=True)
+            vault = Vault()
+            vault.add_entry(name=name, issuer=issuer, secret=secret)
+            vault.save(path, password)
+            print(f"Vault created at {path}")
+            print(f"Entry added: {name}")
         except ValueError as e:
             if "already exists" in str(e):
                 helpers.print_error(str(e))
@@ -154,6 +230,12 @@ def add_entry(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
 
 
 def generate_code(name: str, ctx: typer.Context) -> None:
+    """Generate and print the TOTP code for the given entry.
+
+    Args:
+        name: The name of the entry to generate code for.
+        ctx: Typer context with password options.
+    """
     path = _path()
     if not path.exists():
         helpers.print_warning("No vault found.")
@@ -172,6 +254,8 @@ def generate_code(name: str, ctx: typer.Context) -> None:
             algorithm=entry.algorithm,
         )
         print(code)
+    except PermissionDenied:
+        helpers.print_error("Error: Cannot access vault directory (permission denied).")
     except ValueError as e:
         if "not found" in str(e):
             raise
@@ -187,6 +271,12 @@ def generate_code(name: str, ctx: typer.Context) -> None:
 
 
 def remove_entry(name: str, ctx: typer.Context) -> None:
+    """Remove an entry from the vault.
+
+    Args:
+        name: The name of the entry to remove.
+        ctx: Typer context with password options.
+    """
     path = _path()
     if not path.exists():
         helpers.print_warning("No vault found.")
@@ -197,6 +287,8 @@ def remove_entry(name: str, ctx: typer.Context) -> None:
         vault.remove_entry(name)
         vault.save(path, password)
         helpers.print_success(f"Removed entry: {name}")
+    except PermissionDenied:
+        helpers.print_error("Error: Cannot access vault directory (permission denied).")
     except ValueError as e:
         if "not found" in str(e):
             raise
@@ -212,6 +304,13 @@ def remove_entry(name: str, ctx: typer.Context) -> None:
 
 
 def rename_entry(old: str, new: str, ctx: typer.Context) -> None:
+    """Rename an entry in the vault.
+
+    Args:
+        old: The current name of the entry.
+        new: The new name for the entry.
+        ctx: Typer context with password options.
+    """
     path = _path()
     if not path.exists():
         helpers.print_warning("No vault found.")
@@ -231,6 +330,8 @@ def rename_entry(old: str, new: str, ctx: typer.Context) -> None:
         entry.issuer = new
         vault.save(path, password)
         helpers.print_success(f"Renamed '{old}' → '{new}'")
+    except PermissionDenied:
+        helpers.print_error("Error: Cannot access vault directory (permission denied).")
     except ValueError as e:
         if "not found" in str(e):
             raise
@@ -246,6 +347,12 @@ def rename_entry(old: str, new: str, ctx: typer.Context) -> None:
 
 
 def export_vault(export_path: str, ctx: typer.Context) -> None:
+    """Export the vault to a new file.
+
+    Args:
+        export_path: Path where the vault will be exported.
+        ctx: Typer context with password options.
+    """
     path = _path()
     if not path.exists():
         helpers.print_warning("No vault found.")
@@ -255,6 +362,8 @@ def export_vault(export_path: str, ctx: typer.Context) -> None:
         vault = Vault.load(path, password)
         vault.save(Path(export_path), password)
         helpers.print_success(f"Exported vault to: {export_path}")
+    except PermissionDenied:
+        helpers.print_error("Error: Cannot access vault directory (permission denied).")
     except InvalidPassword:
         helpers.print_error("Invalid vault password.")
     except CorruptedVault:
@@ -266,6 +375,13 @@ def export_vault(export_path: str, ctx: typer.Context) -> None:
 
 
 def import_vault(source: str, force: bool, ctx: typer.Context) -> None:
+    """Import a vault from a source file.
+
+    Args:
+        source: Path to the source vault file.
+        force: Whether to overwrite existing vault.
+        ctx: Typer context with password options.
+    """
     path = _path()
     if path.exists() and not force:
         helpers.print_error(
@@ -288,7 +404,14 @@ def import_vault(source: str, force: bool, ctx: typer.Context) -> None:
 
 
 def _get_backup_path(base_path: Path) -> Path:
-    """Get the next available backup path with auto-suffixing."""
+    """Get the next available backup path for the vault.
+
+    Args:
+        base_path: The original vault path.
+
+    Returns:
+        Path for the backup file.
+    """
     backup_path = base_path.with_suffix(".backup.bin")
     if not backup_path.exists():
         return backup_path
@@ -301,6 +424,11 @@ def _get_backup_path(base_path: Path) -> Path:
 
 
 def backup_vault(ctx: typer.Context) -> None:
+    """Create a backup of the vault.
+
+    Args:
+        ctx: Typer context with password options.
+    """
     path = _path()
     if not path.exists():
         helpers.print_warning("No vault found.")
@@ -311,6 +439,8 @@ def backup_vault(ctx: typer.Context) -> None:
         backup_path = _get_backup_path(path)
         vault.save(backup_path, password)
         helpers.print_success(f"Backup created: {backup_path}")
+    except PermissionDenied:
+        helpers.print_error("Error: Cannot access vault directory (permission denied).")
     except InvalidPassword:
         helpers.print_error("Invalid vault password.")
     except CorruptedVault:
@@ -322,7 +452,12 @@ def backup_vault(ctx: typer.Context) -> None:
 
 
 def init_vault(force: bool, ctx: typer.Context) -> None:
-    """Initialize a new vault explicitly."""
+    """Initialize a new encrypted vault.
+
+    Args:
+        force: Whether to overwrite existing vault.
+        ctx: Typer context with password options.
+    """
     path = _path()
     if path.exists() and not force:
         helpers.print_info("Vault already exists.")
@@ -332,7 +467,19 @@ def init_vault(force: bool, ctx: typer.Context) -> None:
     if path.exists() and force:
         helpers.print_error("Existing vault will be overwritten.")
 
+    # DEF-02: Check for permission issues before trying to create vault
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+    except PermissionError:
+        helpers.print_error("Error: Cannot access vault directory (permission denied).")
+        return
+
     password = helpers.get_password_for_vault(ctx, new_vault=True)
     vault = Vault()
-    vault.save(path, password)
-    print(f"Vault created at {path}")
+    try:
+        vault.save(path, password)
+        print(f"Vault created at {path}")
+    except PermissionDenied:
+        helpers.print_error("Error: Cannot access vault directory (permission denied).")
+    except VaultIOError:
+        helpers.print_error("Failed to create vault file.")

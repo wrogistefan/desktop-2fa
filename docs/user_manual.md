@@ -294,6 +294,21 @@ Entropy calculation:
 
 **Bypass:** Use `--allow-weak-passwords` or set `D2FA_ALLOW_WEAK_PASSWORDS=1` to skip checks.
 
+### Password Validation Rules
+
+Desktop-2FA enforces the following password validation rules:
+
+1. **Empty Passwords**: Empty passwords are immediately rejected with error: `Password cannot be empty.`
+   - This applies to all password input methods (interactive, `--password`, `--password-file`)
+   - No entropy calculation is performed on empty passwords
+   - No confirmation prompt is shown for empty passwords
+   - Vault creation is blocked
+
+2. **Password Confirmation**: When creating a new vault, you must enter the password twice for confirmation
+   - If passwords don't match, you'll be prompted to try again
+
+3. **Password Strength**: Weak passwords trigger a warning or rejection based on configuration
+
 ### Security Notes
 
 - Passwords are never stored or logged (except temporarily in memory)
@@ -365,6 +380,12 @@ The vault file is automatically created on first use.
 **"Error: Password not provided and not running in interactive mode"**
 - No password source available in non-interactive environment
 - Provide `--password` or `--password-file`, or run in a terminal
+
+**"Error: Cannot access vault directory (permission denied)"**
+- You do not have permission to read/write the vault location
+- Check file permissions for `~/.desktop-2fa/`
+- On Linux/macOS: `chmod 700 ~/.desktop-2fa`
+- On Windows: Check folder properties → Security → Permissions
 
 
 ## Advanced Usage
@@ -504,4 +525,4 @@ For issues and questions:
 
 ---
 
-*This manual covers desktop-2fa version 0.7.0*
+*This manual covers desktop-2fa version 0.7.2*
