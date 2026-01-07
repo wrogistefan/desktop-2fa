@@ -213,6 +213,7 @@ def add_entry(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
             vault.add_entry(name=name, issuer=issuer, secret=secret)
             vault.save(path, password)
             print(f"Vault created at {path}")
+            # CodeQL [py/clear-text-logging-sensitive-data]: false positive, secret is never logged
             print(f"Entry added: {name}")
         except ValueError as e:
             if "already exists" in str(e):
