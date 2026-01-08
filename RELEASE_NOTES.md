@@ -1,3 +1,34 @@
+# Release Notes for Desktop-2FA 0.7.3
+
+## DEF-02 PermissionDenied Fix
+
+This release completes the DEF-02 security fix by ensuring PermissionDenied exceptions are properly caught during vault creation operations.
+
+### Changes
+
+Added `try/except PermissionDenied` blocks around all `vault.save()` calls in vault creation paths:
+- `add_entry_interactive()`
+- `list_entries()` (both vault creation paths)
+- `add_entry()` (both vault creation paths)
+- `init_vault()` (already had the fix)
+
+### User-Facing Behavior
+
+When permission errors occur during vault creation, users now see:
+```
+Cannot access vault directory (permission denied).
+```
+
+Instead of a Python traceback.
+
+### Compatibility
+
+- This release maintains full backward compatibility with existing vaults
+- No changes to the vault file format
+- Existing data is preserved
+
+---
+
 # Release Notes for Desktop-2FA 0.7.2
 
 ## Security & Reliability Patch

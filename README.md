@@ -54,7 +54,7 @@ Verify installation:
 
 ```bash
 python -c "import desktop_2fa; print(desktop_2fa.__version__)"
-# Output: 0.7.2
+# Output: 0.7.3
 ```
 
 ### Basic Usage
@@ -141,8 +141,8 @@ The vault uses:
 
 Every command requires explicit password authentication. No session-based access.
 
-### Security Hardening (v0.7.2)
-Version 0.7.2 includes security patches that prevent empty passwords and improve error handling for permission errors:
+### Security Hardening (v0.7.3)
+Version 0.7.3 includes additional DEF-02 fixes that ensure PermissionDenied exceptions are properly caught during vault creation:
 - Empty passwords are immediately rejected with a clear error message
 - Permission errors are distinguished from missing vault files
 - No Python stack traces are shown to users

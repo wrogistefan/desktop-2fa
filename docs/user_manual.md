@@ -525,4 +525,4 @@ For issues and questions:
 
 ---
 
-*This manual covers desktop-2fa version 0.7.2*
+*This manual covers desktop-2fa version 0.7.3*
