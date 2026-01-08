@@ -83,9 +83,7 @@ def add_entry_interactive(
 
     # DEF-02: Handle permission denied during existence check
     if vault_exists is None:
-        helpers.print_error(
-            "Error: Cannot access vault directory (permission denied)."
-        )
+        helpers.print_error("Error: Cannot access vault directory (permission denied).")
         return
 
     if not vault_exists:
@@ -142,9 +140,7 @@ def list_entries(ctx: typer.Context) -> None:
 
     # DEF-02: Handle permission denied during existence check
     if vault_exists is None:
-        helpers.print_error(
-            "Error: Cannot access vault directory (permission denied)."
-        )
+        helpers.print_error("Error: Cannot access vault directory (permission denied).")
         return
 
     if not vault_exists:
@@ -176,7 +172,9 @@ def list_entries(ctx: typer.Context) -> None:
             try:
                 vault.save(path, password)
             except PermissionDenied:
-                helpers.print_error("Cannot access vault directory (permission denied).")
+                helpers.print_error(
+                    "Cannot access vault directory (permission denied)."
+                )
                 return
             print(f"Vault created at {path}")
             print("No entries found.")
@@ -242,9 +240,7 @@ def add_entry(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
 
     # DEF-02: Handle permission denied during existence check
     if vault_exists is None:
-        helpers.print_error(
-            "Error: Cannot access vault directory (permission denied)."
-        )
+        helpers.print_error("Error: Cannot access vault directory (permission denied).")
         return
 
     if not vault_exists:
@@ -280,7 +276,9 @@ def add_entry(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
             try:
                 vault.save(path, password)
             except PermissionDenied:
-                helpers.print_error("Cannot access vault directory (permission denied).")
+                helpers.print_error(
+                    "Cannot access vault directory (permission denied)."
+                )
                 return
             print(f"Vault created at {path}")
             # CodeQL [py/clear-text-logging-sensitive-data]: false positive, secret is never logged
@@ -512,9 +510,7 @@ def import_vault(source: str, force: bool, ctx: typer.Context) -> None:
 
     # DEF-02: Handle permission denied during existence check
     if vault_exists is None:
-        helpers.print_error(
-            "Error: Cannot access vault directory (permission denied)."
-        )
+        helpers.print_error("Error: Cannot access vault directory (permission denied).")
         return
 
     if vault_exists and not force:
@@ -617,9 +613,7 @@ def init_vault(force: bool, ctx: typer.Context) -> None:
 
     # DEF-02: Handle permission denied during existence check
     if vault_exists is None:
-        helpers.print_error(
-            "Error: Cannot access vault directory (permission denied)."
-        )
+        helpers.print_error("Error: Cannot access vault directory (permission denied).")
         return
 
     if vault_exists and not force:

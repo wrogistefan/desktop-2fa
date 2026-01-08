@@ -850,15 +850,16 @@ def test_list_entries_permission_error_directory(
 ) -> None:
     # Create a vault first
     from desktop_2fa.vault import Vault
+    from desktop_2fa.vault.vault import PermissionDenied
 
     vault = Vault()
     vault.save(fake_vault_env, TEST_PASSWORD)
 
-    # Mock mkdir to raise PermissionError
-    def mock_mkdir(*args: Any, **kwargs: Any) -> None:
-        raise PermissionError("Permission denied")
+    # Mock Vault.load to raise PermissionDenied
+    def mock_load(*args: Any, **kwargs: Any) -> None:
+        raise PermissionDenied("Permission denied")
 
-    monkeypatch.setattr("pathlib.Path.mkdir", mock_mkdir)
+    monkeypatch.setattr("desktop_2fa.vault.Vault.load", mock_load)
 
     commands.list_entries(fake_ctx)
 

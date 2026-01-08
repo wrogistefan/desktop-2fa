@@ -256,7 +256,7 @@ def get_password_for_vault(ctx: typer.Context, new_vault: bool = False) -> str:
         if not pwd:
             print_error("Password cannot be empty.")
             raise typer.Exit(1)
-    return pwd  # type: ignore[no-any-return]
+    return pwd
 
 
 def create_vault(path: Path, password: str) -> None:

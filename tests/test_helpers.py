@@ -509,6 +509,56 @@ def test_enforce_password_strength_weak_warn_reject(monkeypatch: Any) -> None:
         helpers._enforce_password_strength("weak")
 
 
+def test_get_password_for_vault_empty_password_direct(
+    capsys: Any
+) -> None:
+    import typer
+
+    fake_ctx = type("FakeContext", (), {"obj": {"password": "", "interactive": True}})()
+
+    with pytest.raises(typer.Exit):
+        helpers.get_password_for_vault(fake_ctx, new_vault=False)
+
+    out = capsys.readouterr().out
+    assert "Password cannot be empty" in out
+
+
+def test_get_password_for_vault_empty_password_prompt_existing_vault(
+    tmp_path: Path, monkeypatch: Any
+) -> None:
+    import typer
+
+    fake_ctx = type("FakeContext", (), {"obj": {"interactive": True}})()
+
+    # Mock getpass.getpass to return empty string for existing vault
+    monkeypatch.setattr("getpass.getpass", lambda prompt: "")
+
+    with pytest.raises(typer.Exit):
+        helpers.get_password_for_vault(fake_ctx, new_vault=False)
+
+
+def test_get_password_for_vault_empty_confirmation_password(
+    tmp_path: Path, monkeypatch: Any
+) -> None:
+    import typer
+
+    fake_ctx = type("FakeContext", (), {"obj": {"interactive": True}})()
+
+    # First password is valid, second (confirmation) is empty
+    call_count = 0
+    def mock_getpass(prompt: str) -> str:
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            return "validpassword"  # First prompt: new password
+        return ""  # Second prompt: confirmation empty
+
+    monkeypatch.setattr("getpass.getpass", mock_getpass)
+
+    with pytest.raises(typer.Exit):
+        helpers.get_password_for_vault(fake_ctx, new_vault=True)
+
+
 def test_get_password_for_vault_password_from_file_empty(
     tmp_path: Path, capsys: Any
 ) -> None:
