@@ -27,6 +27,33 @@ def _path() -> Path:
     return Path(helpers.get_vault_path())
 
 
+def _vault_exists(path: Path) -> bool | None:
+    """Check if vault file exists and is accessible.
+
+    This safely checks vault existence without triggering PermissionError
+    from path.exists(), which raises when file exists but cannot be accessed.
+
+    Args:
+        path: Path to the vault file.
+
+    Returns:
+        True if vault exists and is readable,
+        False if file does not exist,
+        None if permission denied (caller should handle this case).
+    """
+    try:
+        with open(path, "rb"):
+            return True
+    except FileNotFoundError:
+        return False
+    except PermissionError:
+        # Permission denied - file may exist but we can't access it
+        return None
+    except OSError:
+        # Other I/O errors (disk full, etc.) - re-raise for proper handling
+        raise
+
+
 def add_entry_interactive(
     name: str, issuer: str, secret: str, ctx: typer.Context
 ) -> None:
@@ -46,13 +73,32 @@ def add_entry_interactive(
         helpers.print_info("Example: ABCDEFGHIJKL2345")
         return
 
-    if not path.exists():
+    # DEF-02: Use safe vault existence check (avoids PermissionError from path.exists())
+    try:
+        vault_exists = _vault_exists(path)
+    except OSError:
+        # DEF-02: I/O error during existence check
+        helpers.print_error("Failed to access vault file.")
+        return
+
+    # DEF-02: Handle permission denied during existence check
+    if vault_exists is None:
+        helpers.print_error(
+            "Error: Cannot access vault directory (permission denied)."
+        )
+        return
+
+    if not vault_exists:
         helpers.print_warning("No vault found.")
         helpers.print_info("A new encrypted vault will be created.")
         password = helpers.get_password_for_vault(ctx, new_vault=True)
         vault = Vault()
         vault.add_entry(name=name, issuer=issuer, secret=secret)
-        vault.save(path, password)
+        try:
+            vault.save(path, password)
+        except PermissionDenied:
+            helpers.print_error("Cannot access vault directory (permission denied).")
+            return
         print(f"Vault created at {path}")
         print(f"Entry added: {name}")
     else:
@@ -86,24 +132,31 @@ def list_entries(ctx: typer.Context) -> None:
     path = _path()
     interactive = ctx.obj.get("interactive", False)
 
-    # DEF-02: Check for permission issues before trying to create vault
-    if path.exists():
-        # Check if we can read the vault directory
-        try:
-            # Try to access the parent directory
-            path.parent.mkdir(parents=True, exist_ok=True)
-        except PermissionError:
-            helpers.print_error(
-                "Error: Cannot access vault directory (permission denied)."
-            )
-            return
+    # DEF-02: Use safe vault existence check (avoids PermissionError from path.exists())
+    try:
+        vault_exists = _vault_exists(path)
+    except OSError:
+        # DEF-02: I/O error during existence check
+        helpers.print_error("Failed to access vault file.")
+        return
 
-    if not path.exists():
+    # DEF-02: Handle permission denied during existence check
+    if vault_exists is None:
+        helpers.print_error(
+            "Error: Cannot access vault directory (permission denied)."
+        )
+        return
+
+    if not vault_exists:
         helpers.print_warning("No vault found.")
         helpers.print_info("A new encrypted vault will be created.")
         password = helpers.get_password_for_vault(ctx, new_vault=True)
         vault = Vault()
-        vault.save(path, password)
+        try:
+            vault.save(path, password)
+        except PermissionDenied:
+            helpers.print_error("Cannot access vault directory (permission denied).")
+            return
         print(f"Vault created at {path}")
         print("No entries found.")
     else:
@@ -120,7 +173,11 @@ def list_entries(ctx: typer.Context) -> None:
             helpers.print_info("A new encrypted vault will be created.")
             password = helpers.get_password_for_vault(ctx, new_vault=True)
             vault = Vault()
-            vault.save(path, password)
+            try:
+                vault.save(path, password)
+            except PermissionDenied:
+                helpers.print_error("Cannot access vault directory (permission denied).")
+                return
             print(f"Vault created at {path}")
             print("No entries found.")
             return
@@ -175,23 +232,32 @@ def add_entry(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
         helpers.print_info("Example: ABCDEFGHIJKL2345")
         return
 
-    # DEF-02: Check for permission issues before trying to create vault
-    if path.exists():
-        try:
-            path.parent.mkdir(parents=True, exist_ok=True)
-        except PermissionError:
-            helpers.print_error(
-                "Error: Cannot access vault directory (permission denied)."
-            )
-            return
+    # DEF-02: Use safe vault existence check (avoids PermissionError from path.exists())
+    try:
+        vault_exists = _vault_exists(path)
+    except OSError:
+        # DEF-02: I/O error during existence check
+        helpers.print_error("Failed to access vault file.")
+        return
 
-    if not path.exists():
+    # DEF-02: Handle permission denied during existence check
+    if vault_exists is None:
+        helpers.print_error(
+            "Error: Cannot access vault directory (permission denied)."
+        )
+        return
+
+    if not vault_exists:
         helpers.print_warning("No vault found.")
         helpers.print_info("A new encrypted vault will be created.")
         password = helpers.get_password_for_vault(ctx, new_vault=True)
         vault = Vault()
         vault.add_entry(name=name, issuer=issuer, secret=secret)
-        vault.save(path, password)
+        try:
+            vault.save(path, password)
+        except PermissionDenied:
+            helpers.print_error("Cannot access vault directory (permission denied).")
+            return
         print(f"Vault created at {path}")
         print(f"Entry added: {name}")
     else:
@@ -211,7 +277,11 @@ def add_entry(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
             password = helpers.get_password_for_vault(ctx, new_vault=True)
             vault = Vault()
             vault.add_entry(name=name, issuer=issuer, secret=secret)
-            vault.save(path, password)
+            try:
+                vault.save(path, password)
+            except PermissionDenied:
+                helpers.print_error("Cannot access vault directory (permission denied).")
+                return
             print(f"Vault created at {path}")
             # CodeQL [py/clear-text-logging-sensitive-data]: false positive, secret is never logged
             print(f"Entry added: {name}")
@@ -238,7 +308,19 @@ def generate_code(name: str, ctx: typer.Context) -> None:
         ctx: Typer context with password options.
     """
     path = _path()
-    if not path.exists():
+    try:
+        vault_exists = _vault_exists(path)
+    except OSError:
+        # DEF-02: I/O error during existence check
+        helpers.print_error("Failed to access vault file.")
+        return
+
+    # DEF-02: Handle permission denied during existence check
+    if vault_exists is None:
+        helpers.print_error("Error: Cannot access vault directory (permission denied).")
+        return
+
+    if not vault_exists:
         helpers.print_warning("No vault found.")
         helpers.print_info("Nothing to generate.")
         return
@@ -279,7 +361,19 @@ def remove_entry(name: str, ctx: typer.Context) -> None:
         ctx: Typer context with password options.
     """
     path = _path()
-    if not path.exists():
+    try:
+        vault_exists = _vault_exists(path)
+    except OSError:
+        # DEF-02: I/O error during existence check
+        helpers.print_error("Failed to access vault file.")
+        return
+
+    # DEF-02: Handle permission denied during existence check
+    if vault_exists is None:
+        helpers.print_error("Error: Cannot access vault directory (permission denied).")
+        return
+
+    if not vault_exists:
         helpers.print_warning("No vault found.")
         return
     password = helpers.get_password_for_vault(ctx, new_vault=False)
@@ -313,7 +407,19 @@ def rename_entry(old: str, new: str, ctx: typer.Context) -> None:
         ctx: Typer context with password options.
     """
     path = _path()
-    if not path.exists():
+    try:
+        vault_exists = _vault_exists(path)
+    except OSError:
+        # DEF-02: I/O error during existence check
+        helpers.print_error("Failed to access vault file.")
+        return
+
+    # DEF-02: Handle permission denied during existence check
+    if vault_exists is None:
+        helpers.print_error("Error: Cannot access vault directory (permission denied).")
+        return
+
+    if not vault_exists:
         helpers.print_warning("No vault found.")
         return
     password = helpers.get_password_for_vault(ctx, new_vault=False)
@@ -355,7 +461,19 @@ def export_vault(export_path: str, ctx: typer.Context) -> None:
         ctx: Typer context with password options.
     """
     path = _path()
-    if not path.exists():
+    try:
+        vault_exists = _vault_exists(path)
+    except OSError:
+        # DEF-02: I/O error during existence check
+        helpers.print_error("Failed to access vault file.")
+        return
+
+    # DEF-02: Handle permission denied during existence check
+    if vault_exists is None:
+        helpers.print_error("Error: Cannot access vault directory (permission denied).")
+        return
+
+    if not vault_exists:
         helpers.print_warning("No vault found.")
         return
     password = helpers.get_password_for_vault(ctx, new_vault=False)
@@ -384,11 +502,28 @@ def import_vault(source: str, force: bool, ctx: typer.Context) -> None:
         ctx: Typer context with password options.
     """
     path = _path()
-    if path.exists() and not force:
+    # DEF-02: Use safe vault existence check (avoids PermissionError from path.exists())
+    try:
+        vault_exists = _vault_exists(path)
+    except OSError:
+        # DEF-02: I/O error during existence check
+        helpers.print_error("Failed to access vault file.")
+        return
+
+    # DEF-02: Handle permission denied during existence check
+    if vault_exists is None:
+        helpers.print_error(
+            "Error: Cannot access vault directory (permission denied)."
+        )
+        return
+
+    if vault_exists and not force:
         helpers.print_error(
             "Refusing to overwrite existing vault. Use --force to proceed."
         )
         raise typer.Exit(1)
+    if vault_exists and force:
+        helpers.print_error("Existing vault will be overwritten.")
     password = helpers.get_password_for_vault(ctx, new_vault=False)
     try:
         vault = Vault.load(Path(source), password)
@@ -431,7 +566,19 @@ def backup_vault(ctx: typer.Context) -> None:
         ctx: Typer context with password options.
     """
     path = _path()
-    if not path.exists():
+    try:
+        vault_exists = _vault_exists(path)
+    except OSError:
+        # DEF-02: I/O error during existence check
+        helpers.print_error("Failed to access vault file.")
+        return
+
+    # DEF-02: Handle permission denied during existence check
+    if vault_exists is None:
+        helpers.print_error("Error: Cannot access vault directory (permission denied).")
+        return
+
+    if not vault_exists:
         helpers.print_warning("No vault found.")
         return
     password = helpers.get_password_for_vault(ctx, new_vault=False)
@@ -460,12 +607,26 @@ def init_vault(force: bool, ctx: typer.Context) -> None:
         ctx: Typer context with password options.
     """
     path = _path()
-    if path.exists() and not force:
+    # DEF-02: Use safe vault existence check (avoids PermissionError from path.exists())
+    try:
+        vault_exists = _vault_exists(path)
+    except OSError:
+        # DEF-02: I/O error during existence check
+        helpers.print_error("Failed to access vault file.")
+        return
+
+    # DEF-02: Handle permission denied during existence check
+    if vault_exists is None:
+        helpers.print_error(
+            "Error: Cannot access vault directory (permission denied)."
+        )
+        return
+
+    if vault_exists and not force:
         helpers.print_info("Vault already exists.")
         helpers.print_info("Use --force to overwrite.")
         return
-
-    if path.exists() and force:
+    if vault_exists and force:
         helpers.print_error("Existing vault will be overwritten.")
 
     # DEF-02: Check for permission issues before trying to create vault

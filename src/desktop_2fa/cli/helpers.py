@@ -1,6 +1,7 @@
 """CLI helper functions for Desktop 2FA."""
 
 import base64
+import getpass
 import math
 import os
 import tomllib
@@ -197,12 +198,13 @@ def get_password_for_vault(ctx: typer.Context, new_vault: bool = False) -> str:
         print("Error: Cannot specify both --password and --password-file")
         raise typer.Exit(1)
 
+    # DEF-01: Immediately reject empty passwords (direct --password "")
+    if password == "":
+        print_error("Password cannot be empty.")
+        raise typer.Exit(1)
+
     # Direct password
     if password:
-        # DEF-01: Immediately reject empty passwords
-        if not password:
-            print_error("Password cannot be empty.")
-            raise typer.Exit(1)
         return password  # type: ignore[no-any-return]
 
     # Password from file
@@ -230,13 +232,17 @@ def get_password_for_vault(ctx: typer.Context, new_vault: bool = False) -> str:
     # Interactive mode → prompt
     if new_vault:
         rprint(Text("Enter new vault password:", style="cyan"))
-        pwd = typer.prompt("", hide_input=True)
+        pwd = getpass.getpass("")
         # DEF-01: Immediately reject empty passwords
         if not pwd:
             print_error("Password cannot be empty.")
             raise typer.Exit(1)
         rprint(Text("Confirm vault password:", style="cyan"))
-        confirm = typer.prompt("", hide_input=True)
+        confirm = getpass.getpass("")
+        # DEF-01: Immediately reject empty passwords
+        if not confirm:
+            print_error("Password cannot be empty.")
+            raise typer.Exit(1)
         if pwd != confirm:
             print_error("Passwords do not match. Please try again.")
             raise typer.Exit(1)
@@ -245,7 +251,11 @@ def get_password_for_vault(ctx: typer.Context, new_vault: bool = False) -> str:
             _enforce_password_strength(pwd)
     else:
         rprint(Text("Enter vault password:", style="cyan"))
-        pwd = typer.prompt("", hide_input=True)
+        pwd = getpass.getpass("")
+        # DEF-01: Immediately reject empty passwords
+        if not pwd:
+            print_error("Password cannot be empty.")
+            raise typer.Exit(1)
     return pwd  # type: ignore[no-any-return]
 
 

@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.7.3] — DEF-02 PermissionDenied Fix
+
+### 🐛 Fixed
+
+#### DEF-02: PermissionDenied Not Caught During Vault Creation (HIGH)
+
+When creating a new vault (when vault file doesn't exist), the CLI would attempt to save the vault file. If the directory was not writable, `vault.save()` raised `PermissionDenied`, but this exception was NOT caught in the "create new vault" paths, resulting in a full Python traceback.
+
+- Added `try/except PermissionDenied` blocks around all `vault.save()` calls in vault creation paths
+- Functions fixed:
+  - `add_entry_interactive()`
+  - `list_entries()` (both vault creation paths)
+  - `add_entry()` (both vault creation paths)
+  - `init_vault()` (already had the fix)
+- Users now see: `Cannot access vault directory (permission denied).` instead of a traceback
+
+### 📚 Documentation
+- Updated CHANGELOG with DEF-02 fix details
+- Updated version to 0.7.3
+
+---
+
 ## [0.7.2] — Security & Reliability Patch
 
 ### 🛡️ Security Fixes

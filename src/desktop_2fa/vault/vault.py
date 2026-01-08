@@ -240,11 +240,12 @@ class Vault:
             VaultIOError: If saving fails due to IO errors.
         """
         path = Path(path)
-        path.parent.mkdir(parents=True, exist_ok=True)
-
         temp_path = path.with_suffix(".tmp")
 
         try:
+            # DEF-02: Moved mkdir inside try block to catch PermissionError
+            path.parent.mkdir(parents=True, exist_ok=True)
+
             header = VAULT_MAGIC + VAULT_VERSION
             salt = os.urandom(16)
 

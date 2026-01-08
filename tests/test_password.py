@@ -62,18 +62,18 @@ def test_get_password_non_interactive_no_password(fake_ctx: Any) -> None:
 
 def test_get_password_interactive_success(fake_ctx: Any) -> None:
     fake_ctx.obj["interactive"] = True
-    with patch("typer.prompt") as mock_prompt:
-        mock_prompt.side_effect = ["mypass"]
+    with patch("getpass.getpass") as mock_getpass:
+        mock_getpass.return_value = "mypass"
         assert get_password_from_cli(fake_ctx) == "mypass"
-        assert mock_prompt.call_count == 1
+        assert mock_getpass.call_count == 1
 
 
 def test_get_password_interactive_mismatch_retry(fake_ctx: Any) -> None:
     fake_ctx.obj["interactive"] = True
-    with patch("typer.prompt") as mock_prompt:
-        mock_prompt.side_effect = ["pass1"]
+    with patch("getpass.getpass") as mock_getpass:
+        mock_getpass.return_value = "pass1"
         assert get_password_from_cli(fake_ctx) == "pass1"
-        assert mock_prompt.call_count == 1
+        assert mock_getpass.call_count == 1
 
 
 # CLI integration tests using CliRunner
@@ -161,14 +161,14 @@ def test_cli_interactive_password_prompt(fake_vault_env: pathlib.Path) -> None:
     os.environ["DESKTOP_2FA_FORCE_INTERACTIVE"] = "1"
 
     try:
-        with patch("typer.prompt") as mock_prompt:
-            mock_prompt.side_effect = ["JBSWY3DPEHPK3PXP", "interpass", "interpass"]
-            result = runner.invoke(app, ["add", "GitHub", "GitHub"])
+        with patch("getpass.getpass") as mock_getpass:
+            mock_getpass.return_value = "interpass"
+            result = runner.invoke(app, ["add", "GitHub", "GitHub", "JBSWY3DPEHPK3PXP"])
             assert (
                 result.exit_code == 0
             ), f"Exit code was {result.exit_code}, output: {result.output}"
             assert "Entry added: GitHub" in result.output
-            assert mock_prompt.call_count == 3
+            assert mock_getpass.call_count == 2  # password + confirmation
     finally:
         # Restore original environment
         if original_env is None:

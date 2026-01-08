@@ -234,7 +234,7 @@ def test_get_password_for_vault_passwords_not_match(monkeypatch: Any) -> None:
     fake_ctx = type("FakeContext", (), {"obj": {"interactive": True}})()
     # Mock to return different passwords for the two prompts
     responses = ["pass1", "pass2"]
-    monkeypatch.setattr("typer.prompt", lambda text, hide_input: responses.pop(0))
+    monkeypatch.setattr("getpass.getpass", lambda prompt: responses.pop(0))
     with pytest.raises(typer.Exit):
         helpers.get_password_for_vault(fake_ctx, new_vault=True)
 
@@ -591,9 +591,8 @@ def test_get_password_for_vault_empty_password_prompt(
 
     fake_ctx = type("FakeContext", (), {"obj": {"interactive": True}})()
 
-    # Mock prompt to return empty string
-    responses = [""]
-    monkeypatch.setattr("typer.prompt", lambda text, hide_input=False: responses.pop(0))
+    # Mock getpass.getpass to return empty string
+    monkeypatch.setattr("getpass.getpass", lambda prompt: "")
 
     with pytest.raises(typer.Exit):
         helpers.get_password_for_vault(fake_ctx, new_vault=True)
@@ -628,9 +627,9 @@ def test_get_password_for_vault_enforce_strength(monkeypatch: Any) -> None:
 
     fake_ctx = type("FakeContext", (), {"obj": {"interactive": True}})()
 
-    # Mock prompts
+    # Mock getpass.getpass for both password prompts
     responses = ["weak", "weak"]
-    monkeypatch.setattr("typer.prompt", lambda text, hide_input=False: responses.pop(0))
+    monkeypatch.setattr("getpass.getpass", lambda prompt: responses.pop(0))
 
     # Should not raise (accepts weak password with confirmation)
     password = helpers.get_password_for_vault(fake_ctx, new_vault=True)
