@@ -28,16 +28,16 @@ A secure, offline two-factor authentication (2FA) manager for desktop environmen
 
 ## 📸 Screenshots
 
-![Add entry interactively](assets/screenshots/add_interactive.png)
+![Add entry interactively](https://raw.githubusercontent.com/wrogistefan/desktop-2fa/main/assets/screenshots/add_interactive.png)
 *Adding a new TOTP entry interactively*
 
-![Code generation](assets/screenshots/codegen_ss.png)
+![Code generation](https://raw.githubusercontent.com/wrogistefan/desktop-2fa/main/assets/screenshots/codegen_ss.png)
 *Generating a TOTP code for an entry*
 
-![Rename and duplicate error](assets/screenshots/rename_add_duplicate.png)
+![Rename and duplicate error](https://raw.githubusercontent.com/wrogistefan/desktop-2fa/main/assets/screenshots/rename_add_duplicate.png)
 *Renaming an entry with duplicate detection*
 
-![Version and list](assets/screenshots/version_list_ss.png)
+![Version and list](https://raw.githubusercontent.com/wrogistefan/desktop-2fa/main/assets/screenshots/version_list_ss.png)
 *Viewing version info and listing all entries*
 
 ---
