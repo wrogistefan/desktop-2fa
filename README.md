@@ -2,7 +2,7 @@
 
 A secure, offline two-factor authentication (2FA) manager for desktop environments. Built with Python, featuring strong encryption and no cloud dependencies.
 
-🌐 **Landing Page**: [desktop-2fa.lukasz-perek.workers.dev](https://desktop-2fa.lukasz-perek.workers.dev/)
+🌐 **Landing Page**: [desktop-2fa.org](https://desktop-2fa.org/)
 
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/desktop-2fa)
 [![PyPI version](https://img.shields.io/pypi/v/desktop-2fa.svg)](https://pypi.org/project/desktop-2fa/)
