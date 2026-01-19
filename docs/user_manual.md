@@ -494,6 +494,10 @@ d2fa rename AWS AWS-admin
 
 **Note:** The rename command updates both the account name (unique identifier) and issuer (display label) to the new name. After resolving duplicates, the warning will no longer appear.
 
+## Contact
+
+For questions or support, contact us at contact@desktop-2fa.org
+
 ## Command Reference
 
 ```bash

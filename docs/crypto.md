@@ -197,6 +197,10 @@ Parameters may be updated in future versions to maintain security as hardware ad
 ### Algorithm Migration
 If cryptographic weaknesses are discovered, migration paths will be provided to transition to stronger algorithms while maintaining data accessibility.
 
+## Contact
+
+For questions or support, contact us at contact@desktop-2fa.org
+
 ---
 
 *This contract is binding for all implementations of Desktop 2FA vault encryption.*

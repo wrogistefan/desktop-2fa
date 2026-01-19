@@ -233,6 +233,10 @@ All enhancements respect:
 
 This is **presentation only**.
 
+## Contact
+
+For questions or support, contact us at contact@desktop-2fa.org
+
 ---
 
 # 🚀 Implementation Notes
