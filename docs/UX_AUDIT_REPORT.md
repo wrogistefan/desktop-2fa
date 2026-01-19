@@ -430,6 +430,10 @@ Nothing to generate.
 | Command Tests | [`tests/test_commands.py`](tests/test_commands.py) |
 | CLI Tests | [`tests/test_cli.py`](tests/test_cli.py) |
 
+## Contact
+
+For questions or support, contact us at contact@desktop-2fa.org
+
 ---
 
 *End of Report*

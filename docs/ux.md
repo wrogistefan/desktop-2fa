@@ -126,3 +126,7 @@ The `rename` command enforces deterministic behavior when multiple entries match
 - This check occurs **before** any mutation
 
 This ensures predictable behavior when working with vaults that contain duplicate names from older versions.
+
+## Contact
+
+For questions or support, contact us at contact@desktop-2fa.org

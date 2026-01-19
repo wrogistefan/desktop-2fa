@@ -195,6 +195,12 @@ Apache License 2.0. See [LICENSE](LICENSE) file.
 
 ---
 
+## 📧 Contact
+
+For questions or support, contact us at contact@desktop-2fa.org
+
+---
+
 ## 💖 Support the Project
 
 Desktop‑2FA is an independent open‑source tool built with a focus on autonomy, transparency, and offline security.
