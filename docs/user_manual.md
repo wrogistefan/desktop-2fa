@@ -148,6 +148,18 @@ d2fa code [OPTIONS] NAME
 - `--copy` and `--copy-only` are mutually exclusive
 - Clipboard is shared system-wide; Desktop-2FA never clears it automatically
 
+### Clipboard Requirements
+
+Desktop-2FA uses the pyperclip library for clipboard operations. On Linux, pyperclip requires one of the following tools to be installed:
+
+- xclip
+- xsel
+- wl-clipboard (for Wayland)
+
+macOS and Windows work out of the box without additional dependencies.
+
+If none of these tools are installed on Linux, clipboard operations will fail and desktop-2fa will fall back to printing the code normally.
+
 **Examples:**
 ```bash
 # Default: print to terminal
