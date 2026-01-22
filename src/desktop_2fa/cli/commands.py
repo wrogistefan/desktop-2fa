@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import time
 
 import typer
 
@@ -298,12 +299,14 @@ def add_entry(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
             helpers.print_error("Failed to access vault file.")
 
 
-def generate_code(name: str, ctx: typer.Context) -> None:
+def generate_code(name: str, ctx: typer.Context, copy: bool = False, copy_only: bool = False) -> None:
     """Generate and print the TOTP code for the given entry.
 
     Args:
         name: The name of the entry to generate code for.
         ctx: Typer context with password options.
+        copy: Whether to copy the code to clipboard and print.
+        copy_only: Whether to copy the code to clipboard without printing.
     """
     path = _path()
     try:
@@ -328,13 +331,33 @@ def generate_code(name: str, ctx: typer.Context) -> None:
         entry = vault.get_entry(name)
         from desktop_2fa.totp.generator import generate
 
+        timestamp = int(time.time())
         code = generate(
             secret=entry.secret,
+            timestamp=timestamp,
             digits=entry.digits,
             period=entry.period,
             algorithm=entry.algorithm,
         )
-        print(code)
+        remaining = entry.period - (timestamp % entry.period)
+
+        from .clipboard import copy_to_clipboard, ClipboardError
+
+        if copy or copy_only:
+            try:
+                copy_to_clipboard(code)
+                if copy_only:
+                    print(f"Code copied to clipboard (valid {remaining}s)")
+                    return
+                else:
+                    print(f"Copied to clipboard: {code} (valid {remaining}s)")
+                    return
+            except ClipboardError:
+                helpers.print_warning("Clipboard not available on this system.")
+                # fall back to printing
+
+        # default behavior
+        print(f"{code} (valid {remaining}s)")
     except PermissionDenied:
         helpers.print_error("Error: Cannot access vault directory (permission denied).")
     except ValueError as e:

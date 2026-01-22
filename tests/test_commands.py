@@ -143,11 +143,16 @@ def test_generate_code(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -> None
     commands.generate_code("GitHub", fake_ctx)
     out = capsys.readouterr().out.strip()
 
-    # generate_code wypisuje tylko kod, jedną linię
+    # generate_code prints code with validity time
     lines = out.splitlines()
-    code = lines[-1]
+    output = lines[-1]
+    # Should be like "123456 (valid 25s)"
+    parts = output.split()
+    code = parts[0]
     assert len(code) == 6
     assert code.isdigit()
+    assert "(valid" in output
+    assert "s)" in output
 
 
 def test_generate_code_missing_entry_raises(

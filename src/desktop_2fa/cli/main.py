@@ -115,14 +115,24 @@ def add_cmd(
 
 
 @app.command("code")
-def code_cmd(ctx: typer.Context, name: str) -> None:
+def code_cmd(
+    ctx: typer.Context,
+    name: str,
+    copy: bool = typer.Option(False, "--copy", "-c", help="Copy code to clipboard and print"),
+    copy_only: bool = typer.Option(False, "--copy-only", help="Copy code to clipboard without printing"),
+) -> None:
     """Generate and display the TOTP code for an entry.
 
     Args:
         ctx: Typer context object containing configuration.
         name: Name of the entry to generate code for.
+        copy: Whether to copy the code to clipboard and print.
+        copy_only: Whether to copy the code to clipboard without printing.
     """
-    commands.generate_code(name, ctx)
+    if copy and copy_only:
+        helpers.print_error("--copy and --copy-only are mutually exclusive")
+        raise typer.Exit(1)
+    commands.generate_code(name, ctx, copy=copy, copy_only=copy_only)
 
 
 @app.command("remove")

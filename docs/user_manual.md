@@ -133,19 +133,34 @@ d2fa add GitHub GitHub JBSWY3DPEHPK3PXP --password mypassword
 Generates and displays the current TOTP code for an entry.
 
 ```bash
-d2fa code NAME
+d2fa code [OPTIONS] NAME
 ```
 
 **Parameters:**
 - `NAME`: Issuer or account name
 
+**Options:**
+- `--copy`, `-c`: Copy code to clipboard and print
+- `--copy-only`: Copy code to clipboard without printing
+
+**Notes:**
+- Clipboard is always opt-in; default behavior prints to terminal only
+- `--copy` and `--copy-only` are mutually exclusive
+- Clipboard is shared system-wide; Desktop-2FA never clears it automatically
+
 **Examples:**
 ```bash
+# Default: print to terminal
 d2fa code GitHub
-# Output: 123456
+# Output: 123456 (valid 25s)
 
-d2fa code "Google:personal"
-# Output: 789012
+# Copy and print
+d2fa code --copy GitHub
+# Output: Copied to clipboard: 123456 (valid 25s)
+
+# Copy only (no output)
+d2fa code --copy-only GitHub
+# Output: Code copied to clipboard (valid 25s)
 ```
 
 ### `remove` - Remove Entry
