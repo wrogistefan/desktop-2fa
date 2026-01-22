@@ -58,9 +58,14 @@ def test_cli_code(fake_vault_env_cli: Path) -> None:
     )
     result = runner.invoke(app, ["--password", TEST_PASSWORD, "code", "GitHub"])
     assert result.exit_code == 0
-    code = result.output.strip()
+    output = result.output.strip()
+    # Should be like "123456 (valid 25s)"
+    parts = output.split()
+    code = parts[0]
     assert len(code) == 6
     assert code.isdigit()
+    assert "(valid" in output
+    assert "s)" in output
 
 
 def test_cli_remove(fake_vault_env_cli: Path) -> None:
