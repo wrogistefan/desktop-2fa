@@ -13,6 +13,7 @@ import typer
 from rich import print as rprint
 from rich.text import Text
 
+from desktop_2fa.constants import ExitCode
 from desktop_2fa.vault import Vault
 
 if TYPE_CHECKING:
