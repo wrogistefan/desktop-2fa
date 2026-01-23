@@ -212,7 +212,7 @@ When using `--json` mode, errors are returned as JSON objects:
 ```json
 {
   "error": "<error_code>",
-  "message": "<human readable message>"
+  "message": "<human-readable message>"
 }
 ```
 

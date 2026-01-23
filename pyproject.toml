@@ -68,3 +68,12 @@ warn_redundant_casts = true
 warn_no_return = true
 strict = true
 mypy_path = "src"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "pytest.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "pyperclip"
+ignore_missing_imports = true

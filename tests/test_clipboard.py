@@ -19,7 +19,9 @@ class TestClipboard(unittest.TestCase):
     @patch("desktop_2fa.cli.clipboard.pyperclip.copy")
     def test_copy_to_clipboard_failure(self, mock_copy: Mock) -> None:
         """Test clipboard copy failure raises ClipboardError."""
-        mock_copy.side_effect = Exception("Clipboard error")
+        import pyperclip
+
+        mock_copy.side_effect = pyperclip.PyperclipException("Clipboard error")
         with self.assertRaises(ClipboardError) as cm:
             copy_to_clipboard("123456")
         self.assertIn("Clipboard not available", str(cm.exception))

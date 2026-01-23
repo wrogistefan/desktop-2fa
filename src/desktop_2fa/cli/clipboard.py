@@ -1,4 +1,4 @@
-import pyperclip  # type: ignore[import-untyped]
+import pyperclip
 
 
 class ClipboardError(Exception):
@@ -8,5 +8,5 @@ class ClipboardError(Exception):
 def copy_to_clipboard(text: str) -> None:
     try:
         pyperclip.copy(text)
-    except Exception as exc:
+    except pyperclip.PyperclipException as exc:
         raise ClipboardError("Clipboard not available on this system.") from exc
