@@ -4,6 +4,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.8.0] — Modular Architecture & Clipboard Support
+
+### 🆕 Added
+
+#### Modular Architecture Refactor
+
+- **Separated CLI and GUI applications**: The codebase has been restructured into distinct modules for better maintainability and extensibility.
+- **New `app/` module**: Contains the desktop GUI application entry point and related components.
+- **New `ui/` module**: Houses GUI-specific code, including main window and dialog implementations.
+- **Enhanced modularity**: Core components (crypto, totp, vault) remain shared, while UI and CLI are now properly separated.
+
+#### Clipboard Support in CLI
+
+- **New clipboard options for `code` command**: Added `--copy` and `--copy-only` flags to automatically copy generated TOTP codes to the system clipboard.
+- **Cross-platform clipboard handling**: Implemented robust clipboard support using `pyperclip` with proper error handling for systems without clipboard access.
+- **User-friendly feedback**: Clipboard operations provide clear success/failure messages without disrupting normal command flow.
+
+#### GUI Application
+
+- **New desktop GUI**: Introduced a full-featured graphical user interface as an alternative to the CLI.
+- **Token management**: Add, list, generate, rename, and remove TOTP entries through an intuitive interface.
+- **Secure vault integration**: GUI seamlessly integrates with the existing encrypted vault system.
+
+### 🔄 Changed
+
+- **Project structure**: Reorganized source code into more logical modules (`app/`, `cli/`, `ui/`, etc.) for improved code organization.
+- **Dependencies**: Added `pyperclip==1.8.2` for clipboard functionality.
+
+### 📚 Documentation
+
+- Updated README.md with new modular architecture details, clipboard support, and GUI information.
+- Updated project structure diagram to reflect new module organization.
+- Added Kilo OSS Sponsorship acknowledgment.
+
+---
+
 ## [0.7.3] — DEF-02 PermissionDenied Fix
 
 ### 🐛 Fixed

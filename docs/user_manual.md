@@ -2,7 +2,7 @@
 
 ## Overview
 
-Desktop-2FA is a secure, offline two-factor authentication (2FA) manager for desktop environments. It provides a command-line interface for managing TOTP (Time-based One-Time Password) tokens with strong encryption and no cloud dependencies.
+Desktop-2FA is a secure, offline two-factor authentication (2FA) manager for desktop environments. It provides both a command-line interface and a graphical user interface for managing TOTP (Time-based One-Time Password) tokens with strong encryption and no cloud dependencies.
 
 ## Quick Start
 
@@ -607,4 +607,4 @@ For issues and questions:
 
 ---
 
-*This manual covers desktop-2fa version 0.7.3*
+*This manual covers desktop-2fa version 0.8.0*

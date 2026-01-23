@@ -20,6 +20,8 @@ A secure, offline two-factor authentication (2FA) manager for desktop environmen
 | 🔐 **Vault Security** | AES-256-GCM encryption with Argon2id key derivation |
 | ⏱️ **TOTP Generation** | RFC 6238 compliant code generation |
 | 💻 **Full CLI** | Complete command-line interface for managing tokens |
+| 🖥️ **Desktop GUI** | Graphical user interface for token management |
+| 📋 **Clipboard Support** | Automatic copying of TOTP codes to clipboard |
 | 🔓 **Stateless Design** | Every command requires explicit password authentication |
 | 🛡️ **Password Policy** | Configurable password strength enforcement |
 | 🧪 **Well Tested** | 180+ tests passing with comprehensive coverage |
@@ -54,7 +56,7 @@ Verify installation:
 
 ```bash
 python -c "import desktop_2fa; print(desktop_2fa.__version__)"
-# Output: 0.7.3
+# Output: 0.8.0
 ```
 
 ### Basic Usage
@@ -122,7 +124,7 @@ The `rename` command enforces deterministic behavior when multiple entries match
 |---------|-------------|
 | `d2fa add <name> <issuer> <secret>` | Add a new TOTP entry |
 | `d2fa list` | List all entries |
-| `d2fa code <name>` | Generate TOTP code |
+| `d2fa code <name> [--copy|--copy-only]` | Generate TOTP code (with optional clipboard copy) |
 | `d2fa rename <old> <new>` | Rename an entry |
 | `d2fa remove <name>` | Remove an entry |
 | `d2fa export <path>` | Export vault to JSON |
@@ -141,12 +143,13 @@ The vault uses:
 
 Every command requires explicit password authentication. No session-based access.
 
-### Security Hardening (v0.7.3)
-Version 0.7.3 includes additional DEF-02 fixes that ensure PermissionDenied exceptions are properly caught during vault creation:
+### Security Hardening (v0.8.0)
+Version 0.8.0 maintains all previous security hardening from v0.7.3 and introduces modular architecture for better code isolation:
 - Empty passwords are immediately rejected with a clear error message
 - Permission errors are distinguished from missing vault files
 - No Python stack traces are shown to users
 - User-friendly error messages for filesystem permission issues
+- Modular design separates CLI, GUI, and core cryptographic components for enhanced security boundaries
 
 ---
 
@@ -173,11 +176,12 @@ pytest --cov=src/desktop_2fa  # Run with coverage
 
 ```
 src/desktop_2fa/
+├── app/           # Desktop GUI application
 ├── cli/           # Command-line interface
 ├── crypto/        # Encryption utilities
 ├── totp/          # TOTP generation
+├── ui/            # GUI components and dialogs
 ├── vault/         # Vault management
-├── ui/            # Desktop GUI
 └── utils/         # Utilities
 ```
 
@@ -192,6 +196,12 @@ Apache License 2.0. See [LICENSE](LICENSE) file.
 ## 👤 Author
 
 Łukasz Perek
+
+---
+
+## 🏆 Sponsorship
+
+desktop‑2fa is supported through the Kilo OSS Sponsorship Program.
 
 ---
 
