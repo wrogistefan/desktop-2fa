@@ -525,5 +525,4 @@ def validate_code_options(
             "--raw conflicts with --json, --quiet, --copy, and --copy-only"
         )
     if quiet and (json_mode or raw):
-        print_error("--quiet conflicts with --json and --raw")
-        raise typer.Exit(ExitCode.VALIDATION_ERROR)
+        raise ValidationError("--quiet conflicts with --json and --raw")

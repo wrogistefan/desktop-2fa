@@ -4,18 +4,18 @@ import pytest
 from desktop_2fa.cli.clipboard import ClipboardError, copy_to_clipboard
 
 
-def test_copy_to_clipboard_success() -> None:
-    # Skip test if clipboard is not available
-    try:
-        pyperclip.copy("dummy")
-    except pyperclip.PyperclipException:
-        pytest.skip("Clipboard not available on this system")
+def test_copy_to_clipboard_success(monkeypatch) -> None:
+    copied_text: dict[str, str] = {}
 
-    # Test successful copy
-    try:
-        copy_to_clipboard("test")
-    except ClipboardError:
-        assert False, "copy_to_clipboard raised ClipboardError unexpectedly"
+    def fake_copy(text: str) -> None:
+        copied_text["value"] = text
+
+    # Mock pyperclip.copy so the test does not depend on the real clipboard
+    monkeypatch.setattr(pyperclip, "copy", fake_copy)
+
+    copy_to_clipboard("test")
+
+    assert copied_text["value"] == "test"
 
 
 def test_copy_to_clipboard_failure() -> None:
