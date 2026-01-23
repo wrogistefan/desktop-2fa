@@ -513,14 +513,10 @@ def _validate_code_options(
         print_error("--copy and --copy-only are mutually exclusive")
         raise typer.Exit(ExitCode.VALIDATION_ERROR)
     if json_mode and (raw or quiet or copy or copy_only):
-        print_error(
-            "--json conflicts with --raw, --quiet, --copy, and --copy-only"
-        )
+        print_error("--json conflicts with --raw, --quiet, --copy, and --copy-only")
         raise typer.Exit(ExitCode.VALIDATION_ERROR)
     if raw and (json_mode or quiet or copy or copy_only):
-        print_error(
-            "--raw conflicts with --json, --quiet, --copy, and --copy-only"
-        )
+        print_error("--raw conflicts with --json, --quiet, --copy, and --copy-only")
         raise typer.Exit(ExitCode.VALIDATION_ERROR)
     if quiet and (json_mode or raw):
         print_error("--quiet conflicts with --json and --raw")
