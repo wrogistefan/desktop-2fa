@@ -10,6 +10,7 @@ from pathlib import Path
 import typer
 
 import desktop_2fa.cli.helpers as helpers
+from desktop_2fa.constants import ExitCode
 from desktop_2fa.vault import Vault
 from desktop_2fa.vault.vault import (
     CorruptedVault,
@@ -382,7 +383,11 @@ def generate_code(
         quiet: Suppress normal output.
     """
 
-    helpers._validate_code_options(copy, copy_only, json_mode, raw, quiet)
+    try:
+        helpers.validate_code_options(copy, copy_only, json_mode, raw, quiet)
+    except helpers.ValidationError as e:
+        helpers.print_error(str(e))
+        raise typer.Exit(ExitCode.VALIDATION_ERROR)
 
     path = _path()
     # Check vault existence

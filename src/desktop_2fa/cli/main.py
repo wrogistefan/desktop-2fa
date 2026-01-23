@@ -8,6 +8,7 @@ from rich import print as rprint
 from rich.text import Text
 
 from desktop_2fa import __version__
+from desktop_2fa.constants import ExitCode
 
 from . import commands, helpers
 
@@ -15,7 +16,11 @@ from . import commands, helpers
 def _validate_code_options(
     copy: bool, copy_only: bool, json_mode: bool, raw: bool, quiet: bool
 ) -> None:
-    helpers._validate_code_options(copy, copy_only, json_mode, raw, quiet)
+    try:
+        helpers.validate_code_options(copy, copy_only, json_mode, raw, quiet)
+    except helpers.ValidationError as e:
+        helpers.print_error(str(e))
+        raise typer.Exit(ExitCode.VALIDATION_ERROR)
 
 
 def is_interactive() -> bool:
