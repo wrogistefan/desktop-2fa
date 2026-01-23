@@ -8,6 +8,7 @@ from rich import print as rprint
 from rich.text import Text
 
 from desktop_2fa import __version__
+from desktop_2fa.constants import ExitCode
 
 from . import commands, helpers
 
@@ -15,34 +16,11 @@ from . import commands, helpers
 def _validate_code_options(
     copy: bool, copy_only: bool, json_mode: bool, raw: bool, quiet: bool
 ) -> None:
-    """Validate mutually exclusive options for code command.
-
-    Args:
-        copy: Whether to copy code to clipboard and print.
-        copy_only: Whether to copy code to clipboard without printing.
-        json_mode: Whether to output in JSON format.
-        raw: Whether to output only the TOTP code.
-        quiet: Whether to suppress normal output.
-
-    Raises:
-        typer.Exit: With code 6 if validation fails.
-    """
-    if copy and copy_only:
-        helpers.print_error("--copy and --copy-only are mutually exclusive")
-        raise typer.Exit(6)
-    if json_mode and (raw or quiet or copy or copy_only):
-        helpers.print_error(
-            "--json conflicts with --raw, --quiet, --copy, and --copy-only"
-        )
-        raise typer.Exit(6)
-    if raw and (json_mode or quiet or copy or copy_only):
-        helpers.print_error(
-            "--raw conflicts with --json, --quiet, --copy, and --copy-only"
-        )
-        raise typer.Exit(6)
-    if quiet and (json_mode or raw):
-        helpers.print_error("--quiet conflicts with --json and --raw")
-        raise typer.Exit(6)
+    try:
+        helpers.validate_code_options(copy, copy_only, json_mode, raw, quiet)
+    except helpers.ValidationError as e:
+        helpers.print_error(str(e))
+        raise typer.Exit(ExitCode.VALIDATION_ERROR)
 
 
 def is_interactive() -> bool:

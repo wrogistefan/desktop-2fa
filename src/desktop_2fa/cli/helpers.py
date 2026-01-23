@@ -15,6 +15,11 @@ from rich.text import Text
 
 from desktop_2fa.vault import Vault
 
+
+class ValidationError(Exception):
+    """Raised when CLI option validation fails."""
+
+
 if TYPE_CHECKING:
     from desktop_2fa.vault.models import TotpEntry
 
@@ -491,3 +496,32 @@ def parse_otpauth_url(url: str) -> dict[str, str]:
         "label": label or issuer or "Unknown",
         "secret": secret,
     }
+
+
+def validate_code_options(
+    copy: bool, copy_only: bool, json_mode: bool, raw: bool, quiet: bool
+) -> None:
+    """Validate mutually exclusive options for code command.
+
+    Args:
+        copy: Whether to copy code to clipboard and print.
+        copy_only: Whether to copy code to clipboard without printing.
+        json_mode: Whether to output in JSON format.
+        raw: Whether to output only the TOTP code.
+        quiet: Whether to suppress normal output.
+
+    Raises:
+        ValidationError: If validation fails.
+    """
+    if copy and copy_only:
+        raise ValidationError("--copy and --copy-only are mutually exclusive")
+    if json_mode and (raw or quiet or copy or copy_only):
+        raise ValidationError(
+            "--json conflicts with --raw, --quiet, --copy, and --copy-only"
+        )
+    if raw and (json_mode or quiet or copy or copy_only):
+        raise ValidationError(
+            "--raw conflicts with --json, --quiet, --copy, and --copy-only"
+        )
+    if quiet and (json_mode or raw):
+        raise ValidationError("--quiet conflicts with --json and --raw")

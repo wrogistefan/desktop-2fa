@@ -1,28 +1,31 @@
-"""Tests for clipboard functionality."""
-
-import unittest
-from unittest.mock import Mock, patch
+import pyperclip
+import pytest
 
 from desktop_2fa.cli.clipboard import ClipboardError, copy_to_clipboard
 
 
-class TestClipboard(unittest.TestCase):
-    """Test clipboard operations."""
+def test_copy_to_clipboard_success(monkeypatch) -> None:
+    copied_text: dict[str, str] = {}
 
-    @patch("desktop_2fa.cli.clipboard.pyperclip.copy")
-    def test_copy_to_clipboard_success(self, mock_copy: Mock) -> None:
-        """Test successful clipboard copy."""
-        mock_copy.return_value = None
-        copy_to_clipboard("123456")
-        mock_copy.assert_called_once_with("123456")
+    def fake_copy(text: str) -> None:
+        copied_text["value"] = text
 
-    @patch("desktop_2fa.cli.clipboard.pyperclip.copy")
-    def test_copy_to_clipboard_failure(self, mock_copy: Mock) -> None:
-        """Test clipboard copy failure raises ClipboardError."""
-        import pyperclip
+    # Mock pyperclip.copy so the test does not depend on the real clipboard
+    monkeypatch.setattr(pyperclip, "copy", fake_copy)
 
-        mock_copy.side_effect = pyperclip.PyperclipException("Clipboard error")
-        with self.assertRaises(ClipboardError) as cm:
-            copy_to_clipboard("123456")
-        self.assertIn("Clipboard not available", str(cm.exception))
-        mock_copy.assert_called_once_with("123456")
+    copy_to_clipboard("test")
+
+    assert copied_text["value"] == "test"
+
+
+def test_copy_to_clipboard_failure() -> None:
+    # Test that ClipboardError is raised when pyperclip fails
+    import unittest.mock as mock
+
+    with mock.patch(
+        "pyperclip.copy", side_effect=pyperclip.PyperclipException("Mocked failure")
+    ):
+        with pytest.raises(
+            ClipboardError, match="Clipboard not available on this system."
+        ):
+            copy_to_clipboard("test")

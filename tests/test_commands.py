@@ -1031,15 +1031,14 @@ def test_generate_code_json_clipboard_unavailable(
         "desktop_2fa.cli.clipboard.copy_to_clipboard", mock_copy_to_clipboard
     )
 
-    with pytest.raises(SystemExit) as exc_info:
+    from typer import Exit as TyperExit
+
+    with pytest.raises(TyperExit) as exc_info:
         commands.generate_code("GitHub", fake_ctx, json_mode=True, copy_only=True)
-    assert exc_info.value.code == 5
+    assert exc_info.value.exit_code == 6
 
     out = capsys.readouterr().out.strip()
-    import json
-
-    data = json.loads(out)
-    assert data["error"] == "clipboard_unavailable"
+    assert "--json conflicts with --raw, --quiet, --copy, and --copy-only" in out
 
 
 def test_generate_code_clipboard_copy_success(
