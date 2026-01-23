@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import sys
 from pathlib import Path
 import time
 
@@ -299,7 +301,7 @@ def add_entry(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
             helpers.print_error("Failed to access vault file.")
 
 
-def generate_code(name: str, ctx: typer.Context, copy: bool = False, copy_only: bool = False) -> None:
+def generate_code(name: str, ctx: typer.Context, copy: bool = False, copy_only: bool = False, json_mode: bool = False, raw: bool = False, quiet: bool = False) -> None:
     """Generate and print the TOTP code for the given entry.
 
     Args:
@@ -307,25 +309,40 @@ def generate_code(name: str, ctx: typer.Context, copy: bool = False, copy_only: 
         ctx: Typer context with password options.
         copy: Whether to copy the code to clipboard and print.
         copy_only: Whether to copy the code to clipboard without printing.
+        json_mode: Output in JSON format.
+        raw: Output only the TOTP code.
+        quiet: Suppress normal output.
     """
     path = _path()
+
+    # Check vault existence
     try:
         vault_exists = _vault_exists(path)
     except OSError:
-        # DEF-02: I/O error during existence check
-        helpers.print_error("Failed to access vault file.")
-        return
+        if json_mode:
+            print(json.dumps({"error": "vault_io_error", "message": "Failed to access vault file."}))
+        else:
+            helpers.print_error("Failed to access vault file.")
+        sys.exit(1)
 
-    # DEF-02: Handle permission denied during existence check
     if vault_exists is None:
-        helpers.print_error("Error: Cannot access vault directory (permission denied).")
-        return
+        if json_mode:
+            print(json.dumps({"error": "permission_denied", "message": "Cannot access vault directory (permission denied)."}))
+        else:
+            helpers.print_error("Error: Cannot access vault directory (permission denied).")
+        sys.exit(1)
 
     if not vault_exists:
-        helpers.print_warning("No vault found.")
-        helpers.print_info("Nothing to generate.")
-        return
+        if json_mode:
+            print(json.dumps({"error": "vault_missing", "message": "No vault found."}))
+        elif not quiet:
+            helpers.print_warning("No vault found.")
+            helpers.print_info("Nothing to generate.")
+        sys.exit(4)
+
+    # Get password
     password = helpers.get_password_for_vault(ctx, new_vault=False)
+
     try:
         vault = Vault.load(path, password)
         entry = vault.get_entry(name)
@@ -343,35 +360,87 @@ def generate_code(name: str, ctx: typer.Context, copy: bool = False, copy_only: 
 
         from .clipboard import copy_to_clipboard, ClipboardError
 
+        # Handle clipboard operations
+        clipboard_success = True
         if copy or copy_only:
             try:
                 copy_to_clipboard(code)
-                if copy_only:
-                    print(f"Code copied to clipboard (valid {remaining}s)")
-                    return
-                else:
-                    print(f"Copied to clipboard: {code} (valid {remaining}s)")
-                    return
             except ClipboardError:
-                helpers.print_warning("Clipboard not available on this system.")
-                # fall back to printing
+                clipboard_success = False
+                if json_mode:
+                    print(json.dumps({"error": "clipboard_unavailable", "message": "Clipboard not available on this system."}))
+                    sys.exit(5)
+                elif not quiet:
+                    helpers.print_warning("Clipboard not available on this system.")
+                if copy_only:
+                    sys.exit(5)
 
-        # default behavior
-        print(f"{code} (valid {remaining}s)")
-    except PermissionDenied:
-        helpers.print_error("Error: Cannot access vault directory (permission denied).")
+        # Output based on mode
+        if json_mode:
+            output = {
+                "account": entry.account_name,
+                "issuer": entry.issuer,
+                "code": code,
+                "valid_for": remaining
+            }
+            print(json.dumps(output))
+        elif raw:
+            print(code)
+        elif quiet:
+            # No output for quiet mode on success
+            pass
+        else:
+            # Default behavior
+            if copy_only and clipboard_success:
+                print(f"Code copied to clipboard (valid {remaining}s)")
+            elif copy and clipboard_success:
+                print(f"Copied to clipboard: {code} (valid {remaining}s)")
+            else:
+                print(f"{code} (valid {remaining}s)")
+
+    except InvalidPassword:
+        if json_mode:
+            print(json.dumps({"error": "invalid_password", "message": "Invalid vault password."}))
+        else:
+            helpers.print_error("Invalid vault password.")
+        sys.exit(2)
     except ValueError as e:
         if "not found" in str(e):
-            raise
-        helpers.print_error("Invalid vault password.")
-    except InvalidPassword:
-        helpers.print_error("Invalid vault password.")
+            if json_mode:
+                print(json.dumps({"error": "entry_not_found", "message": f"Entry '{name}' not found."}))
+            else:
+                helpers.print_error(f"Entry '{name}' not found.")
+            sys.exit(3)
+        else:
+            if json_mode:
+                print(json.dumps({"error": "invalid_password", "message": "Invalid vault password."}))
+            else:
+                helpers.print_error("Invalid vault password.")
+            sys.exit(2)
     except CorruptedVault:
-        helpers.print_error("Vault file is corrupted.")
+        if json_mode:
+            print(json.dumps({"error": "corrupted_vault", "message": "Vault file is corrupted."}))
+        else:
+            helpers.print_error("Vault file is corrupted.")
+        sys.exit(1)
     except UnsupportedFormat:
-        helpers.print_error("Vault file format is unsupported.")
+        if json_mode:
+            print(json.dumps({"error": "unsupported_format", "message": "Vault file format is unsupported."}))
+        else:
+            helpers.print_error("Vault file format is unsupported.")
+        sys.exit(1)
+    except PermissionDenied:
+        if json_mode:
+            print(json.dumps({"error": "permission_denied", "message": "Cannot access vault directory (permission denied)."}))
+        else:
+            helpers.print_error("Error: Cannot access vault directory (permission denied).")
+        sys.exit(1)
     except VaultIOError:
-        helpers.print_error("Failed to access vault file.")
+        if json_mode:
+            print(json.dumps({"error": "vault_io_error", "message": "Failed to access vault file."}))
+        else:
+            helpers.print_error("Failed to access vault file.")
+        sys.exit(1)
 
 
 def remove_entry(name: str, ctx: typer.Context) -> None:

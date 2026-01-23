@@ -120,6 +120,9 @@ def code_cmd(
     name: str,
     copy: bool = typer.Option(False, "--copy", "-c", help="Copy code to clipboard and print"),
     copy_only: bool = typer.Option(False, "--copy-only", help="Copy code to clipboard without printing"),
+    json_mode: bool = typer.Option(False, "--json", help="Output in JSON format"),
+    raw: bool = typer.Option(False, "--raw", help="Output only the TOTP code"),
+    quiet: bool = typer.Option(False, "--quiet", help="Suppress normal output"),
 ) -> None:
     """Generate and display the TOTP code for an entry.
 
@@ -128,11 +131,25 @@ def code_cmd(
         name: Name of the entry to generate code for.
         copy: Whether to copy the code to clipboard and print.
         copy_only: Whether to copy the code to clipboard without printing.
+        json_mode: Output in JSON format.
+        raw: Output only the TOTP code.
+        quiet: Suppress normal output.
     """
+    # Flag conflict checks
     if copy and copy_only:
         helpers.print_error("--copy and --copy-only are mutually exclusive")
-        raise typer.Exit(1)
-    commands.generate_code(name, ctx, copy=copy, copy_only=copy_only)
+        raise typer.Exit(6)
+    if json_mode and (raw or quiet or copy or copy_only):
+        helpers.print_error("--json conflicts with --raw, --quiet, --copy, and --copy-only")
+        raise typer.Exit(6)
+    if raw and (json_mode or quiet or copy or copy_only):
+        helpers.print_error("--raw conflicts with --json, --quiet, --copy, and --copy-only")
+        raise typer.Exit(6)
+    if quiet and (json_mode or raw):
+        helpers.print_error("--quiet conflicts with --json and --raw")
+        raise typer.Exit(6)
+
+    commands.generate_code(name, ctx, copy=copy, copy_only=copy_only, json_mode=json_mode, raw=raw, quiet=quiet)
 
 
 @app.command("remove")

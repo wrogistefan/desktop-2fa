@@ -142,10 +142,16 @@ d2fa code [OPTIONS] NAME
 **Options:**
 - `--copy`, `-c`: Copy code to clipboard and print
 - `--copy-only`: Copy code to clipboard without printing
+- `--json`: Output in JSON format
+- `--raw`: Output only the TOTP code
+- `--quiet`: Suppress normal output
 
 **Notes:**
 - Clipboard is always opt-in; default behavior prints to terminal only
 - `--copy` and `--copy-only` are mutually exclusive
+- `--json` conflicts with `--raw`, `--quiet`, `--copy`, and `--copy-only`
+- `--raw` conflicts with `--json`, `--quiet`, `--copy`, and `--copy-only`
+- `--quiet` conflicts with `--json` and `--raw`
 - Clipboard is shared system-wide; Desktop-2FA never clears it automatically
 
 ### Clipboard Requirements
@@ -173,7 +179,52 @@ d2fa code --copy GitHub
 # Copy only (no output)
 d2fa code --copy-only GitHub
 # Output: Code copied to clipboard (valid 25s)
+
+# JSON output
+d2fa code --json GitHub
+# Output: {"account": "GitHub", "issuer": "GitHub", "code": "123456", "valid_for": 25}
+
+# Raw output (code only)
+d2fa code --raw GitHub
+# Output: 123456
+
+# Quiet mode (no output on success)
+d2fa code --quiet GitHub
+# Output: (none)
 ```
+
+### Exit Codes
+
+Desktop-2FA uses the following exit codes:
+
+- `0`: Success
+- `1`: Generic error
+- `2`: Invalid password
+- `3`: Entry not found
+- `4`: Vault missing
+- `5`: Clipboard unavailable
+- `6`: Invalid flag combination
+
+### JSON Error Format
+
+When using `--json` mode, errors are returned as JSON objects:
+
+```json
+{
+  "error": "<error_code>",
+  "message": "<human readable message>"
+}
+```
+
+**Error codes:**
+- `invalid_password`: Invalid vault password
+- `entry_not_found`: Entry not found
+- `vault_missing`: No vault found
+- `vault_io_error`: Failed to access vault file
+- `permission_denied`: Cannot access vault directory
+- `corrupted_vault`: Vault file is corrupted
+- `unsupported_format`: Vault file format is unsupported
+- `clipboard_unavailable`: Clipboard not available on this system
 
 ### `remove` - Remove Entry
 

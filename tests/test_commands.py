@@ -163,8 +163,9 @@ def test_generate_code_missing_entry_raises(
 
     vault = Vault()
     vault.save(fake_vault_env, TEST_PASSWORD)
-    with pytest.raises(ValueError):
+    with pytest.raises(SystemExit) as exc_info:
         commands.generate_code("Nope", fake_ctx)
+    assert exc_info.value.code == 3
 
 
 def test_remove_entry(fake_vault_env: Path, fake_ctx: Any) -> None:
@@ -345,7 +346,10 @@ def test_generate_code_invalid_password(
     vault = Vault()
     vault.save(fake_vault_env, TEST_PASSWORD)
 
-    commands.generate_code("nonexistent", fake_ctx_wrong_password)
+    with pytest.raises(SystemExit) as exc_info:
+        commands.generate_code("nonexistent", fake_ctx_wrong_password)
+    assert exc_info.value.code == 2
+
     out = capsys.readouterr().out.strip()
     assert out == "Invalid vault password."
 
@@ -487,8 +491,9 @@ def test_generate_code_existing_vault_no_entries(
     vault = Vault()
     vault.save(fake_vault_env, TEST_PASSWORD)
 
-    with pytest.raises(ValueError, match="not found"):
+    with pytest.raises(SystemExit) as exc_info:
         commands.generate_code("nonexistent", fake_ctx)
+    assert exc_info.value.code == 3
 
 
 def test_remove_entry_existing_vault_no_entries(
@@ -703,7 +708,9 @@ def test_generate_code_unsupported_format(
         b"WRNG" + b"\x01" + b"16byte_salt_here" + b"encrypted_data"
     )
 
-    commands.generate_code("GitHub", fake_ctx)
+    with pytest.raises(SystemExit) as exc_info:
+        commands.generate_code("GitHub", fake_ctx)
+    assert exc_info.value.code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Vault file format is unsupported." in out
@@ -973,7 +980,9 @@ def test_generate_code_no_vault_warns(
     if fake_vault_env.exists():
         fake_vault_env.unlink()
 
-    commands.generate_code("Test", fake_ctx)
+    with pytest.raises(SystemExit) as exc_info:
+        commands.generate_code("Test", fake_ctx)
+    assert exc_info.value.code == 4
 
     out = capsys.readouterr().out.strip()
     assert "No vault found" in out
@@ -1276,7 +1285,9 @@ def test_generate_code_permission_denied(
 
     monkeypatch.setattr("desktop_2fa.vault.Vault.load", mock_load)
 
-    commands.generate_code("GitHub", fake_ctx)
+    with pytest.raises(SystemExit) as exc_info:
+        commands.generate_code("GitHub", fake_ctx)
+    assert exc_info.value.code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Cannot access vault directory (permission denied)" in out
@@ -1299,7 +1310,9 @@ def test_generate_code_value_error_invalid(
 
     monkeypatch.setattr("desktop_2fa.vault.Vault.load", mock_load)
 
-    commands.generate_code("GitHub", fake_ctx)
+    with pytest.raises(SystemExit) as exc_info:
+        commands.generate_code("GitHub", fake_ctx)
+    assert exc_info.value.code == 2
 
     out = capsys.readouterr().out.strip()
     assert "Invalid vault password" in out
@@ -1311,7 +1324,9 @@ def test_generate_code_corrupted_vault(
     # Create a corrupted vault file
     fake_vault_env.write_bytes(b"WRNG\x01" + b"16byte_salt_here" + b"encrypted_data")
 
-    commands.generate_code("GitHub", fake_ctx)
+    with pytest.raises(SystemExit) as exc_info:
+        commands.generate_code("GitHub", fake_ctx)
+    assert exc_info.value.code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Vault file format is unsupported" in out
@@ -1335,10 +1350,86 @@ def test_generate_code_vault_io_error(
 
     monkeypatch.setattr("desktop_2fa.vault.Vault.load", mock_load)
 
-    commands.generate_code("GitHub", fake_ctx)
+    with pytest.raises(SystemExit) as exc_info:
+        commands.generate_code("GitHub", fake_ctx)
+    assert exc_info.value.code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Failed to access vault file" in out
+
+
+def test_generate_code_json(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -> None:
+    commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+    capsys.readouterr()  # clear output
+
+    commands.generate_code("GitHub", fake_ctx, json_mode=True)
+    out = capsys.readouterr().out.strip()
+
+    import json
+    data = json.loads(out)
+    assert "account" in data
+    assert "issuer" in data
+    assert "code" in data
+    assert "valid_for" in data
+    assert data["account"] == "GitHub"
+    assert data["issuer"] == "GitHub"
+    assert len(data["code"]) == 6
+    assert isinstance(data["valid_for"], int)
+
+
+def test_generate_code_raw(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -> None:
+    commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+    capsys.readouterr()  # clear output
+
+    commands.generate_code("GitHub", fake_ctx, raw=True)
+    out = capsys.readouterr().out.strip()
+
+    # Raw mode should output only the code
+    assert len(out) == 6
+    assert out.isdigit()
+
+
+def test_generate_code_quiet(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -> None:
+    commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+    capsys.readouterr()  # clear output
+
+    commands.generate_code("GitHub", fake_ctx, quiet=True)
+    out = capsys.readouterr().out.strip()
+
+    # Quiet mode should have no output on success
+    assert out == ""
+
+
+def test_generate_code_json_invalid_password(fake_vault_env: Path, capsys: Any, fake_ctx: Any, fake_ctx_wrong_password: Any) -> None:
+    # Create vault with correct password
+    commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+    capsys.readouterr()  # clear output
+
+    # Try to access with wrong password
+    with pytest.raises(SystemExit) as exc_info:
+        commands.generate_code("GitHub", fake_ctx_wrong_password, json_mode=True)
+    assert exc_info.value.code == 2
+
+    out = capsys.readouterr().out.strip()
+    import json
+    data = json.loads(out)
+    assert data["error"] == "invalid_password"
+
+
+def test_generate_code_json_entry_not_found(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -> None:
+    # Create empty vault
+    from desktop_2fa.vault import Vault
+    vault = Vault()
+    vault.save(fake_vault_env, TEST_PASSWORD)
+
+    with pytest.raises(SystemExit) as exc_info:
+        commands.generate_code("NonExistent", fake_ctx, json_mode=True)
+    assert exc_info.value.code == 3
+
+    out = capsys.readouterr().out.strip()
+    import json
+    data = json.loads(out)
+    assert data["error"] == "entry_not_found"
 
 
 def test_remove_entry_no_vault(
