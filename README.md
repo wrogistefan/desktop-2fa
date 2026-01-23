@@ -20,7 +20,6 @@ A secure, offline two-factor authentication (2FA) manager for desktop environmen
 | 🔐 **Vault Security** | AES-256-GCM encryption with Argon2id key derivation |
 | ⏱️ **TOTP Generation** | RFC 6238 compliant code generation |
 | 💻 **Full CLI** | Complete command-line interface for managing tokens |
-| 🖥️ **Desktop GUI** | Graphical user interface for token management |
 | 📋 **Clipboard Support** | Automatic copying of TOTP codes to clipboard |
 | 🔓 **Stateless Design** | Every command requires explicit password authentication |
 | 🛡️ **Password Policy** | Configurable password strength enforcement |
@@ -149,7 +148,7 @@ Version 0.8.0 maintains all previous security hardening from v0.7.3 and introduc
 - Permission errors are distinguished from missing vault files
 - No Python stack traces are shown to users
 - User-friendly error messages for filesystem permission issues
-- Modular design separates CLI, GUI, and core cryptographic components for enhanced security boundaries
+- Modular design separates CLI and core cryptographic components for enhanced security boundaries
 
 ---
 
@@ -176,11 +175,11 @@ pytest --cov=src/desktop_2fa  # Run with coverage
 
 ```
 src/desktop_2fa/
-├── app/           # Desktop GUI application
+├── app/           # Application components
 ├── cli/           # Command-line interface
 ├── crypto/        # Encryption utilities
 ├── totp/          # TOTP generation
-├── ui/            # GUI components and dialogs
+├── ui/            # User interface components
 ├── vault/         # Vault management
 └── utils/         # Utilities
 ```
