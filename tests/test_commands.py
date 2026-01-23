@@ -143,11 +143,16 @@ def test_generate_code(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -> None
     commands.generate_code("GitHub", fake_ctx)
     out = capsys.readouterr().out.strip()
 
-    # generate_code wypisuje tylko kod, jedną linię
+    # generate_code prints code with validity time
     lines = out.splitlines()
-    code = lines[-1]
+    output = lines[-1]
+    # Should be like "123456 (valid 25s)"
+    parts = output.split()
+    code = parts[0]
     assert len(code) == 6
     assert code.isdigit()
+    assert "(valid" in output
+    assert "s)" in output
 
 
 def test_generate_code_missing_entry_raises(
@@ -158,8 +163,9 @@ def test_generate_code_missing_entry_raises(
 
     vault = Vault()
     vault.save(fake_vault_env, TEST_PASSWORD)
-    with pytest.raises(ValueError):
+    with pytest.raises(SystemExit) as exc_info:
         commands.generate_code("Nope", fake_ctx)
+    assert exc_info.value.code == 3
 
 
 def test_remove_entry(fake_vault_env: Path, fake_ctx: Any) -> None:
@@ -340,7 +346,10 @@ def test_generate_code_invalid_password(
     vault = Vault()
     vault.save(fake_vault_env, TEST_PASSWORD)
 
-    commands.generate_code("nonexistent", fake_ctx_wrong_password)
+    with pytest.raises(SystemExit) as exc_info:
+        commands.generate_code("nonexistent", fake_ctx_wrong_password)
+    assert exc_info.value.code == 2
+
     out = capsys.readouterr().out.strip()
     assert out == "Invalid vault password."
 
@@ -482,8 +491,9 @@ def test_generate_code_existing_vault_no_entries(
     vault = Vault()
     vault.save(fake_vault_env, TEST_PASSWORD)
 
-    with pytest.raises(ValueError, match="not found"):
+    with pytest.raises(SystemExit) as exc_info:
         commands.generate_code("nonexistent", fake_ctx)
+    assert exc_info.value.code == 3
 
 
 def test_remove_entry_existing_vault_no_entries(
@@ -698,7 +708,9 @@ def test_generate_code_unsupported_format(
         b"WRNG" + b"\x01" + b"16byte_salt_here" + b"encrypted_data"
     )
 
-    commands.generate_code("GitHub", fake_ctx)
+    with pytest.raises(SystemExit) as exc_info:
+        commands.generate_code("GitHub", fake_ctx)
+    assert exc_info.value.code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Vault file format is unsupported." in out
@@ -913,6 +925,272 @@ def test_list_entries_io_error(
         builtins.open = original_open
 
 
+def test_generate_code_json_vault_missing(
+    fake_vault_env: Path, capsys: Any, fake_ctx: Any
+) -> None:
+    # Ensure no vault exists
+    if fake_vault_env.exists():
+        fake_vault_env.unlink()
+
+    with pytest.raises(SystemExit) as exc_info:
+        commands.generate_code("Test", fake_ctx, json_mode=True)
+    assert exc_info.value.code == 4
+
+    out = capsys.readouterr().out.strip()
+    import json
+
+    data = json.loads(out)
+    assert data["error"] == "vault_missing"
+
+
+def test_generate_code_json_vault_io_error(
+    fake_vault_env: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
+) -> None:
+    # Mock _vault_exists to raise OSError
+    def mock_vault_exists(path: Path) -> None:
+        raise OSError("Disk error")
+
+    monkeypatch.setattr("desktop_2fa.cli.commands._vault_exists", mock_vault_exists)
+
+    with pytest.raises(SystemExit) as exc_info:
+        commands.generate_code("Test", fake_ctx, json_mode=True)
+    assert exc_info.value.code == 1
+
+    out = capsys.readouterr().out.strip()
+    import json
+
+    data = json.loads(out)
+    assert data["error"] == "vault_io_error"
+
+
+def test_generate_code_json_permission_denied(
+    fake_vault_env: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
+) -> None:
+    # Mock _vault_exists to return None (permission denied)
+    monkeypatch.setattr("desktop_2fa.cli.commands._vault_exists", lambda path: None)
+
+    with pytest.raises(SystemExit) as exc_info:
+        commands.generate_code("Test", fake_ctx, json_mode=True)
+    assert exc_info.value.code == 1
+
+    out = capsys.readouterr().out.strip()
+    import json
+
+    data = json.loads(out)
+    assert data["error"] == "permission_denied"
+
+
+def test_generate_code_json_corrupted_vault(
+    fake_vault_env: Path, capsys: Any, fake_ctx: Any
+) -> None:
+    # Create a corrupted vault file
+    fake_vault_env.write_bytes(b"WRNG\x01" + b"16byte_salt_here" + b"encrypted_data")
+
+    with pytest.raises(SystemExit) as exc_info:
+        commands.generate_code("GitHub", fake_ctx, json_mode=True)
+    assert exc_info.value.code == 1
+
+    out = capsys.readouterr().out.strip()
+    import json
+
+    data = json.loads(out)
+    assert data["error"] == "unsupported_format"
+
+
+def test_generate_code_json_unsupported_format(
+    fake_vault_env: Path, capsys: Any, fake_ctx: Any
+) -> None:
+    # Create an unsupported format vault file
+    fake_vault_env.write_bytes(b"INVALID")
+
+    with pytest.raises(SystemExit) as exc_info:
+        commands.generate_code("GitHub", fake_ctx, json_mode=True)
+    assert exc_info.value.code == 1
+
+    out = capsys.readouterr().out.strip()
+    import json
+
+    data = json.loads(out)
+    assert data["error"] == "unsupported_format"
+
+
+def test_generate_code_json_clipboard_unavailable(
+    fake_vault_env: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
+) -> None:
+    # Create a vault with an entry
+    commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+    capsys.readouterr()  # clear output
+
+    # Mock copy_to_clipboard to raise ClipboardError
+    from desktop_2fa.cli.clipboard import ClipboardError
+
+    def mock_copy_to_clipboard(text: str) -> None:
+        raise ClipboardError("Clipboard not available")
+
+    monkeypatch.setattr(
+        "desktop_2fa.cli.clipboard.copy_to_clipboard", mock_copy_to_clipboard
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        commands.generate_code("GitHub", fake_ctx, json_mode=True, copy_only=True)
+    assert exc_info.value.code == 5
+
+    out = capsys.readouterr().out.strip()
+    import json
+
+    data = json.loads(out)
+    assert data["error"] == "clipboard_unavailable"
+
+
+def test_generate_code_clipboard_copy_success(
+    fake_vault_env: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
+) -> None:
+    # Create a vault with an entry
+    commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+    capsys.readouterr()  # clear output
+
+    # Mock copy_to_clipboard to succeed
+    copied_text = []
+
+    def mock_copy_to_clipboard(text: str) -> None:
+        copied_text.append(text)
+
+    monkeypatch.setattr(
+        "desktop_2fa.cli.clipboard.copy_to_clipboard", mock_copy_to_clipboard
+    )
+
+    commands.generate_code("GitHub", fake_ctx, copy=True)
+
+    out = capsys.readouterr().out.strip()
+    # Should print the code with validity
+    assert "valid" in out
+    assert len(copied_text) == 1
+    # The copied text should be the TOTP code
+    assert len(copied_text[0]) == 6  # TOTP codes are 6 digits
+
+
+def test_generate_code_clipboard_copy_only_success(
+    fake_vault_env: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
+) -> None:
+    # Create a vault with an entry
+    commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+    capsys.readouterr()  # clear output
+
+    # Mock copy_to_clipboard to succeed
+    copied_text = []
+
+    def mock_copy_to_clipboard(text: str) -> None:
+        copied_text.append(text)
+
+    monkeypatch.setattr(
+        "desktop_2fa.cli.clipboard.copy_to_clipboard", mock_copy_to_clipboard
+    )
+
+    commands.generate_code("GitHub", fake_ctx, copy_only=True)
+
+    out = capsys.readouterr().out.strip()
+    # Should print "Code copied to clipboard (valid Xs)"
+    assert "Code copied to clipboard" in out
+    assert "valid" in out
+    assert len(copied_text) == 1
+
+
+def test_generate_code_clipboard_unavailable_copy(
+    fake_vault_env: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
+) -> None:
+
+    # Create a vault with an entry
+    commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+    capsys.readouterr()  # clear output
+
+    # Mock copy_to_clipboard to raise ClipboardError
+    from desktop_2fa.cli.clipboard import ClipboardError
+
+    def mock_copy_to_clipboard(text: str) -> None:
+        raise ClipboardError("Clipboard not available")
+
+    monkeypatch.setattr(
+        "desktop_2fa.cli.clipboard.copy_to_clipboard", mock_copy_to_clipboard
+    )
+
+    commands.generate_code("GitHub", fake_ctx, copy=True)
+
+    out = capsys.readouterr().out.strip()
+    # Should print warning and then the code
+    assert "Clipboard not available on this system" in out
+    assert "valid" in out
+
+
+def test_generate_code_clipboard_unavailable_copy_only(
+    fake_vault_env: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
+) -> None:
+    # Create a vault with an entry
+    commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+    capsys.readouterr()  # clear output
+
+    # Mock copy_to_clipboard to raise ClipboardError
+    from desktop_2fa.cli.clipboard import ClipboardError
+
+    def mock_copy_to_clipboard(text: str) -> None:
+        raise ClipboardError("Clipboard not available")
+
+    monkeypatch.setattr(
+        "desktop_2fa.cli.clipboard.copy_to_clipboard", mock_copy_to_clipboard
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        commands.generate_code("GitHub", fake_ctx, copy_only=True)
+    assert exc_info.value.code == 5
+
+    out = capsys.readouterr().out.strip()
+    assert "Clipboard not available on this system" in out
+
+
+def test_generate_code_clipboard_unavailable_quiet(
+    fake_vault_env: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
+) -> None:
+    # Create a vault with an entry
+    commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+    capsys.readouterr()  # clear output
+
+    # Mock copy_to_clipboard to raise ClipboardError
+    from desktop_2fa.cli.clipboard import ClipboardError
+
+    def mock_copy_to_clipboard(text: str) -> None:
+        raise ClipboardError("Clipboard not available")
+
+    monkeypatch.setattr(
+        "desktop_2fa.cli.clipboard.copy_to_clipboard", mock_copy_to_clipboard
+    )
+
+    commands.generate_code("GitHub", fake_ctx, copy=True, quiet=True)
+
+    out = capsys.readouterr().out.strip()
+    # Should have no output in quiet mode
+    assert out == ""
+
+
+def test_generate_code_deterministic_validity_time(
+    fake_vault_env: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
+) -> None:
+    # Create a vault with an entry
+    commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+    capsys.readouterr()  # clear output
+
+    # Mock time.time() to return a fixed value
+    fixed_time = 1640995200.0  # 2022-01-01 00:00:00 UTC
+    monkeypatch.setattr("time.time", lambda: fixed_time)
+
+    commands.generate_code("GitHub", fake_ctx, json_mode=True)
+
+    out = capsys.readouterr().out.strip()
+    import json
+
+    data = json.loads(out)
+    # For period=30 (default), timestamp % 30 = 0, so remaining = 30 - 0 = 30
+    assert data["valid_for"] == 30
+
+
 def test_add_entry_permission_error_directory(
     fake_vault_env: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
 ) -> None:
@@ -968,7 +1246,9 @@ def test_generate_code_no_vault_warns(
     if fake_vault_env.exists():
         fake_vault_env.unlink()
 
-    commands.generate_code("Test", fake_ctx)
+    with pytest.raises(SystemExit) as exc_info:
+        commands.generate_code("Test", fake_ctx)
+    assert exc_info.value.code == 4
 
     out = capsys.readouterr().out.strip()
     assert "No vault found" in out
@@ -1271,7 +1551,9 @@ def test_generate_code_permission_denied(
 
     monkeypatch.setattr("desktop_2fa.vault.Vault.load", mock_load)
 
-    commands.generate_code("GitHub", fake_ctx)
+    with pytest.raises(SystemExit) as exc_info:
+        commands.generate_code("GitHub", fake_ctx)
+    assert exc_info.value.code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Cannot access vault directory (permission denied)" in out
@@ -1294,7 +1576,9 @@ def test_generate_code_value_error_invalid(
 
     monkeypatch.setattr("desktop_2fa.vault.Vault.load", mock_load)
 
-    commands.generate_code("GitHub", fake_ctx)
+    with pytest.raises(SystemExit) as exc_info:
+        commands.generate_code("GitHub", fake_ctx)
+    assert exc_info.value.code == 2
 
     out = capsys.readouterr().out.strip()
     assert "Invalid vault password" in out
@@ -1306,7 +1590,9 @@ def test_generate_code_corrupted_vault(
     # Create a corrupted vault file
     fake_vault_env.write_bytes(b"WRNG\x01" + b"16byte_salt_here" + b"encrypted_data")
 
-    commands.generate_code("GitHub", fake_ctx)
+    with pytest.raises(SystemExit) as exc_info:
+        commands.generate_code("GitHub", fake_ctx)
+    assert exc_info.value.code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Vault file format is unsupported" in out
@@ -1330,10 +1616,94 @@ def test_generate_code_vault_io_error(
 
     monkeypatch.setattr("desktop_2fa.vault.Vault.load", mock_load)
 
-    commands.generate_code("GitHub", fake_ctx)
+    with pytest.raises(SystemExit) as exc_info:
+        commands.generate_code("GitHub", fake_ctx)
+    assert exc_info.value.code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Failed to access vault file" in out
+
+
+def test_generate_code_json(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -> None:
+    commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+    capsys.readouterr()  # clear output
+
+    commands.generate_code("GitHub", fake_ctx, json_mode=True)
+    out = capsys.readouterr().out.strip()
+
+    import json
+
+    data = json.loads(out)
+    assert "account" in data
+    assert "issuer" in data
+    assert "code" in data
+    assert "valid_for" in data
+    assert data["account"] == "GitHub"
+    assert data["issuer"] == "GitHub"
+    assert len(data["code"]) == 6
+    assert isinstance(data["valid_for"], int)
+
+
+def test_generate_code_raw(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -> None:
+    commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+    capsys.readouterr()  # clear output
+
+    commands.generate_code("GitHub", fake_ctx, raw=True)
+    out = capsys.readouterr().out.strip()
+
+    # Raw mode should output only the code
+    assert len(out) == 6
+    assert out.isdigit()
+
+
+def test_generate_code_quiet(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -> None:
+    commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+    capsys.readouterr()  # clear output
+
+    commands.generate_code("GitHub", fake_ctx, quiet=True)
+    out = capsys.readouterr().out.strip()
+
+    # Quiet mode should have no output on success
+    assert out == ""
+
+
+def test_generate_code_json_invalid_password(
+    fake_vault_env: Path, capsys: Any, fake_ctx: Any, fake_ctx_wrong_password: Any
+) -> None:
+    # Create vault with correct password
+    commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+    capsys.readouterr()  # clear output
+
+    # Try to access with wrong password
+    with pytest.raises(SystemExit) as exc_info:
+        commands.generate_code("GitHub", fake_ctx_wrong_password, json_mode=True)
+    assert exc_info.value.code == 2
+
+    out = capsys.readouterr().out.strip()
+    import json
+
+    data = json.loads(out)
+    assert data["error"] == "invalid_password"
+
+
+def test_generate_code_json_entry_not_found(
+    fake_vault_env: Path, capsys: Any, fake_ctx: Any
+) -> None:
+    # Create empty vault
+    from desktop_2fa.vault import Vault
+
+    vault = Vault()
+    vault.save(fake_vault_env, TEST_PASSWORD)
+
+    with pytest.raises(SystemExit) as exc_info:
+        commands.generate_code("NonExistent", fake_ctx, json_mode=True)
+    assert exc_info.value.code == 3
+
+    out = capsys.readouterr().out.strip()
+    import json
+
+    data = json.loads(out)
+    assert data["error"] == "entry_not_found"
 
 
 def test_remove_entry_no_vault(

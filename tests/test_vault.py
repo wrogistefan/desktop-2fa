@@ -446,12 +446,17 @@ def test_vault_save_os_error_cleanup_on_unlink_failure(
     def mock_fsync(fd: int) -> None:
         raise OSError(28, "No space left on device")
 
-    # Make unlink fail with OSError (covers lines 278-281)
+    # Make exists return True so cleanup is attempted
+    def mock_exists(self: Any) -> bool:
+        return True
+
+    # Make unlink fail with OSError (covers lines 283-286)
     def mock_unlink(path: Any) -> None:
         raise OSError("Cannot remove temp file")
 
     monkeypatch.setattr("os.open", mock_open)
     monkeypatch.setattr("os.fsync", mock_fsync)
+    monkeypatch.setattr("pathlib.Path.exists", mock_exists)
     monkeypatch.setattr("pathlib.Path.unlink", mock_unlink)
 
     with pytest.raises(VaultIOError):

@@ -133,20 +133,98 @@ d2fa add GitHub GitHub JBSWY3DPEHPK3PXP --password mypassword
 Generates and displays the current TOTP code for an entry.
 
 ```bash
-d2fa code NAME
+d2fa code [OPTIONS] NAME
 ```
 
 **Parameters:**
 - `NAME`: Issuer or account name
 
+**Options:**
+- `--copy`, `-c`: Copy code to clipboard and print
+- `--copy-only`: Copy code to clipboard without printing
+- `--json`: Output in JSON format
+- `--raw`: Output only the TOTP code
+- `--quiet`: Suppress normal output
+
+**Notes:**
+- Clipboard is always opt-in; default behavior prints to terminal only
+- `--copy` and `--copy-only` are mutually exclusive
+- `--json` conflicts with `--raw`, `--quiet`, `--copy`, and `--copy-only`
+- `--raw` conflicts with `--json`, `--quiet`, `--copy`, and `--copy-only`
+- `--quiet` conflicts with `--json` and `--raw`
+- Clipboard is shared system-wide; Desktop-2FA never clears it automatically
+
+### Clipboard Requirements
+
+Desktop-2FA uses the pyperclip library for clipboard operations. On Linux, pyperclip requires one of the following tools to be installed:
+
+- xclip
+- xsel
+- wl-clipboard (for Wayland)
+
+macOS and Windows work out of the box without additional dependencies.
+
+If none of these tools are installed on Linux, clipboard operations will fail and desktop-2fa will fall back to printing the code normally.
+
 **Examples:**
 ```bash
+# Default: print to terminal
 d2fa code GitHub
+# Output: 123456 (valid 25s)
+
+# Copy and print
+d2fa code --copy GitHub
+# Output: Copied to clipboard: 123456 (valid 25s)
+
+# Copy only (no output)
+d2fa code --copy-only GitHub
+# Output: Code copied to clipboard (valid 25s)
+
+# JSON output
+d2fa code --json GitHub
+# Output: {"account": "GitHub", "issuer": "GitHub", "code": "123456", "valid_for": 25}
+
+# Raw output (code only)
+d2fa code --raw GitHub
 # Output: 123456
 
-d2fa code "Google:personal"
-# Output: 789012
+# Quiet mode (no output on success)
+d2fa code --quiet GitHub
+# Output: (none)
 ```
+
+### Exit Codes
+
+Desktop-2FA uses the following exit codes:
+
+- `0`: Success
+- `1`: Generic error
+- `2`: Invalid password
+- `3`: Entry not found
+- `4`: Vault missing
+- `5`: Clipboard unavailable
+- `6`: Invalid flag combination
+
+### JSON Error Format
+
+When using `--json` mode, errors are returned as JSON objects:
+
+```json
+{
+  "error": "<error_code>",
+  "message": "<human-readable message>"
+}
+```
+
+**Error codes:**
+- `invalid_password`: Invalid vault password
+- `entry_not_found`: Entry not found
+- `vault_missing`: No vault found
+- `vault_io_error`: Failed to access vault file
+- `permission_denied`: Cannot access vault directory
+- `corrupted_vault`: Vault file is corrupted
+- `unsupported_format`: Vault file format is unsupported
+- `clipboard_unavailable`: Clipboard not available on this system
 
 ### `remove` - Remove Entry
 

@@ -27,6 +27,8 @@ dependencies = [
     "pydantic>=2.0.0",
     "rich>=13.0.0",
     "typer>=0.9.0",
+    "pyperclip==1.8.2",
+
 ]
 
 [project.scripts]
@@ -66,3 +68,12 @@ warn_redundant_casts = true
 warn_no_return = true
 strict = true
 mypy_path = "src"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "pytest.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "pyperclip"
+ignore_missing_imports = true
