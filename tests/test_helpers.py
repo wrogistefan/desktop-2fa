@@ -606,6 +606,14 @@ def test_read_password_file_os_error(tmp_path: Path, monkeypatch: Any) -> None:
         helpers._read_password_file(str(password_file))
 
 
+def test_read_password_file_success(tmp_path: Path) -> None:
+    password_file = tmp_path / "password.txt"
+    password_file.write_text("  test_password  \n")
+
+    result = helpers._read_password_file(str(password_file))
+    assert result == "test_password"
+
+
 def test_load_config_existing_file(tmp_path: Path, monkeypatch: Any) -> None:
 
     config_dir = tmp_path / ".config" / "d2fa"
@@ -621,6 +629,18 @@ def test_load_config_existing_file(tmp_path: Path, monkeypatch: Any) -> None:
         config = helpers.load_config()
         assert "security" in config
         assert config["security"]["min_password_entropy"] == 80
+    finally:
+        Path.home = original_home  # type: ignore[method-assign]
+
+
+def test_load_config_missing_file(tmp_path: Path, monkeypatch: Any) -> None:
+    # Mock Path.home() to return tmp_path (which doesn't have .config/d2fa/config.toml)
+    original_home = Path.home
+    Path.home = lambda: tmp_path  # type: ignore[method-assign]
+
+    try:
+        config = helpers.load_config()
+        assert config == {}
     finally:
         Path.home = original_home  # type: ignore[method-assign]
 

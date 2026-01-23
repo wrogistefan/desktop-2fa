@@ -1,3 +1,4 @@
+import json
 import re
 import shutil
 from pathlib import Path
@@ -66,6 +67,74 @@ def test_cli_code(fake_vault_env_cli: Path) -> None:
     assert code.isdigit()
     assert "(valid" in output
     assert "s)" in output
+
+
+def test_cli_code_json(fake_vault_env_cli: Path) -> None:
+    runner.invoke(
+        app,
+        ["--password", TEST_PASSWORD, "add", "GitHub", "GitHub", "JBSWY3DPEHPK3PXP"],
+    )
+    result = runner.invoke(app, ["--password", TEST_PASSWORD, "code", "GitHub", "--json"])
+    assert result.exit_code == 0
+    import json
+    data = json.loads(result.output.strip())
+    assert "account" in data
+    assert "issuer" in data
+    assert "code" in data
+    assert "valid_for" in data
+
+
+def test_cli_code_raw(fake_vault_env_cli: Path) -> None:
+    runner.invoke(
+        app,
+        ["--password", TEST_PASSWORD, "add", "GitHub", "GitHub", "JBSWY3DPEHPK3PXP"],
+    )
+    result = runner.invoke(app, ["--password", TEST_PASSWORD, "code", "GitHub", "--raw"])
+    assert result.exit_code == 0
+    output = result.output.strip()
+    assert len(output) == 6
+    assert output.isdigit()
+
+
+def test_cli_code_quiet(fake_vault_env_cli: Path) -> None:
+    runner.invoke(
+        app,
+        ["--password", TEST_PASSWORD, "add", "GitHub", "GitHub", "JBSWY3DPEHPK3PXP"],
+    )
+    result = runner.invoke(app, ["--password", TEST_PASSWORD, "code", "GitHub", "--quiet"])
+    assert result.exit_code == 0
+    assert result.output.strip() == ""
+
+
+def test_cli_code_flag_conflicts(fake_vault_env_cli: Path) -> None:
+    runner.invoke(
+        app,
+        ["--password", TEST_PASSWORD, "add", "GitHub", "GitHub", "JBSWY3DPEHPK3PXP"],
+    )
+    # Test --json conflicts with --copy
+    result = runner.invoke(app, ["--password", TEST_PASSWORD, "code", "GitHub", "--json", "--copy"])
+    assert result.exit_code == 6
+    assert "conflicts with" in result.output
+
+    # Test --raw conflicts with --quiet
+    result = runner.invoke(app, ["--password", TEST_PASSWORD, "code", "GitHub", "--raw", "--quiet"])
+    assert result.exit_code == 6
+    assert "conflicts with" in result.output
+
+    # Test --copy conflicts with --copy-only
+    result = runner.invoke(app, ["--password", TEST_PASSWORD, "code", "GitHub", "--copy", "--copy-only"])
+    assert result.exit_code == 6
+    assert "mutually exclusive" in result.output
+
+    # Test --quiet conflicts with --json
+    result = runner.invoke(app, ["--password", TEST_PASSWORD, "code", "GitHub", "--quiet", "--json"])
+    assert result.exit_code == 6
+    assert "conflicts with" in result.output
+
+    # Test --quiet conflicts with --raw
+    result = runner.invoke(app, ["--password", TEST_PASSWORD, "code", "GitHub", "--quiet", "--raw"])
+    assert result.exit_code == 6
+    assert "conflicts with" in result.output
 
 
 def test_cli_remove(fake_vault_env_cli: Path) -> None:
