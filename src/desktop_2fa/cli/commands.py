@@ -381,8 +381,10 @@ def generate_code(
         raw: Output only the TOTP code.
         quiet: Suppress normal output.
     """
-    path = _path()
 
+    helpers._validate_code_options(copy, copy_only, json_mode, raw, quiet)
+
+    path = _path()
     # Check vault existence
     vault_exists = None
     try:

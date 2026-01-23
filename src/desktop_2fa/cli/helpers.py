@@ -491,3 +491,36 @@ def parse_otpauth_url(url: str) -> dict[str, str]:
         "label": label or issuer or "Unknown",
         "secret": secret,
     }
+
+
+def _validate_code_options(
+    copy: bool, copy_only: bool, json_mode: bool, raw: bool, quiet: bool
+) -> None:
+    """Validate mutually exclusive options for code command.
+
+    Args:
+        copy: Whether to copy code to clipboard and print.
+        copy_only: Whether to copy code to clipboard without printing.
+        json_mode: Whether to output in JSON format.
+        raw: Whether to output only the TOTP code.
+        quiet: Whether to suppress normal output.
+
+    Raises:
+        typer.Exit: With code 6 if validation fails.
+    """
+    if copy and copy_only:
+        print_error("--copy and --copy-only are mutually exclusive")
+        raise typer.Exit(ExitCode.VALIDATION_ERROR)
+    if json_mode and (raw or quiet or copy or copy_only):
+        print_error(
+            "--json conflicts with --raw, --quiet, --copy, and --copy-only"
+        )
+        raise typer.Exit(ExitCode.VALIDATION_ERROR)
+    if raw and (json_mode or quiet or copy or copy_only):
+        print_error(
+            "--raw conflicts with --json, --quiet, --copy, and --copy-only"
+        )
+        raise typer.Exit(ExitCode.VALIDATION_ERROR)
+    if quiet and (json_mode or raw):
+        print_error("--quiet conflicts with --json and --raw")
+        raise typer.Exit(ExitCode.VALIDATION_ERROR)
