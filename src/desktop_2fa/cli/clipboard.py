@@ -1,7 +1,9 @@
-import pyperclip
+import pyperclip  # type: ignore[import-untyped]
+
 
 class ClipboardError(Exception):
     pass
+
 
 def copy_to_clipboard(text: str) -> None:
     try:

@@ -447,7 +447,7 @@ def test_vault_save_os_error_cleanup_on_unlink_failure(
         raise OSError(28, "No space left on device")
 
     # Make exists return True so cleanup is attempted
-    def mock_exists(self) -> bool:
+    def mock_exists(self: Any) -> bool:
         return True
 
     # Make unlink fail with OSError (covers lines 283-286)

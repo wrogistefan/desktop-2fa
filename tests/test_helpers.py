@@ -509,9 +509,7 @@ def test_enforce_password_strength_weak_warn_reject(monkeypatch: Any) -> None:
         helpers._enforce_password_strength("weak")
 
 
-def test_get_password_for_vault_empty_password_direct(
-    capsys: Any
-) -> None:
+def test_get_password_for_vault_empty_password_direct(capsys: Any) -> None:
     import typer
 
     fake_ctx = type("FakeContext", (), {"obj": {"password": "", "interactive": True}})()
@@ -546,6 +544,7 @@ def test_get_password_for_vault_empty_confirmation_password(
 
     # First password is valid, second (confirmation) is empty
     call_count = 0
+
     def mock_getpass(prompt: str) -> str:
         nonlocal call_count
         call_count += 1

@@ -1366,6 +1366,7 @@ def test_generate_code_json(fake_vault_env: Path, capsys: Any, fake_ctx: Any) ->
     out = capsys.readouterr().out.strip()
 
     import json
+
     data = json.loads(out)
     assert "account" in data
     assert "issuer" in data
@@ -1400,7 +1401,9 @@ def test_generate_code_quiet(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -
     assert out == ""
 
 
-def test_generate_code_json_invalid_password(fake_vault_env: Path, capsys: Any, fake_ctx: Any, fake_ctx_wrong_password: Any) -> None:
+def test_generate_code_json_invalid_password(
+    fake_vault_env: Path, capsys: Any, fake_ctx: Any, fake_ctx_wrong_password: Any
+) -> None:
     # Create vault with correct password
     commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
     capsys.readouterr()  # clear output
@@ -1412,13 +1415,17 @@ def test_generate_code_json_invalid_password(fake_vault_env: Path, capsys: Any, 
 
     out = capsys.readouterr().out.strip()
     import json
+
     data = json.loads(out)
     assert data["error"] == "invalid_password"
 
 
-def test_generate_code_json_entry_not_found(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -> None:
+def test_generate_code_json_entry_not_found(
+    fake_vault_env: Path, capsys: Any, fake_ctx: Any
+) -> None:
     # Create empty vault
     from desktop_2fa.vault import Vault
+
     vault = Vault()
     vault.save(fake_vault_env, TEST_PASSWORD)
 
@@ -1428,6 +1435,7 @@ def test_generate_code_json_entry_not_found(fake_vault_env: Path, capsys: Any, f
 
     out = capsys.readouterr().out.strip()
     import json
+
     data = json.loads(out)
     assert data["error"] == "entry_not_found"
 
