@@ -1,6 +1,7 @@
+from typing import Any
+
 import pyperclip
 import pytest
-from typing import Any
 
 from desktop_2fa.cli.clipboard import ClipboardError, copy_to_clipboard
 

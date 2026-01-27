@@ -4,10 +4,12 @@
 Password strength evaluation module using zxcvbn.
 """
 
+from typing import Any
+
 from zxcvbn import zxcvbn
 
 
-def evaluate_password_strength(password: str) -> dict:
+def evaluate_password_strength(password: str) -> dict[str, Any]:
     """
     Evaluate password strength using zxcvbn.
 
