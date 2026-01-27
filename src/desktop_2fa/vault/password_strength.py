@@ -6,6 +6,7 @@ Password strength evaluation module using zxcvbn.
 
 from zxcvbn import zxcvbn
 
+
 def evaluate_password_strength(password: str) -> dict:
     """
     Evaluate password strength using zxcvbn.
@@ -23,6 +24,6 @@ def evaluate_password_strength(password: str) -> dict:
         "score": result["score"],
         "feedback": {
             "warning": result["feedback"]["warning"],
-            "suggestions": result["feedback"]["suggestions"]
-        }
+            "suggestions": result["feedback"]["suggestions"],
+        },
     }

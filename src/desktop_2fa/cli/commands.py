@@ -825,7 +825,7 @@ def unlock_vault(ctx: typer.Context) -> None:
     password = helpers.get_password_for_vault(ctx, new_vault=False)
 
     try:
-        vault = Vault.load(path, password)
+        Vault.load(path, password)
         helpers.print_success("Vault unlocked successfully.")
 
         # Check for weak password and warn if configured
@@ -940,5 +940,3 @@ def change_password(ctx: typer.Context) -> None:
         helpers.print_error("Error: Cannot access vault directory (permission denied).")
     except VaultIOError:
         helpers.print_error("Failed to save vault file.")
-
-

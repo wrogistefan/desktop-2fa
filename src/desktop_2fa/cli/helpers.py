@@ -381,7 +381,9 @@ def _enforce_password_strength(password: str) -> None:
     if score < 3:
         warning = feedback.get("warning") or ""
         suggestions = " ".join(feedback.get("suggestions", []))
-        message = f"Password too weak (score {score} < 3). {warning} {suggestions}".strip()
+        message = (
+            f"Password too weak (score {score} < 3). {warning} {suggestions}".strip()
+        )
         if reject_weak:
             print_error(message)
             raise typer.Exit(1)
