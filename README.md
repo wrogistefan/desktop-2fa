@@ -138,9 +138,42 @@ The `rename` command enforces deterministic behavior when multiple entries match
 The vault uses:
 - **AES-256-GCM** for authenticated encryption
 - **Argon2id** for key derivation (time_cost=4, memory_cost=128MiB, parallelism=2)
+- **zxcvbn** for password strength evaluation
 - **Versioned header** for forward compatibility
 
 Every command requires explicit password authentication. No session-based access.
+
+### Password Strength Evaluation
+
+Desktop-2FA uses **zxcvbn** to evaluate password strength when creating or changing vault passwords:
+
+- **Score 0-2 (Weak)**: Easily guessable passwords (e.g., "password123")
+- **Score 3-4 (Strong)**: Resistant to common attacks (recommended)
+
+**Examples:**
+- ❌ Weak: `password`, `123456`, `qwerty`, `admin2024`
+- ✅ Strong: `Battery-Horse-Staple-Correct`, `Mountain@River*2024`, `MySecureVault#42`
+
+**Configuration** (`~/.config/d2fa/config.toml`):
+
+```toml
+[security]
+# Require strong passwords (score >= 3)
+reject_weak_passwords = false  # warn but allow | true: reject weak passwords
+```
+
+When `reject_weak_passwords = false`:
+- Weak passwords trigger a yellow warning
+- User is prompted to confirm continuation
+- Password acceptance is non-blocking
+
+When `reject_weak_passwords = true`:
+- Weak passwords are rejected immediately
+- Command exits with error
+- User must choose a stronger password
+
+**Backward Compatibility:**
+If you have `min_password_entropy` set in your config (legacy option), it is recognized and treated as equivalent to requiring zxcvbn score >= 3.
 
 ### Security Hardening (v0.8.0)
 Version 0.8.0 maintains all previous security hardening from v0.7.3 and introduces modular architecture for better code isolation:
@@ -149,6 +182,8 @@ Version 0.8.0 maintains all previous security hardening from v0.7.3 and introduc
 - No Python stack traces are shown to users
 - User-friendly error messages for filesystem permission issues
 - Modular design separates CLI and core cryptographic components for enhanced security boundaries
+- zxcvbn-based password strength evaluation (new in v0.8.0)
+
 
 ---
 

@@ -362,8 +362,33 @@ def _should_skip_password_checks(ctx: typer.Context) -> bool:
     )
 
 
+def _get_password_strength_threshold(config: dict[str, Any]) -> int:
+    """Get the password strength threshold from config.
+
+    Implements Option A: Configuration Mapping
+    - If min_password_entropy is set, treat it as requiring zxcvbn score >= 3
+    - Otherwise use default threshold of 3
+
+    Args:
+        config: Configuration dictionary loaded from ~/.config/d2fa/config.toml
+
+    Returns:
+        The zxcvbn score threshold (3 for strong passwords)
+    """
+    security = config.get("security", {})
+    # Check if legacy min_password_entropy is configured
+    if "min_password_entropy" in security:
+        # Legacy config present: map to zxcvbn score >= 3 requirement
+        return 3
+    # Default threshold
+    return 3
+
+
 def _enforce_password_strength(password: str) -> None:
-    """Enforce password strength requirements.
+    """Enforce password strength requirements using zxcvbn.
+
+    Uses zxcvbn score < 3 as the threshold for weak passwords.
+    Respects legacy min_password_entropy config (mapped to threshold 3).
 
     Args:
         password: The password to validate.
@@ -374,15 +399,16 @@ def _enforce_password_strength(password: str) -> None:
     config = load_config()
     security = config.get("security", {})
     reject_weak = security.get("reject_weak_passwords", False)
+    threshold = _get_password_strength_threshold(config)
 
     result = evaluate_password_strength(password)
     score = result["score"]
     feedback = result["feedback"]
-    if score < 3:
+    if score < threshold:
         warning = feedback.get("warning") or ""
         suggestions = " ".join(feedback.get("suggestions", []))
         message = (
-            f"Password too weak (score {score} < 3). {warning} {suggestions}".strip()
+            f"Password too weak (score {score} < {threshold}). {warning} {suggestions}".strip()
         )
         if reject_weak:
             print_error(message)
@@ -391,6 +417,7 @@ def _enforce_password_strength(password: str) -> None:
             print_warning(message)
             if not typer.confirm("Continue with weak password?"):
                 raise typer.Exit(1)
+
 
 
 def get_password_from_cli(ctx: typer.Context) -> str:
