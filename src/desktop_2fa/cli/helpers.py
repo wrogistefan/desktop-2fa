@@ -407,9 +407,7 @@ def _enforce_password_strength(password: str) -> None:
     if score < threshold:
         warning = feedback.get("warning") or ""
         suggestions = " ".join(feedback.get("suggestions", []))
-        message = (
-            f"Password too weak (score {score} < {threshold}). {warning} {suggestions}".strip()
-        )
+        message = f"Password too weak (score {score} < {threshold}). {warning} {suggestions}".strip()
         if reject_weak:
             print_error(message)
             raise typer.Exit(1)
@@ -417,7 +415,6 @@ def _enforce_password_strength(password: str) -> None:
             print_warning(message)
             if not typer.confirm("Continue with weak password?"):
                 raise typer.Exit(1)
-
 
 
 def get_password_from_cli(ctx: typer.Context) -> str:

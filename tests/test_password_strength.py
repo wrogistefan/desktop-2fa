@@ -9,22 +9,17 @@ This module tests:
 5. Non-interactive mode behavior
 """
 
-import os
 import pathlib
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
-from typer.testing import CliRunner
 
 from desktop_2fa.cli.helpers import (
     _enforce_password_strength,
     _get_password_strength_threshold,
-    load_config,
 )
-from desktop_2fa.cli.main import app
 from desktop_2fa.vault.password_strength import evaluate_password_strength
-
 
 # ============================================================================
 # Tests for zxcvbn Password Strength Evaluation
@@ -104,25 +99,25 @@ class TestConfigurationMapping:
 
     def test_get_threshold_default(self) -> None:
         """Test that default threshold is 3 when no config is present."""
-        config = {"security": {}}
+        config: dict[str, Any] = {"security": {}}
         threshold = _get_password_strength_threshold(config)
         assert threshold == 3
 
     def test_get_threshold_with_legacy_entropy(self) -> None:
         """Test that legacy min_password_entropy is mapped to threshold 3."""
-        config = {"security": {"min_password_entropy": 60}}
+        config: dict[str, Any] = {"security": {"min_password_entropy": 60}}
         threshold = _get_password_strength_threshold(config)
         assert threshold == 3
 
     def test_get_threshold_empty_config(self) -> None:
         """Test that empty config returns default threshold."""
-        config = {}
+        config: dict[str, Any] = {}
         threshold = _get_password_strength_threshold(config)
         assert threshold == 3
 
     def test_get_threshold_no_security_section(self) -> None:
         """Test that missing security section returns default threshold."""
-        config = {"other_section": {}}
+        config: dict[str, Any] = {"other_section": {}}
         threshold = _get_password_strength_threshold(config)
         assert threshold == 3
 
@@ -149,7 +144,9 @@ class TestPasswordEnforcement:
         """Test that weak passwords prompt for confirmation by default."""
         with patch("desktop_2fa.cli.helpers.load_config") as mock_config:
             with patch("typer.confirm") as mock_confirm:
-                mock_config.return_value = {"security": {"reject_weak_passwords": False}}
+                mock_config.return_value = {
+                    "security": {"reject_weak_passwords": False}
+                }
                 mock_confirm.return_value = True
                 # Should prompt and accept confirmation
                 try:
@@ -169,7 +166,9 @@ class TestPasswordEnforcement:
         """Test that user can decline weak password confirmation."""
         with patch("desktop_2fa.cli.helpers.load_config") as mock_config:
             with patch("rich.prompt.Confirm.ask") as mock_confirm:
-                mock_config.return_value = {"security": {"reject_weak_passwords": False}}
+                mock_config.return_value = {
+                    "security": {"reject_weak_passwords": False}
+                }
                 mock_confirm.return_value = False  # User declines
                 with pytest.raises(Exception):  # Should raise when declined
                     _enforce_password_strength("password")
@@ -193,6 +192,7 @@ class TestVaultPasswordStrength:
         )
         if fake_vault.parent.exists():
             import shutil
+
             shutil.rmtree(fake_vault.parent)
         fake_vault.parent.mkdir(parents=True, exist_ok=True)
         return fake_vault
@@ -229,7 +229,7 @@ class TestCLIPasswordBehaviors:
         # Test that weak passwords are identified
         weak_result = evaluate_password_strength("password123")
         assert weak_result["score"] < 3
-        
+
         # Test that strong passwords are identified
         strong_result = evaluate_password_strength("Battery-Horse-Staple")
         assert strong_result["score"] >= 3
@@ -241,7 +241,7 @@ class TestCLIPasswordBehaviors:
             mock_config.return_value = {"security": {"reject_weak_passwords": False}}
             threshold = _get_password_strength_threshold(mock_config.return_value)
             assert threshold == 3
-        
+
         # Strict mode: should reject weak passwords
         with patch("desktop_2fa.cli.helpers.load_config") as mock_config:
             mock_config.return_value = {"security": {"reject_weak_passwords": True}}
