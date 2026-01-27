@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import getpass
 import json
 import sys
 import time
 from pathlib import Path
 
 import typer
+from rich import print as rprint
+from rich.text import Text
 
 import desktop_2fa.cli.helpers as helpers
 from desktop_2fa.constants import ExitCode
@@ -848,4 +851,94 @@ def unlock_vault(ctx: typer.Context) -> None:
         helpers.print_error("Error: Cannot access vault directory (permission denied).")
     except VaultIOError:
         helpers.print_error("Failed to access vault file.")
+
+
+def change_password(ctx: typer.Context) -> None:
+    """Change the vault password.
+
+    Prompts for the current password, verifies the vault can be opened,
+    then prompts for a new password (with confirmation), enforces strength
+    checks, and re-encrypts the vault with the new password.
+
+    Args:
+        ctx: Typer context with password options.
+    """
+    path = _path()
+    # DEF-02: Use safe vault existence check (avoids PermissionError from path.exists())
+    try:
+        vault_exists = _vault_exists(path)
+    except OSError:
+        # DEF-02: I/O error during existence check
+        helpers.print_error("Failed to access vault file.")
+        return
+
+    # DEF-02: Handle permission denied during existence check
+    if vault_exists is None:
+        helpers.print_error("Error: Cannot access vault directory (permission denied).")
+        return
+
+    if not vault_exists:
+        helpers.print_warning("No vault found.")
+        return
+
+    # Get current password and open vault
+    current_password = helpers.get_password_for_vault(ctx, new_vault=False)
+
+    try:
+        vault = Vault.load(path, current_password)
+    except InvalidPassword:
+        helpers.print_error("Invalid vault password.")
+        return
+    except CorruptedVault:
+        helpers.print_error("Vault file is corrupted.")
+        return
+    except UnsupportedFormat:
+        helpers.print_error("Vault file format is unsupported.")
+        return
+    except PermissionDenied:
+        helpers.print_error("Error: Cannot access vault directory (permission denied).")
+        return
+    except VaultIOError:
+        helpers.print_error("Failed to access vault file.")
+        return
+
+    # Prompt for new password (with confirmation)
+    interactive = ctx.obj.get("interactive")
+    if not interactive:
+        helpers.print_error("Password change requires interactive mode.")
+        return
+
+    rprint(Text("Enter new vault password:", style="cyan"))
+    new_password = getpass.getpass("")
+
+    # DEF-01: Immediately reject empty passwords
+    if not new_password:
+        helpers.print_error("Password cannot be empty.")
+        return
+
+    rprint(Text("Confirm new vault password:", style="cyan"))
+    confirm_password = getpass.getpass("")
+
+    # DEF-01: Immediately reject empty passwords
+    if not confirm_password:
+        helpers.print_error("Password cannot be empty.")
+        return
+
+    if new_password != confirm_password:
+        helpers.print_error("Passwords do not match. Please try again.")
+        return
+
+    # Enforce password strength
+    if not helpers._should_skip_password_checks(ctx):
+        helpers._enforce_password_strength(new_password)
+
+    # Re-encrypt vault with new password
+    try:
+        vault.save(path, new_password)
+        helpers.print_success("Vault password changed successfully.")
+    except PermissionDenied:
+        helpers.print_error("Error: Cannot access vault directory (permission denied).")
+    except VaultIOError:
+        helpers.print_error("Failed to save vault file.")
+
 
