@@ -1,13 +1,28 @@
 # src/desktop_2fa/vault/password_strength.py
 
 """
-Password strength evaluation module (zxcvbn-based).
-
-This is a placeholder for the upcoming integration of zxcvbn.
+Password strength evaluation module using zxcvbn.
 """
+
+from zxcvbn import zxcvbn
 
 def evaluate_password_strength(password: str) -> dict:
     """
-    Placeholder function. Will be replaced with zxcvbn evaluation.
+    Evaluate password strength using zxcvbn.
+
+    Args:
+        password: The password to evaluate.
+
+    Returns:
+        A dict with:
+        - "score": int (0-4)
+        - "feedback": dict with "warning" (str | None) and "suggestions" (list[str])
     """
-    return {"score": None, "feedback": None}
+    result = zxcvbn(password)
+    return {
+        "score": result["score"],
+        "feedback": {
+            "warning": result["feedback"]["warning"],
+            "suggestions": result["feedback"]["suggestions"]
+        }
+    }

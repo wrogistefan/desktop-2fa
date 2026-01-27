@@ -372,22 +372,20 @@ def _enforce_password_strength(password: str) -> None:
     """
     config = load_config()
     security = config.get("security", {})
-    min_entropy = security.get("min_password_entropy", 60)
     reject_weak = security.get("reject_weak_passwords", False)
 
-    entropy = calculate_entropy(password)
-    if entropy < min_entropy:
+    result = evaluate_password_strength(password)
+    score = result["score"]
+    feedback = result["feedback"]
+    if score < 3:
+        warning = feedback.get("warning") or ""
+        suggestions = " ".join(feedback.get("suggestions", []))
+        message = f"Password too weak (score {score} < 3). {warning} {suggestions}".strip()
         if reject_weak:
-            print_error(
-                f"Password too weak (entropy {entropy:.1f} < {min_entropy}). "
-                "Please choose a stronger password."
-            )
+            print_error(message)
             raise typer.Exit(1)
         else:
-            print_warning(
-                f"Password is weak (entropy {entropy:.1f} < {min_entropy}). "
-                "Consider using a stronger password."
-            )
+            print_warning(message)
             if not typer.confirm("Continue with weak password?"):
                 raise typer.Exit(1)
 
