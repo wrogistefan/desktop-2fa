@@ -12,6 +12,7 @@ import typer
 import desktop_2fa.cli.helpers as helpers
 from desktop_2fa.constants import ExitCode
 from desktop_2fa.vault import Vault
+from desktop_2fa.vault.password_strength import evaluate_password_strength
 from desktop_2fa.vault.vault import (
     CorruptedVault,
     InvalidPassword,
@@ -787,3 +788,64 @@ def init_vault(force: bool, ctx: typer.Context) -> None:
         helpers.print_error("Error: Cannot access vault directory (permission denied).")
     except VaultIOError:
         helpers.print_error("Failed to create vault file.")
+
+
+def unlock_vault(ctx: typer.Context) -> None:
+    """Unlock an existing vault and check for weak password.
+
+    Loads and opens an existing vault, verifying the password is correct.
+    If configured, prints a non-blocking warning if the vault password
+    has a zxcvbn score < 3.
+
+    Args:
+        ctx: Typer context with password options.
+    """
+    path = _path()
+    # DEF-02: Use safe vault existence check (avoids PermissionError from path.exists())
+    try:
+        vault_exists = _vault_exists(path)
+    except OSError:
+        # DEF-02: I/O error during existence check
+        helpers.print_error("Failed to access vault file.")
+        return
+
+    # DEF-02: Handle permission denied during existence check
+    if vault_exists is None:
+        helpers.print_error("Error: Cannot access vault directory (permission denied).")
+        return
+
+    if not vault_exists:
+        helpers.print_warning("No vault found.")
+        return
+
+    # Get password
+    password = helpers.get_password_for_vault(ctx, new_vault=False)
+
+    try:
+        vault = Vault.load(path, password)
+        helpers.print_success("Vault unlocked successfully.")
+
+        # Check for weak password and warn if configured
+        config = helpers.load_config()
+        security = config.get("security", {})
+        warn_on_weak = security.get("warn_on_weak_existing_passwords", False)
+
+        if warn_on_weak:
+            result = evaluate_password_strength(password)
+            score = result["score"]
+            if score < 3:
+                helpers.print_warning(
+                    f"Warning: Your vault password is weak (score {score}). "
+                    "Consider changing it."
+                )
+    except InvalidPassword:
+        helpers.print_error("Invalid vault password.")
+    except CorruptedVault:
+        helpers.print_error("Vault file is corrupted.")
+    except UnsupportedFormat:
+        helpers.print_error("Vault file format is unsupported.")
+    except PermissionDenied:
+        helpers.print_error("Error: Cannot access vault directory (permission denied).")
+    except VaultIOError:
+        helpers.print_error("Failed to access vault file.")
+
