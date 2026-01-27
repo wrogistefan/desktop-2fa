@@ -14,6 +14,7 @@ from rich import print as rprint
 from rich.text import Text
 
 from desktop_2fa.vault import Vault
+from desktop_2fa.vault.password_strength import evaluate_password_strength
 
 
 class ValidationError(Exception):
@@ -359,6 +360,23 @@ def _should_skip_password_checks(ctx: typer.Context) -> bool:
         or os.getenv("D2FA_ALLOW_WEAK_PASSWORDS") == "1"
         or os.getenv("PYTEST_CURRENT_TEST") is not None
     )
+
+
+def _print_password_strength_feedback(feedback: dict[str, Any]) -> None:
+    """Print password strength feedback in a formatted manner.
+
+    Args:
+        feedback: Feedback dict with "warning" and "suggestions" keys.
+    """
+    print_header("Password strength feedback:")
+    
+    warning = feedback.get("warning")
+    if warning:
+        print(warning)
+    
+    suggestions = feedback.get("suggestions", [])
+    for suggestion in suggestions:
+        print(f"- {suggestion}")
 
 
 def _enforce_password_strength(password: str) -> None:
