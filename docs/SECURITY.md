@@ -29,13 +29,13 @@ Desktop-2FA is an offline, stateless 2FA manager designed for secure local stora
 | **Memory attacks** | Attacker accesses RAM during operation | Python runtime limitations, brief key retention |
 | **Side-channel attacks** | Timing/power analysis on encryption | Hardware/OS responsibility, use of standard libraries |
 | **Backup compromise** | Backups are stolen | Same encryption as primary vault |
-| **Configuration tampering** | Attacker modifies config file | User responsibility (not in scope for now) |
 | **Weak password selection** | User chooses guessable password | zxcvbn-based strength enforcement |
 
 ### Out of Scope (Threats We Don't Address)
 
 | Threat | Reason | Recommendation |
 |--------|--------|-----------------|
+| **Configuration tampering** | Config file protection is user responsibility | Protect ~/.config/d2fa/ with file permissions |
 | **Compromised host OS** | Cannot protect if OS is infected | Use trusted/verified operating system |
 | **Malware on system** | Malware can read any decrypted data | Use antivirus/keep system updated |
 | **Shoulder surfing** | Visual observation during password entry | User responsibility to secure workspace |

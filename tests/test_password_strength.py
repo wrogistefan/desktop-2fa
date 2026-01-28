@@ -14,6 +14,7 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
+import typer
 
 from desktop_2fa.cli.helpers import (
     _enforce_password_strength,
@@ -159,19 +160,22 @@ class TestPasswordEnforcement:
         """Test that weak passwords are rejected in strict mode."""
         with patch("desktop_2fa.cli.helpers.load_config") as mock_config:
             mock_config.return_value = {"security": {"reject_weak_passwords": True}}
-            with pytest.raises(Exception):  # Should raise an exception
+            with pytest.raises(typer.Exit) as exc:
                 _enforce_password_strength("password")
+            assert exc.value.exit_code == 1
 
     def test_enforce_password_confirmation_declined(self) -> None:
         """Test that user can decline weak password confirmation."""
         with patch("desktop_2fa.cli.helpers.load_config") as mock_config:
-            with patch("rich.prompt.Confirm.ask") as mock_confirm:
+            with patch("desktop_2fa.cli.helpers.typer.confirm") as mock_confirm:
                 mock_config.return_value = {
                     "security": {"reject_weak_passwords": False}
                 }
                 mock_confirm.return_value = False  # User declines
-                with pytest.raises(Exception):  # Should raise when declined
+                with pytest.raises(typer.Exit) as exc:
                     _enforce_password_strength("password")
+                assert exc.value.exit_code == 1
+                mock_confirm.assert_called_once()
 
 
 # ============================================================================
@@ -202,8 +206,9 @@ class TestVaultPasswordStrength:
         with patch("desktop_2fa.cli.helpers.load_config") as mock_config:
             mock_config.return_value = {"security": {"reject_weak_passwords": True}}
             # Weak password should be rejected in strict mode
-            with pytest.raises(Exception):
+            with pytest.raises(typer.Exit) as exc:
                 _enforce_password_strength("password")
+            assert exc.value.exit_code == 1
 
     def test_enforce_password_accepts_strong_always(self) -> None:
         """Test that strong passwords are always accepted."""
@@ -264,8 +269,9 @@ class TestPasswordStrengthEdgeCases:
         with patch("desktop_2fa.cli.helpers.load_config") as mock_config:
             mock_config.return_value = {"security": {"reject_weak_passwords": True}}
             # Empty password should be rejected
-            with pytest.raises(Exception):
+            with pytest.raises(typer.Exit) as exc:
                 _enforce_password_strength("")
+            assert exc.value.exit_code == 1
 
     def test_very_long_password(self) -> None:
         """Test that very long passwords can score as strong."""
@@ -293,3 +299,4 @@ class TestPasswordStrengthEdgeCases:
         feedback = result["feedback"]
         # Feedback should be a dict (zxcvbn returns dict with warning, suggestions)
         assert isinstance(feedback, dict)
+

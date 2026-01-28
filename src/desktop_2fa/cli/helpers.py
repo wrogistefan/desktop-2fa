@@ -396,6 +396,11 @@ def _enforce_password_strength(password: str) -> None:
     Raises:
         typer.Exit: If password is too weak and rejection is enabled.
     """
+    # Guard against empty passwords which crash zxcvbn
+    if not password or not password.strip():
+        print_error("Password cannot be empty")
+        raise typer.Exit(1)
+
     config = load_config()
     security = config.get("security", {})
     reject_weak = security.get("reject_weak_passwords", False)
@@ -550,3 +555,110 @@ def validate_code_options(
         )
     if quiet and (json_mode or raw):
         raise ValidationError("--quiet conflicts with --json and --raw")
+
+
+# ============================================================================
+# Vault Helper Functions for Code Reuse
+# ============================================================================
+
+
+def ensure_existing_vault(path: Path) -> bool:
+    """Check that vault exists at the given path.
+
+    Args:
+        path: Path to the vault file.
+
+    Returns:
+        True if vault exists, False otherwise. Prints error messages on failure.
+    """
+    from desktop_2fa.cli.commands import _vault_exists
+
+    try:
+        vault_exists = _vault_exists(path)
+    except OSError:
+        print_error("Failed to access vault file.")
+        return False
+
+    if vault_exists is None:
+        print_error("Error: Cannot access vault directory (permission denied).")
+        return False
+
+    if not vault_exists:
+        print_warning("No vault found.")
+        return False
+
+    return True
+
+
+def load_vault_or_print_error(path: Path, password: str) -> "Vault | None":
+    """Load vault and handle errors with user-friendly messages.
+
+    Args:
+        path: Path to the vault file.
+        password: Password to decrypt the vault.
+
+    Returns:
+        Loaded Vault object if successful, None otherwise. Prints error messages on failure.
+    """
+    from desktop_2fa.vault import Vault
+    from desktop_2fa.vault.vault import (
+        CorruptedVault,
+        InvalidPassword,
+        PermissionDenied,
+        UnsupportedFormat,
+        VaultIOError,
+    )
+
+    try:
+        return Vault.load(path, password)
+    except InvalidPassword:
+        print_error("Invalid vault password.")
+    except CorruptedVault:
+        print_error("Vault file is corrupted.")
+    except UnsupportedFormat:
+        print_error("Vault file format is unsupported.")
+    except PermissionDenied:
+        print_error("Error: Cannot access vault directory (permission denied).")
+    except VaultIOError:
+        print_error("Failed to access vault file.")
+    return None
+
+
+def prompt_new_password(ctx: typer.Context) -> "str | None":
+    """Prompt for new password with confirmation.
+
+    Args:
+        ctx: Typer context.
+
+    Returns:
+        Confirmed new password string, or None if not in interactive mode or passwords don't match.
+        Prints error messages on failure.
+    """
+    data = ctx.obj or {}
+    interactive = data.get("interactive")
+    if not interactive:
+        print_error("Password change requires interactive mode.")
+        return None
+
+    rprint(Text("Enter new vault password:", style="cyan"))
+    new_password = getpass.getpass("")
+
+    # Immediately reject empty passwords
+    if not new_password:
+        print_error("Password cannot be empty.")
+        return None
+
+    rprint(Text("Confirm new vault password:", style="cyan"))
+    confirm_password = getpass.getpass("")
+
+    # Immediately reject empty passwords
+    if not confirm_password:
+        print_error("Password cannot be empty.")
+        return None
+
+    if new_password != confirm_password:
+        print_error("Passwords do not match. Please try again.")
+        return None
+
+    return new_password
+
