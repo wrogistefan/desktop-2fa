@@ -232,3 +232,27 @@ def init_vault_cmd(
         force: Whether to overwrite existing vault.
     """
     commands.init_vault(force, ctx)
+
+# -----------------------------
+# Vault command group
+# -----------------------------
+vault_app = typer.Typer(help="Vault operations")
+
+@vault_app.command("unlock")
+def unlock_cmd(ctx: typer.Context) -> None:
+    """Unlock the encrypted vault."""
+    commands.unlock_vault(ctx)
+
+@vault_app.command("change-password")
+def change_password_cmd(ctx: typer.Context) -> None:
+    """Change the vault password."""
+    commands.change_password(ctx)
+
+# Optional: alias for init-vault inside the group
+@vault_app.command("init")
+def init_cmd(ctx: typer.Context, force: bool = typer.Option(False, "--force")) -> None:
+    """Initialize a new encrypted vault."""
+    commands.init_vault(force, ctx)
+
+# Register the group
+app.add_typer(vault_app, name="vault")
