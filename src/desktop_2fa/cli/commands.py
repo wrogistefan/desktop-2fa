@@ -12,6 +12,7 @@ import typer
 import desktop_2fa.cli.helpers as helpers
 from desktop_2fa.constants import ExitCode
 from desktop_2fa.vault import Vault
+from desktop_2fa.vault.password_strength import evaluate_password_strength
 from desktop_2fa.vault.vault import (
     CorruptedVault,
     InvalidPassword,
@@ -787,3 +788,85 @@ def init_vault(force: bool, ctx: typer.Context) -> None:
         helpers.print_error("Error: Cannot access vault directory (permission denied).")
     except VaultIOError:
         helpers.print_error("Failed to create vault file.")
+
+
+def unlock_vault(ctx: typer.Context) -> None:
+    """Unlock an existing vault and check for weak password.
+
+    Loads and opens an existing vault, verifying the password is correct.
+    If configured, prints a non-blocking warning if the vault password
+    has a zxcvbn score < 3.
+
+    Args:
+        ctx: Typer context with password options.
+    """
+    path = _path()
+
+    # Ensure vault exists
+    if not helpers.ensure_existing_vault(path):
+        return
+
+    # Get password
+    password = helpers.get_password_for_vault(ctx, new_vault=False)
+
+    # Load vault and handle errors
+    vault = helpers.load_vault_or_print_error(path, password)
+    if vault is None:
+        return
+
+    helpers.print_success("Vault unlocked successfully.")
+
+    # Check for weak password and warn if configured
+    config = helpers.load_config()
+    security = config.get("security", {})
+    warn_on_weak = security.get("warn_on_weak_existing_passwords", False)
+
+    if warn_on_weak:
+        result = evaluate_password_strength(password)
+        score = result["score"]
+        if score < 3:
+            helpers.print_warning(
+                f"Warning: Your vault password is weak (score {score}). "
+                "Consider changing it."
+            )
+
+
+def change_password(ctx: typer.Context) -> None:
+    """Change the vault password.
+
+    Prompts for the current password, verifies the vault can be opened,
+    then prompts for a new password (with confirmation), enforces strength
+    checks, and re-encrypts the vault with the new password.
+
+    Args:
+        ctx: Typer context with password options.
+    """
+    path = _path()
+
+    # Ensure vault exists
+    if not helpers.ensure_existing_vault(path):
+        return
+
+    # Get current password and open vault
+    current_password = helpers.get_password_for_vault(ctx, new_vault=False)
+    vault = helpers.load_vault_or_print_error(path, current_password)
+    if vault is None:
+        return
+
+    # Prompt for new password (with confirmation)
+    new_password = helpers.prompt_new_password(ctx)
+    if new_password is None:
+        return
+
+    # Enforce password strength
+    if not helpers._should_skip_password_checks(ctx):
+        helpers._enforce_password_strength(new_password)
+
+    # Re-encrypt vault with new password
+    try:
+        vault.save(path, new_password)
+        helpers.print_success("Vault password changed successfully.")
+    except PermissionDenied:
+        helpers.print_error("Error: Cannot access vault directory (permission denied).")
+    except VaultIOError:
+        helpers.print_error("Failed to save vault file.")

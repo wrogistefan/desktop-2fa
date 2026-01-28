@@ -14,6 +14,7 @@ from rich import print as rprint
 from rich.text import Text
 
 from desktop_2fa.vault import Vault
+from desktop_2fa.vault.password_strength import evaluate_password_strength
 
 
 class ValidationError(Exception):
@@ -361,8 +362,33 @@ def _should_skip_password_checks(ctx: typer.Context) -> bool:
     )
 
 
+def _get_password_strength_threshold(config: dict[str, Any]) -> int:
+    """Get the password strength threshold from config.
+
+    Implements Option A: Configuration Mapping
+    - If min_password_entropy is set, treat it as requiring zxcvbn score >= 3
+    - Otherwise use default threshold of 3
+
+    Args:
+        config: Configuration dictionary loaded from ~/.config/d2fa/config.toml
+
+    Returns:
+        The zxcvbn score threshold (3 for strong passwords)
+    """
+    security = config.get("security", {})
+    # Check if legacy min_password_entropy is configured
+    if "min_password_entropy" in security:
+        # Legacy config present: map to zxcvbn score >= 3 requirement
+        return 3
+    # Default threshold
+    return 3
+
+
 def _enforce_password_strength(password: str) -> None:
-    """Enforce password strength requirements.
+    """Enforce password strength requirements using zxcvbn.
+
+    Uses zxcvbn score < 3 as the threshold for weak passwords.
+    Respects legacy min_password_entropy config (mapped to threshold 3).
 
     Args:
         password: The password to validate.
@@ -370,24 +396,28 @@ def _enforce_password_strength(password: str) -> None:
     Raises:
         typer.Exit: If password is too weak and rejection is enabled.
     """
+    # Guard against empty passwords which crash zxcvbn
+    if not password or not password.strip():
+        print_error("Password cannot be empty")
+        raise typer.Exit(1)
+
     config = load_config()
     security = config.get("security", {})
-    min_entropy = security.get("min_password_entropy", 60)
     reject_weak = security.get("reject_weak_passwords", False)
+    threshold = _get_password_strength_threshold(config)
 
-    entropy = calculate_entropy(password)
-    if entropy < min_entropy:
+    result = evaluate_password_strength(password)
+    score = result["score"]
+    feedback = result["feedback"]
+    if score < threshold:
+        warning = feedback.get("warning") or ""
+        suggestions = " ".join(feedback.get("suggestions", []))
+        message = f"Password too weak (score {score} < {threshold}). {warning} {suggestions}".strip()
         if reject_weak:
-            print_error(
-                f"Password too weak (entropy {entropy:.1f} < {min_entropy}). "
-                "Please choose a stronger password."
-            )
+            print_error(message)
             raise typer.Exit(1)
         else:
-            print_warning(
-                f"Password is weak (entropy {entropy:.1f} < {min_entropy}). "
-                "Consider using a stronger password."
-            )
+            print_warning(message)
             if not typer.confirm("Continue with weak password?"):
                 raise typer.Exit(1)
 
@@ -525,3 +555,109 @@ def validate_code_options(
         )
     if quiet and (json_mode or raw):
         raise ValidationError("--quiet conflicts with --json and --raw")
+
+
+# ============================================================================
+# Vault Helper Functions for Code Reuse
+# ============================================================================
+
+
+def ensure_existing_vault(path: Path) -> bool:
+    """Check that vault exists at the given path.
+
+    Args:
+        path: Path to the vault file.
+
+    Returns:
+        True if vault exists, False otherwise. Prints error messages on failure.
+    """
+    from desktop_2fa.cli.commands import _vault_exists
+
+    try:
+        vault_exists = _vault_exists(path)
+    except OSError:
+        print_error("Failed to access vault file.")
+        return False
+
+    if vault_exists is None:
+        print_error("Error: Cannot access vault directory (permission denied).")
+        return False
+
+    if not vault_exists:
+        print_warning("No vault found.")
+        return False
+
+    return True
+
+
+def load_vault_or_print_error(path: Path, password: str) -> "Vault | None":
+    """Load vault and handle errors with user-friendly messages.
+
+    Args:
+        path: Path to the vault file.
+        password: Password to decrypt the vault.
+
+    Returns:
+        Loaded Vault object if successful, None otherwise. Prints error messages on failure.
+    """
+    from desktop_2fa.vault import Vault
+    from desktop_2fa.vault.vault import (
+        CorruptedVault,
+        InvalidPassword,
+        PermissionDenied,
+        UnsupportedFormat,
+        VaultIOError,
+    )
+
+    try:
+        return Vault.load(path, password)
+    except InvalidPassword:
+        print_error("Invalid vault password.")
+    except CorruptedVault:
+        print_error("Vault file is corrupted.")
+    except UnsupportedFormat:
+        print_error("Vault file format is unsupported.")
+    except PermissionDenied:
+        print_error("Error: Cannot access vault directory (permission denied).")
+    except VaultIOError:
+        print_error("Failed to access vault file.")
+    return None
+
+
+def prompt_new_password(ctx: typer.Context) -> "str | None":
+    """Prompt for new password with confirmation.
+
+    Args:
+        ctx: Typer context.
+
+    Returns:
+        Confirmed new password string, or None if not in interactive mode or passwords don't match.
+        Prints error messages on failure.
+    """
+    data = ctx.obj or {}
+    interactive = data.get("interactive")
+    if not interactive:
+        print_error("Password change requires interactive mode.")
+        return None
+
+    rprint(Text("Enter new vault password:", style="cyan"))
+    new_password = getpass.getpass("")
+
+    # Immediately reject empty passwords
+    if not new_password:
+        print_error("Password cannot be empty.")
+        return None
+
+    rprint(Text("Confirm new vault password:", style="cyan"))
+    confirm_password = getpass.getpass("")
+
+    # Immediately reject empty passwords
+    if not confirm_password:
+        print_error("Password cannot be empty.")
+        return None
+
+    if new_password != confirm_password:
+        print_error("Passwords do not match. Please try again.")
+        return None
+
+    return new_password

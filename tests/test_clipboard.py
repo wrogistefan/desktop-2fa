@@ -1,10 +1,12 @@
+from typing import Any
+
 import pyperclip
 import pytest
 
 from desktop_2fa.cli.clipboard import ClipboardError, copy_to_clipboard
 
 
-def test_copy_to_clipboard_success(monkeypatch) -> None:
+def test_copy_to_clipboard_success(monkeypatch: Any) -> None:
     copied_text: dict[str, str] = {}
 
     def fake_copy(text: str) -> None:
