@@ -56,7 +56,7 @@
 
 **After**: Organized into 4 sections:
 - **Core Commands** (5 commands): add, list, code, rename, remove
-- **Vault Management** (4 commands): init-vault, unlock-vault, change-password, backup
+- **Vault Management** (6 commands): vault init, vault unlock, vault change-password, vault export, vault import, vault backup
 - **Import/Export** (2 commands): export, import
 - **Global Options** (8 options): password, password-file, json, raw, quiet, copy, copy-only, force
 
@@ -149,25 +149,25 @@ SECURITY.md              (Root level - Quick reference)
 
 **Core Entry Management**:
 ```bash
-d2fa add <name> <issuer> <secret>    # Add entry
-d2fa list                             # View all
-d2fa code <name>                      # Generate code
-d2fa rename <old> <new>               # Rename
-d2fa remove <name>                    # Delete
+d2fa vault add <name> <issuer> <secret>    # Add entry
+d2fa vault list                            # View all
+d2fa code <name>                           # Generate code
+d2fa vault rename <old> <new>              # Rename
+d2fa vault remove <name>                   # Delete
 ```
 
 **Vault Operations**:
 ```bash
-d2fa init-vault                       # Create new vault
-d2fa unlock-vault                     # Open vault
-d2fa change-password                  # Update password
-d2fa backup                           # Backup vault
+d2fa vault init                       # Create new vault
+d2fa vault unlock                     # Open vault
+d2fa vault change-password            # Update password
+d2fa vault backup                     # Backup vault
 ```
 
 **Data Management**:
 ```bash
-d2fa export <path>                    # Export to JSON
-d2fa import <path>                    # Import from JSON
+d2fa vault export <path>              # Export to file
+d2fa vault import <path>              # Import from file
 ```
 
 **Global Options**:

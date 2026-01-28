@@ -31,7 +31,7 @@ AND only for commands where this does not violate the contract.
 Example:
 
 ```
-d2fa add
+d2fa vault add
 ```
 
 → Allowed, because vault creation rules remain unchanged  
@@ -49,7 +49,7 @@ Interactive prompts:
 If user provides arguments:
 
 ```
-d2fa add GitHub GitHub ABC123
+d2fa vault add GitHub GitHub ABC123
 ```
 
 → No interactivity  
@@ -75,7 +75,7 @@ A new encrypted vault will be created.
 [blue]No entries found.[/blue]
 ```
 
-### d2fa add NAME ISSUER SECRET
+### d2fa vault add NAME ISSUER SECRET
 
 ```
 [yellow]No vault found.[/yellow]
@@ -111,7 +111,7 @@ Nothing to generate.
 - AWS (Amazon)
 ```
 
-### d2fa add NAME ISSUER SECRET
+### d2fa vault add NAME ISSUER SECRET
 
 ```
 [cyan]Enter vault password:[/cyan]
@@ -182,7 +182,7 @@ This does **not** violate the contract — it is a user input validation step.
 Allowed:
 
 ```
-d2fa add "otpauth://totp/GitHub:lukas?secret=ABC123&issuer=GitHub"
+d2fa vault add "otpauth://totp/GitHub:lukas?secret=ABC123&issuer=GitHub"
 ```
 
 CLI extracts:
@@ -209,10 +209,10 @@ Missing argument 'ISSUER'.
 [red]Missing argument: ISSUER[/red]
 
 Usage:
-  d2fa add NAME ISSUER SECRET
+  d2fa vault add NAME ISSUER SECRET
 
 Example:
-  d2fa add GitHub GitHub ABCDEFGHIJKL1234
+  d2fa vault add GitHub GitHub ABCDEFGHIJKL1234
 ```
 
 Still deterministic.  
@@ -255,7 +255,7 @@ To implement this UX, you can use:
 # ⚠️ Vault Format Change (0.6.0)
 
 Starting with desktop‑2fa 0.6.0, vaults created with versions prior to 0.6.0 are not compatible and will be rejected as "unsupported format".  
-Users must initialize a new vault using `d2fa init-vault`.  
+Users must initialize a new vault using `d2fa vault init`.  
 See README.md for full details.
 
 ---

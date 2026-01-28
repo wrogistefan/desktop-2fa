@@ -40,12 +40,12 @@ All commands support these options:
 - `--allow-weak-passwords`: Allow weak passwords (bypasses strength checks)
 - `--help`: Show help for the command
 
-### `init-vault` - Initialize New Vault
+### `vault init` - Initialize New Vault
 
 Creates a new encrypted vault file.
 
 ```bash
-d2fa init-vault [--force]
+d2fa vault init [--force]
 ```
 
 **Options:**
@@ -54,38 +54,49 @@ d2fa init-vault [--force]
 **Examples:**
 ```bash
 # Create new vault (interactive password prompt)
-d2fa init-vault
+d2fa vault init
 
 # Overwrite existing vault
-d2fa init-vault --force
+d2fa vault init --force
 
 # Create vault with password from file
-d2fa init-vault --password-file ~/.vault_pass
+d2fa vault init --password-file ~/.vault_pass
 ```
 
-### `list` - List All Entries
+**Password Strength:** The vault password is evaluated using zxcvbn. If the password is weak:
+- In default mode: A warning is shown, and you can confirm to continue
+- In strict mode (with `reject_weak_passwords = true`): The weak password is rejected immediately
+
+Example of password strength feedback:
+```
+Password too weak (score 1 < 3). This is similar to a word by itself. 
+Add another word or two. Otherwise, a few variations of this are very guessable.
+Continue with weak password? [y/N]:
+```
+
+### `vault list` - List All Entries
 
 Displays all stored TOTP entries.
 
 ```bash
-d2fa list
+d2fa vault list
 ```
 
 **Examples:**
 ```bash
-d2fa list
+d2fa vault list
 # Output:
 # - GitHub (GitHub)
 # - AWS (Amazon)
 # - Google (personal)
 ```
 
-### `add` - Add New TOTP Entry
+### `vault add` - Add New TOTP Entry
 
 Adds a new TOTP token to the vault.
 
 ```bash
-d2fa add [NAME] [ISSUER] [SECRET]
+d2fa vault add [NAME] [ISSUER] [SECRET]
 ```
 
 **Parameters:**
@@ -96,7 +107,7 @@ d2fa add [NAME] [ISSUER] [SECRET]
 **Interactive Mode:**
 When run in a terminal without arguments, prompts for name, issuer and secret:
 ```bash
-d2fa add
+d2fa vault add
 Name (unique identifier): GitHub
 Issuer: GitHub
 Secret: JBSWY3DPEHPK3PXP
@@ -105,16 +116,16 @@ Secret: JBSWY3DPEHPK3PXP
 **Examples:**
 ```bash
 # Add entry interactively (prompts for missing values)
-d2fa add
+d2fa vault add
 
 # Add with arguments
-d2fa add GitHub GitHub JBSWY3DPEHPK3PXP
+d2fa vault add GitHub GitHub JBSWY3DPEHPK3PXP
 
 # Add using otpauth URL
-d2fa add "otpauth://totp/GitHub:user?secret=JBSWY3DPEHPK3PXP&issuer=GitHub"
+d2fa vault add "otpauth://totp/GitHub:user?secret=JBSWY3DPEHPK3PXP&issuer=GitHub"
 
 # Add with password from command line
-d2fa add GitHub GitHub JBSWY3DPEHPK3PXP --password mypassword
+d2fa vault add GitHub GitHub JBSWY3DPEHPK3PXP --password mypassword
 ```
 
 **Notes:**
@@ -122,11 +133,65 @@ d2fa add GitHub GitHub JBSWY3DPEHPK3PXP --password mypassword
 - `issuer` is a display label and may repeat across entries
 - Names must be unique within the vault
 - Older versions allowed duplicate names; you may see warnings about this when loading existing vaults
-- Use the `rename` command to resolve duplicate names
+- Use the `vault rename` command to resolve duplicate names
 - Secrets must be valid Base32
 - otpauth URLs are automatically parsed
 - If vault doesn't exist, it will be created automatically
 - In interactive mode, the secret is entered visibly (not hidden)
+
+### `vault unlock` - Unlock and Verify Vault
+
+Unlocks an existing vault and checks if the password is weak (if configured).
+
+```bash
+d2fa vault unlock
+```
+
+**Examples:**
+```bash
+# Unlock vault with interactive password prompt
+d2fa vault unlock
+# Output: Vault unlocked successfully.
+
+# Unlock with password provided
+d2fa vault unlock --password mypassword
+# Output: Vault unlocked successfully.
+# (If vault password is weak and warn_on_weak_existing_passwords is true)
+# Warning: Your vault password is weak (score 1). Consider changing it.
+```
+
+**Notes:**
+- This command verifies vault access and checks password strength
+- If `warn_on_weak_existing_passwords = true` in config and the password is weak, a non-blocking warning is displayed
+
+### `vault change-password` - Change Vault Password
+
+Changes the vault password. The new password is validated for strength.
+
+```bash
+d2fa vault change-password
+```
+
+**Examples:**
+```bash
+# Change vault password (interactive)
+d2fa vault change-password
+# Output: 
+# Old vault password:
+# New vault password:
+# Confirm new vault password:
+# Vault password changed successfully.
+
+# Change with old password provided
+d2fa vault change-password --password oldpassword
+# (Will prompt for new password interactively)
+```
+
+**Notes:**
+- Requires both old and new passwords
+- New password strength is validated
+- If new password is weak and `reject_weak_passwords = true`, operation is rejected
+- Requires interactive mode
 
 ### `code` - Generate TOTP Code
 
@@ -226,12 +291,12 @@ When using `--json` mode, errors are returned as JSON objects:
 - `unsupported_format`: Vault file format is unsupported
 - `clipboard_unavailable`: Clipboard not available on this system
 
-### `remove` - Remove Entry
+### `vault remove` - Remove Entry
 
 Deletes a TOTP entry from the vault.
 
 ```bash
-d2fa remove NAME
+d2fa vault remove NAME
 ```
 
 **Parameters:**
@@ -239,18 +304,18 @@ d2fa remove NAME
 
 **Examples:**
 ```bash
-d2fa remove GitHub
+d2fa vault remove GitHub
 # Output: Removed entry: GitHub
 
-d2fa remove "AWS:root"
+d2fa vault remove "AWS:root"
 ```
 
-### `rename` - Rename Entry
+### `vault rename` - Rename Entry
 
 Changes the name and issuer of an existing entry. Both the unique identifier (account name) and display label (issuer) are updated to the new name.
 
 ```bash
-d2fa rename OLD_NAME NEW_NAME
+d2fa vault rename OLD_NAME NEW_NAME
 ```
 
 **Parameters:**
@@ -259,7 +324,7 @@ d2fa rename OLD_NAME NEW_NAME
 
 **Examples:**
 ```bash
-d2fa rename GitHub GitHub-work
+d2fa vault rename GitHub GitHub-work
 # Output: Renamed 'GitHub' → 'GitHub-work'
 ```
 
@@ -270,12 +335,12 @@ Error: Multiple entries named '<name>' exist. Operation aborted. Resolve duplica
 ```
 This ensures deterministic behavior when duplicate names exist in older vaults.
 
-### `export` - Export Vault
+### `vault export` - Export Vault
 
 Exports the vault to a file (for backup or transfer).
 
 ```bash
-d2fa export FILENAME
+d2fa vault export FILENAME
 ```
 
 **Parameters:**
@@ -283,18 +348,18 @@ d2fa export FILENAME
 
 **Examples:**
 ```bash
-d2fa export backup.bin
+d2fa vault export backup.bin
 # Output: Exported vault to: backup.bin
 
-d2fa export ~/vault_backup.bin
+d2fa vault export ~/vault_backup.bin
 ```
 
-### `import` - Import Vault
+### `vault import` - Import Vault
 
 Imports a vault from a file.
 
 ```bash
-d2fa import SOURCE_FILE [--force]
+d2fa vault import SOURCE_FILE [--force]
 ```
 
 **Parameters:**
@@ -305,24 +370,24 @@ d2fa import SOURCE_FILE [--force]
 
 **Examples:**
 ```bash
-d2fa import backup.bin
+d2fa vault import backup.bin
 # Output: Vault imported from backup.bin
 
 # Overwrite existing vault
-d2fa import new_vault.bin --force
+d2fa vault import new_vault.bin --force
 ```
 
-### `backup` - Create Backup
+### `vault backup` - Create Backup
 
 Creates an automatic backup of the current vault.
 
 ```bash
-d2fa backup
+d2fa vault backup
 ```
 
 **Examples:**
 ```bash
-d2fa backup
+d2fa vault backup
 # Output: Backup created: /home/user/.desktop-2fa/vault.backup.bin
 
 # If backup already exists:
@@ -355,22 +420,30 @@ Desktop-2FA supports multiple ways to provide passwords:
 
 ### Password Strength Enforcement
 
-Desktop-2FA can enforce password strength requirements when creating new vaults. Configure via `~/.config/d2fa/config.toml`:
+Desktop-2FA uses **zxcvbn** to evaluate password strength when creating or changing vault passwords. Configure via `~/.config/d2fa/config.toml`:
 
 ```toml
 [security]
-min_password_entropy = 60
+# Reject weak passwords (password score < 3)
 reject_weak_passwords = false
+
+# Warn when unlocking vault if password is weak
+warn_on_weak_existing_passwords = false
+
+# Legacy option (recognized but uses zxcvbn scoring)
+min_password_entropy = 60
 ```
 
-- **min_password_entropy**: Minimum entropy bits required (default: 60)
-- **reject_weak_passwords**: If true, reject weak passwords; if false, warn and allow continuation
+**zxcvbn Scoring:**
+- **Score 0-2 (Weak)**: Easily guessable passwords like "password", "123456", "qwerty"
+- **Score 3-4 (Strong)**: Resilient passwords like "Battery-Horse-Staple", "Mountain@River2024"
 
-Entropy calculation:
-- Passphrases (4+ words): 11 bits × number of words
-- Passwords: log2(N^L) where N is character set size, L is length
+**Configuration Options:**
+- **reject_weak_passwords**: If true, weak passwords are rejected immediately; if false (default), user is warned and can confirm
+- **warn_on_weak_existing_passwords**: If true, warns when unlocking vault with weak password (non-blocking)
+- **min_password_entropy**: Legacy option - values are mapped to zxcvbn score thresholds (60+ bits ≈ score 3)
 
-**Bypass:** Use `--allow-weak-passwords` or set `D2FA_ALLOW_WEAK_PASSWORDS=1` to skip checks.
+**Bypass:** Use `--allow-weak-passwords` or set `D2FA_ALLOW_WEAK_PASSWORDS=1` to skip strength checks.
 
 ### Password Validation Rules
 
@@ -402,14 +475,21 @@ Desktop-2FA can be configured via `~/.config/d2fa/config.toml`:
 
 ```toml
 [security]
-min_password_entropy = 60
+# Reject weak passwords (zxcvbn score < 3)
 reject_weak_passwords = false
+
+# Warn when unlocking vault with weak password
+warn_on_weak_existing_passwords = false
+
+# Legacy entropy option (mapped to zxcvbn score)
+min_password_entropy = 60
 ```
 
 ### Configuration Options
 
-- **min_password_entropy** (default: 60): Minimum password entropy in bits
-- **reject_weak_passwords** (default: false): Whether to reject weak passwords or just warn
+- **reject_weak_passwords** (default: false): Whether to reject weak passwords (true) or warn and allow (false)
+- **warn_on_weak_existing_passwords** (default: false): Whether to warn when unlocking vault with weak password
+- **min_password_entropy** (default: 60): Legacy option - minimum password entropy in bits (mapped to zxcvbn score ≥ 3)
 
 The config file is optional - defaults are used if the file doesn't exist.
 
@@ -442,10 +522,15 @@ The vault file is automatically created on first use.
 - The specified entry doesn't exist
 - Use `d2fa list` to see available entries
 
-**"Password too weak (entropy X < Y)"**
-- The vault password doesn't meet strength requirements
+**"Password too weak (score X < Y)"**
+- The vault password doesn't meet strength requirements (zxcvbn score is weak)
+- Examples of weak passwords: "password", "123456", "admin2024"
 - Either strengthen the password or use `--allow-weak-passwords`
 - Configure requirements in `~/.config/d2fa/config.toml`
+
+**"Password cannot be empty."**
+- Empty passwords are not allowed
+- Provide a non-empty password
 
 **"Passwords do not match"**
 - Confirmation password doesn't match the initial password
@@ -472,12 +557,12 @@ The vault file is automatically created on first use.
 
 ```bash
 # Add multiple entries
-d2fa add GitHub GitHub JBSWY3DPEHPK3PXP
-d2fa add AWS Amazon ABCDEFGHIJKLMNOP
-d2fa add Google Google QRSTUVWXYZ123456
+d2fa vault add GitHub GitHub JBSWY3DPEHPK3PXP
+d2fa vault add AWS Amazon ABCDEFGHIJKLMNOP
+d2fa vault add Google Google QRSTUVWXYZ123456
 
 # List all
-d2fa list
+d2fa vault list
 
 # Generate codes for multiple services
 d2fa code GitHub
@@ -489,25 +574,25 @@ d2fa code Google
 
 ```bash
 # Regular backup
-d2fa backup
+d2fa vault backup
 
 # Export to external location
-d2fa export ~/Documents/vault-$(date +%Y%m%d).bin
+d2fa vault export ~/Documents/vault-$(date +%Y%m%d).bin
 
 # Import from backup
-d2fa import ~/Documents/vault-20231201.bin --force
+d2fa vault import ~/Documents/vault-20231201.bin --force
 ```
 
 ### Migration Between Machines
 
 ```bash
 # On source machine
-d2fa export transfer.bin
+d2fa vault export transfer.bin
 
 # Transfer transfer.bin to new machine
 
 # On destination machine
-d2fa import transfer.bin
+d2fa vault import transfer.bin
 ```
 
 ## Troubleshooting
@@ -518,7 +603,7 @@ If you get "No vault found" errors:
 
 ```bash
 # Initialize new vault
-d2fa init-vault
+d2fa vault init
 
 # Or check vault location
 ls -la ~/.desktop-2fa/
@@ -557,17 +642,17 @@ This was allowed in older versions. You can resolve this by renaming entries usi
 ```
 
 **Resolution:**
-Use the `rename` command to give unique names to conflicting entries:
+Use the `vault rename` command to give unique names to conflicting entries:
 
 ```bash
 # List current entries
-d2fa list
+d2fa vault list
 
 # Rename duplicates
-d2fa rename GitHub GitHub-personal
-d2fa rename GitHub GitHub-work
-d2fa rename AWS AWS-root
-d2fa rename AWS AWS-admin
+d2fa vault rename GitHub GitHub-personal
+d2fa vault rename GitHub GitHub-work
+d2fa vault rename AWS AWS-root
+d2fa vault rename AWS AWS-admin
 ```
 
 **Note:** The rename command updates both the account name (unique identifier) and issuer (display label) to the new name. After resolving duplicates, the warning will no longer appear.
@@ -587,7 +672,9 @@ d2fa                         # Show version (no args)
 
 ## Security Best Practices
 
-1. **Use strong passwords** for your vault (configure minimum entropy in config)
+1. **Use strong passwords** for your vault (zxcvbn score 3-4 recommended)
+   - Examples of strong passwords: "Battery-Horse-Staple", "Mountain@River2024"
+   - Avoid common words, sequential numbers, keyboard patterns
 2. **Keep backups** in secure locations
 3. **Regularly update** desktop-2fa
 4. **Verify secrets** when adding entries
@@ -595,7 +682,10 @@ d2fa                         # Show version (no args)
 6. **Keep vault file secure** - don't share or store in insecure locations
 7. **Stateless design** - every command requires explicit password authentication
 8. **Use `--allow-weak-passwords`** only when necessary (testing, legacy systems)
-9. **Configure password policies** in `~/.config/d2fa/config.toml` for your security requirements
+9. **Configure password policies** in `~/.config/d2fa/config.toml`:
+   - Set `reject_weak_passwords = true` for strict enforcement
+   - Set `warn_on_weak_existing_passwords = true` to check existing vault passwords
+10. **Test password strength** - run `d2fa vault unlock` to verify your password strength
 
 ## Support
 
@@ -607,4 +697,4 @@ For issues and questions:
 
 ---
 
-*This manual covers desktop-2fa version 0.8.0*
+*This manual covers desktop-2fa version 0.8.1*
