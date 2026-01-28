@@ -22,8 +22,9 @@ A secure, offline two-factor authentication (2FA) manager for desktop environmen
 | 💻 **Full CLI** | Complete command-line interface for managing tokens |
 | 📋 **Clipboard Support** | Automatic copying of TOTP codes to clipboard |
 | 🔓 **Stateless Design** | Every command requires explicit password authentication |
-| 🛡️ **Password Policy** | Configurable password strength enforcement |
-| 🧪 **Well Tested** | 180+ tests passing with comprehensive coverage |
+| 🛡️ **Password Policy** | Configurable password strength enforcement with zxcvbn |
+| 🧪 **Well Tested** | 289 tests passing with comprehensive coverage |
+| 📖 **Security Model** | Detailed threat analysis and cryptographic design documentation |
 
 ---
 
@@ -55,7 +56,7 @@ Verify installation:
 
 ```bash
 python -c "import desktop_2fa; print(desktop_2fa.__version__)"
-# Output: 0.8.0
+# Output: 0.8.1dev
 ```
 
 ### Basic Usage
@@ -119,17 +120,44 @@ The `rename` command enforces deterministic behavior when multiple entries match
 
 ## 📖 CLI Commands
 
+### Core Commands
+
 | Command | Description |
 |---------|-------------|
 | `d2fa add <name> <issuer> <secret>` | Add a new TOTP entry |
-| `d2fa list` | List all entries |
-| `d2fa code <name> [--copy|--copy-only]` | Generate TOTP code (with optional clipboard copy) |
+| `d2fa list` | List all stored TOTP entries |
+| `d2fa code <name> [--copy\|--copy-only]` | Generate TOTP code with clipboard copy options |
 | `d2fa rename <old> <new>` | Rename an entry |
 | `d2fa remove <name>` | Remove an entry |
-| `d2fa export <path>` | Export vault to JSON |
-| `d2fa import <path>` | Import from JSON |
-| `d2fa backup` | Create a backup |
-| `d2fa init-vault` | Initialize new vault |
+
+### Vault Management
+
+| Command | Description |
+|---------|-------------|
+| `d2fa init-vault [--force]` | Initialize a new vault |
+| `d2fa unlock-vault` | Open vault with non-blocking weak password warning |
+| `d2fa change-password` | Change the vault password |
+| `d2fa backup` | Create an encrypted backup of the vault |
+
+### Import/Export
+
+| Command | Description |
+|---------|-------------|
+| `d2fa export <path>` | Export vault entries to JSON |
+| `d2fa import <path> [--force]` | Import entries from JSON |
+
+### Global Options
+
+| Option | Description |
+|--------|-------------|
+| `--password <pwd>` | Provide vault password directly |
+| `--password-file <path>` | Read vault password from file |
+| `--json` | Output in JSON format |
+| `--raw` | Raw output (no formatting) |
+| `--quiet` | Suppress non-essential output |
+| `--copy` | Copy TOTP code to clipboard and display |
+| `--copy-only` | Copy TOTP code to clipboard only |
+| `--force` | Force operation (bypass confirmations) |
 
 ---
 
@@ -192,8 +220,9 @@ Version 0.8.0 maintains all previous security hardening from v0.7.3 and introduc
 | Document | Description |
 |----------|-------------|
 | [User Manual](docs/user_manual.md) | Complete usage guide |
+| [Security Model](docs/SECURITY.md) | Detailed threat analysis and cryptographic design |
 | [CLI UX Specification](docs/ux.md) | UX contract and behavior |
-| [Cryptography](docs/crypto.md) | Security details |
+| [Cryptography](docs/crypto.md) | Security implementation details |
 
 ---
 
