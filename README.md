@@ -62,27 +62,27 @@ python -c "import desktop_2fa; print(desktop_2fa.__version__)"
 ### Basic Usage
 
 ```bash
+# Initialize a new vault
+d2fa vault init
+
 # Add a new TOTP token
-d2fa add GitHub GitHub JBSWY3DPEHPK3PXP
+d2fa vault add GitHub GitHub JBSWY3DPEHPK3PXP
 
 # List all entries
-d2fa list
+d2fa vault list
 
 # Generate a code
 d2fa code GitHub
-
-# Initialize a new vault
-d2fa init-vault
 ```
 
 ### Non-Interactive Usage
 
 ```bash
 # Provide password via command line
-d2fa --password mypassphrase add GitHub GitHub JBSWY3DPEHPK3PXP
+d2fa vault add GitHub GitHub JBSWY3DPEHPK3PXP --password mypassphrase
 
 # Provide password via file
-d2fa --password-file /path/to/passphrase.txt add GitHub GitHub JBSWY3DPEHPK3PXP
+d2fa vault add GitHub GitHub JBSWY3DPEHPK3PXP --password-file /path/to/passphrase.txt
 ```
 
 ---
@@ -124,27 +124,22 @@ The `rename` command enforces deterministic behavior when multiple entries match
 
 | Command | Description |
 |---------|-------------|
-| `d2fa add <name> <issuer> <secret>` | Add a new TOTP entry |
-| `d2fa list` | List all stored TOTP entries |
+| `d2fa vault add <name> <issuer> <secret>` | Add a new TOTP entry |
+| `d2fa vault list` | List all stored TOTP entries |
+| `d2fa vault rename <old> <new>` | Rename an entry |
+| `d2fa vault remove <name>` | Remove an entry |
 | `d2fa code <name> [--copy\|--copy-only]` | Generate TOTP code with clipboard copy options |
-| `d2fa rename <old> <new>` | Rename an entry |
-| `d2fa remove <name>` | Remove an entry |
 
 ### Vault Management
 
 | Command | Description |
 |---------|-------------|
-| `d2fa init-vault [--force]` | Initialize a new vault |
-| `d2fa unlock-vault` | Open vault with non-blocking weak password warning |
-| `d2fa change-password` | Change the vault password |
-| `d2fa backup` | Create an encrypted backup of the vault |
-
-### Import/Export
-
-| Command | Description |
-|---------|-------------|
-| `d2fa export <path>` | Export vault entries to JSON |
-| `d2fa import <path> [--force]` | Import entries from JSON |
+| `d2fa vault init [--force]` | Initialize a new vault |
+| `d2fa vault unlock` | Open vault with weak password warning (if configured) |
+| `d2fa vault change-password` | Change the vault password |
+| `d2fa vault backup` | Create an encrypted backup of the vault |
+| `d2fa vault export <path>` | Export vault to file |
+| `d2fa vault import <path> [--force]` | Import vault from file |
 
 ### Global Options
 
