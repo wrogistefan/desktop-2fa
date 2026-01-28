@@ -299,4 +299,3 @@ class TestPasswordStrengthEdgeCases:
         feedback = result["feedback"]
         # Feedback should be a dict (zxcvbn returns dict with warning, suggestions)
         assert isinstance(feedback, dict)
-

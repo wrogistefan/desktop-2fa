@@ -2,15 +2,12 @@
 
 from __future__ import annotations
 
-import getpass
 import json
 import sys
 import time
 from pathlib import Path
 
 import typer
-from rich import print as rprint
-from rich.text import Text
 
 import desktop_2fa.cli.helpers as helpers
 from desktop_2fa.constants import ExitCode

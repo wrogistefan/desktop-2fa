@@ -661,4 +661,3 @@ def prompt_new_password(ctx: typer.Context) -> "str | None":
         return None
 
     return new_password
-
