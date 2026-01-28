@@ -21,6 +21,15 @@ def evaluate_password_strength(password: str) -> dict[str, Any]:
         - "score": int (0-4)
         - "feedback": dict with "warning" (str | None) and "suggestions" (list[str])
     """
+    if not password:
+        return {
+            "score": 0,
+            "feedback": {
+                "warning": "Password is empty",
+                "suggestions": ["Use a longer password with more variety"]
+            }
+        }
+    
     result = zxcvbn(password)
     return {
         "score": result["score"],

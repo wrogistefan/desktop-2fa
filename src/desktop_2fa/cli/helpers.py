@@ -396,6 +396,12 @@ def _enforce_password_strength(password: str) -> None:
     Raises:
         typer.Exit: If password is too weak and rejection is enabled.
     """
+    # Reject empty passwords immediately
+    if not password:
+        message = "Password cannot be empty."
+        print_error(message)
+        raise typer.Exit(1)
+
     config = load_config()
     security = config.get("security", {})
     reject_weak = security.get("reject_weak_passwords", False)
