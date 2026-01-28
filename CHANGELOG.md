@@ -4,7 +4,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [0.8.1dev] — Development Version
+## [0.8.1] — zxcvbn Password Strength Integration
+
+### 🆕 Added
+
+- **zxcvbn-based password strength evaluation**: Added a new module `password_strength.py` with zxcvbn integration for detecting common patterns, dictionary words, keyboard walks, dates, and repeated sequences.
+- **New CLI commands**: Introduced `vault unlock` and `vault change-password` commands for vault management.
+- **Typer vault command group**: Organized vault operations under a dedicated `vault` command group with subcommands.
+
+### 🔄 Changed
+
+- **Backward compatibility**: Mapped legacy `min_password_entropy` configuration to zxcvbn score thresholds.
+- **Error handling**: Improved messaging for vault access, permission issues, and password validation.
+- **CLI structure**: Reorganized command reference and updated security descriptions.
+
+### 📦 Build
+
+- **Dependencies**: Added `zxcvbn-python` as a project dependency.
+- **Version bump**: Updated package version to 0.8.1dev.
+
+### 📚 Documentation
+
+- **SECURITY.md**: Added comprehensive security model documentation, threat analysis, and password strength policy.
+- **README updates**: Extended with zxcvbn password strength documentation, updated CLI command tables, and links to security model.
+- **Issue documentation**: Added summary and completion documents for Issue #21.
+- **DOCUMENTATION_UPDATES.md**: Documented recent documentation work and scope.
+
+### 🧪 Testing
+
+- **Password strength tests**: Added dedicated test suite covering zxcvbn evaluation, configuration mapping, enforcement modes, vault flows, CLI behavior, and edge cases.
+- **Test adjustments**: Updated existing tests with typing annotations where needed.
+
+### 🧹 Chores
+
+- **Issue tracking**: Introduced internal issue summary and completion reports for Issue #21.
 
 ## [0.8.0] — Modular Architecture & Clipboard Support
 
