@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### 🆕 Added
+
+- **`ui` CLI command**: Launches an interactive Textual-based TOTP UI (`d2fa ui --vault <path>`).
+
+### 🐛 Fixed
+
+- **Textual UI error handling**: `Vault.load` failures (invalid/unreadable vault) and empty vaults now display a clear message in the UI instead of crashing.
+- **Duplicate TOTP generation**: Extracted code generation into a single `_generate_code` helper to eliminate duplicated logic in the button handler.
+- **Clipboard robustness**: `pyperclip` import and clipboard errors are now caught and reflected in the UI output label.
+- **Import and attribute fixes**: Corrected `generate_totp` import to `generate` and `entry.name` to `entry.account_name`.
+
 ## [0.8.1] — zxcvbn Password Strength Integration
 
 ### 🆕 Added
