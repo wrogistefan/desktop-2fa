@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **Duplicate TOTP generation**: Extracted code generation into a single `_generate_code` helper to eliminate duplicated logic in the button handler.
 - **Clipboard robustness**: `pyperclip` import and clipboard errors are now caught and reflected in the UI output label.
 - **Import and attribute fixes**: Corrected `generate_totp` import to `generate` and `entry.name` to `entry.account_name`.
+- **Button handler error messages**: Distinguishes between vault load failures (surfaces the actual error), empty vaults ("Vault is empty"), and unloaded vaults ("Vault not loaded") instead of a single generic message.
+- **Mypy compliance**: Added `App[object]` generic type parameter and `query_one` widget type hints (`Label`, `ListView`) for strict mypy on Textual generics.
 
 ## [0.8.1] — zxcvbn Password Strength Integration
 

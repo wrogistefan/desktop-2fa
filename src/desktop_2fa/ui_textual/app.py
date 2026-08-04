@@ -8,7 +8,7 @@ from desktop_2fa.vault.models import TotpEntry
 from desktop_2fa.vault.vault import VaultError
 
 
-class D2FAApp(App):
+class D2FAApp(App[object]):
     CSS_PATH = "styles.css"
     TITLE = "Desktop-2FA (Textual Prototype)"
     SUB_TITLE = "TOTP Vault UI"
@@ -42,14 +42,14 @@ class D2FAApp(App):
         try:
             import pyperclip
         except ImportError:
-            self.query_one("#output").update("pyperclip is not installed")
+            self.query_one("#output", Label).update("pyperclip is not installed")
             return
         try:
             pyperclip.copy(code)
         except Exception as e:
-            self.query_one("#output").update(f"Copy failed: {e}")
+            self.query_one("#output", Label).update(f"Copy failed: {e}")
             return
-        self.query_one("#output").update("Copied to clipboard!")
+        self.query_one("#output", Label).update("Copied to clipboard!")
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -76,22 +76,30 @@ class D2FAApp(App):
         yield Footer()
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
-        if self.error or not self.vault or not self.vault.entries:
-            self.query_one("#output").update("Vault not loaded")
+        if self.error:
+            self.query_one("#output", Label).update(self.error)
+            return
+
+        if self.vault is None:
+            self.query_one("#output", Label).update("Vault not loaded")
+            return
+
+        if not self.vault.entries:
+            self.query_one("#output", Label).update("Vault is empty")
             return
 
         button_id = event.button.id
-        selected = self.query_one("#accounts").index
+        selected = self.query_one("#accounts", ListView).index
 
         if selected is None:
-            self.query_one("#output").update("No entry selected")
+            self.query_one("#output", Label).update("No entry selected")
             return
 
         entry = self.vault.entries[selected]
 
         if button_id == "generate":
             code = self._generate_code(entry)
-            self.query_one("#output").update(f"Code: {code}")
+            self.query_one("#output", Label).update(f"Code: {code}")
 
         if button_id == "copy":
             code = self._generate_code(entry)
