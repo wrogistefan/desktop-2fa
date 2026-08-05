@@ -1,0 +1,14 @@
+#title {
+    padding: 1;
+    text-style: bold;
+}
+
+#accounts {
+    height: 10;
+    border: solid green;
+}
+
+#output {
+    padding: 1;
+    text-style: italic;
+}

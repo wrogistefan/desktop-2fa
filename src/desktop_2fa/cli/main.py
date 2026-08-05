@@ -261,3 +261,15 @@ def init_cmd(ctx: typer.Context, force: bool = typer.Option(False, "--force")) -
 
 # Register the group
 app.add_typer(vault_app, name="vault")
+
+
+@app.command("ui")
+def ui_cmd(
+    vault: str = typer.Option(
+        "~/.config/d2fa/vault.bin", "--vault", help="Path to the vault file"
+    ),
+) -> None:
+    """Run the Textual UI."""
+    from desktop_2fa.ui_textual.app import run_textual
+
+    run_textual(os.path.expanduser(vault))

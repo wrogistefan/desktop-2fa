@@ -206,16 +206,14 @@ def test_import_from_format_otpauth() -> None:
 
 def test_import_from_format_freeotp(tmp_path: pathlib.Path) -> None:
     xml_file = tmp_path / "freeotp.xml"
-    xml_file.write_text(
-        """<?xml version="1.0"?>
+    xml_file.write_text("""<?xml version="1.0"?>
 <tokens>
     <token>
         <issuer>Test</issuer>
         <label>test</label>
         <secret>SECRET</secret>
     </token>
-</tokens>"""
-    )
+</tokens>""")
 
     entries = import_from_format("freeotp", str(xml_file))
     assert len(entries) == 1

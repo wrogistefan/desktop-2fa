@@ -29,6 +29,7 @@ dependencies = [
     "typer>=0.9.0",
     "pyperclip==1.8.2",
     "zxcvbn-python>=4.0.0",
+    "textual>=6.0.0",
 
 ]
 
@@ -42,7 +43,7 @@ dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0.0",
     "ruff>=0.6.0",
-    "black==24.10.0",
+    "black==26.5.1",
     "mypy>=1.0.0",
 ]
 
@@ -51,11 +52,11 @@ pythonpath = ["src"]
 
 [tool.black]
 line-length = 88
-target-version = ["py311"]
+target-version = ["py312", "py313"]
 
 [tool.ruff]
 line-length = 88
-target-version = "py311"
+target-version = "py313"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I"]
