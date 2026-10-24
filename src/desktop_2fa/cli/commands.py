@@ -124,7 +124,10 @@ def _vault_exists(path: Path) -> bool | None:
         raise
     finally:
         if fd is not None:
-            os.close(fd)
+            try:
+                os.close(fd)
+            except OSError:
+                pass
 
 
 def add_entry_interactive(
