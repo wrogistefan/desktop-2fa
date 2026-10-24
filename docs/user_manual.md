@@ -35,10 +35,38 @@ d2fa code GitHub
 
 All commands support these options:
 
+- `--vault PATH`: Select the vault file (place this global option before the command)
 - `--password PASSWORD`: Provide password directly
 - `--password-file FILE`: Read password from file
 - `--allow-weak-passwords`: Allow weak passwords (bypasses strength checks)
 - `--help`: Show help for the command
+
+### Selecting the Vault File
+
+The default vault is `~/.desktop-2fa/vault`. To use another vault for a
+command, provide the global `--vault` option before the command:
+
+```bash
+# List entries from a separate vault
+d2fa --vault ./development-vault list
+
+# Initialize a selected vault
+d2fa --vault ./development-vault vault init
+
+# Display the selected path (printed in a quoted, terminal-safe form)
+d2fa --vault ./development-vault vault path
+```
+
+Alternatively, set `DESKTOP_2FA_VAULT` to choose a path for commands that do
+not specify `--vault`:
+
+```bash
+DESKTOP_2FA_VAULT=./development-vault d2fa list
+```
+
+An explicit `--vault` takes precedence over `DESKTOP_2FA_VAULT`. If neither
+selects a path, the default remains unchanged. This makes it possible to keep
+development and test vaults separate from the normal vault.
 
 ### `vault init` - Initialize New Vault
 
@@ -60,7 +88,7 @@ d2fa vault init
 d2fa vault init --force
 
 # Create vault with password from file
-d2fa vault init --password-file ~/.vault_pass
+d2fa --password-file ~/.vault_pass vault init
 ```
 
 **Password Strength:** The vault password is evaluated using zxcvbn. If the password is weak:
@@ -74,29 +102,29 @@ Add another word or two. Otherwise, a few variations of this are very guessable.
 Continue with weak password? [y/N]:
 ```
 
-### `vault list` - List All Entries
+### `list` - List All Entries
 
 Displays all stored TOTP entries.
 
 ```bash
-d2fa vault list
+d2fa list
 ```
 
 **Examples:**
 ```bash
-d2fa vault list
+d2fa list
 # Output:
 # - GitHub (GitHub)
 # - AWS (Amazon)
 # - Google (personal)
 ```
 
-### `vault add` - Add New TOTP Entry
+### `add` - Add New TOTP Entry
 
 Adds a new TOTP token to the vault.
 
 ```bash
-d2fa vault add [NAME] [ISSUER] [SECRET]
+d2fa add [NAME] [ISSUER] [SECRET]
 ```
 
 **Parameters:**
@@ -107,7 +135,7 @@ d2fa vault add [NAME] [ISSUER] [SECRET]
 **Interactive Mode:**
 When run in a terminal without arguments, prompts for name, issuer and secret:
 ```bash
-d2fa vault add
+d2fa add
 Name (unique identifier): GitHub
 Issuer: GitHub
 Secret: JBSWY3DPEHPK3PXP
@@ -116,16 +144,16 @@ Secret: JBSWY3DPEHPK3PXP
 **Examples:**
 ```bash
 # Add entry interactively (prompts for missing values)
-d2fa vault add
+d2fa add
 
 # Add with arguments
-d2fa vault add GitHub GitHub JBSWY3DPEHPK3PXP
+d2fa add GitHub GitHub JBSWY3DPEHPK3PXP
 
 # Add using otpauth URL
-d2fa vault add "otpauth://totp/GitHub:user?secret=JBSWY3DPEHPK3PXP&issuer=GitHub"
+d2fa add "otpauth://totp/GitHub:user?secret=JBSWY3DPEHPK3PXP&issuer=GitHub"
 
 # Add with password from command line
-d2fa vault add GitHub GitHub JBSWY3DPEHPK3PXP --password mypassword
+d2fa --password mypassword add GitHub GitHub JBSWY3DPEHPK3PXP
 ```
 
 **Notes:**
@@ -133,7 +161,7 @@ d2fa vault add GitHub GitHub JBSWY3DPEHPK3PXP --password mypassword
 - `issuer` is a display label and may repeat across entries
 - Names must be unique within the vault
 - Older versions allowed duplicate names; you may see warnings about this when loading existing vaults
-- Use the `vault rename` command to resolve duplicate names
+- Use the `d2fa rename` command to resolve duplicate names
 - Secrets must be valid Base32
 - otpauth URLs are automatically parsed
 - If vault doesn't exist, it will be created automatically
@@ -154,7 +182,7 @@ d2fa vault unlock
 # Output: Vault unlocked successfully.
 
 # Unlock with password provided
-d2fa vault unlock --password mypassword
+d2fa --password mypassword vault unlock
 # Output: Vault unlocked successfully.
 # (If vault password is weak and warn_on_weak_existing_passwords is true)
 # Warning: Your vault password is weak (score 1). Consider changing it.
@@ -183,7 +211,7 @@ d2fa vault change-password
 # Vault password changed successfully.
 
 # Change with old password provided
-d2fa vault change-password --password oldpassword
+d2fa --password oldpassword vault change-password
 # (Will prompt for new password interactively)
 ```
 
@@ -291,12 +319,12 @@ When using `--json` mode, errors are returned as JSON objects:
 - `unsupported_format`: Vault file format is unsupported
 - `clipboard_unavailable`: Clipboard not available on this system
 
-### `vault remove` - Remove Entry
+### `remove` - Remove Entry
 
 Deletes a TOTP entry from the vault.
 
 ```bash
-d2fa vault remove NAME
+d2fa remove NAME
 ```
 
 **Parameters:**
@@ -304,18 +332,18 @@ d2fa vault remove NAME
 
 **Examples:**
 ```bash
-d2fa vault remove GitHub
+d2fa remove GitHub
 # Output: Removed entry: GitHub
 
-d2fa vault remove "AWS:root"
+d2fa remove "AWS:root"
 ```
 
-### `vault rename` - Rename Entry
+### `rename` - Rename Entry
 
 Changes the name and issuer of an existing entry. Both the unique identifier (account name) and display label (issuer) are updated to the new name.
 
 ```bash
-d2fa vault rename OLD_NAME NEW_NAME
+d2fa rename OLD_NAME NEW_NAME
 ```
 
 **Parameters:**
@@ -324,7 +352,7 @@ d2fa vault rename OLD_NAME NEW_NAME
 
 **Examples:**
 ```bash
-d2fa vault rename GitHub GitHub-work
+d2fa rename GitHub GitHub-work
 # Output: Renamed 'GitHub' → 'GitHub-work'
 ```
 
@@ -335,12 +363,12 @@ Error: Multiple entries named '<name>' exist. Operation aborted. Resolve duplica
 ```
 This ensures deterministic behavior when duplicate names exist in older vaults.
 
-### `vault export` - Export Vault
+### `export` - Export Vault
 
 Exports the vault to a file (for backup or transfer).
 
 ```bash
-d2fa vault export FILENAME
+d2fa export FILENAME
 ```
 
 **Parameters:**
@@ -348,18 +376,18 @@ d2fa vault export FILENAME
 
 **Examples:**
 ```bash
-d2fa vault export backup.bin
+d2fa export backup.bin
 # Output: Exported vault to: backup.bin
 
-d2fa vault export ~/vault_backup.bin
+d2fa export ~/vault_backup.bin
 ```
 
-### `vault import` - Import Vault
+### `import` - Import Vault
 
 Imports a vault from a file.
 
 ```bash
-d2fa vault import SOURCE_FILE [--force]
+d2fa import SOURCE_FILE [--force]
 ```
 
 **Parameters:**
@@ -370,24 +398,24 @@ d2fa vault import SOURCE_FILE [--force]
 
 **Examples:**
 ```bash
-d2fa vault import backup.bin
+d2fa import backup.bin
 # Output: Vault imported from backup.bin
 
 # Overwrite existing vault
-d2fa vault import new_vault.bin --force
+d2fa import new_vault.bin --force
 ```
 
-### `vault backup` - Create Backup
+### `backup` - Create Backup
 
 Creates an automatic backup of the current vault.
 
 ```bash
-d2fa vault backup
+d2fa backup
 ```
 
 **Examples:**
 ```bash
-d2fa vault backup
+d2fa backup
 # Output: Backup created: /home/user/.desktop-2fa/vault.backup.bin
 
 # If backup already exists:
@@ -408,13 +436,13 @@ Desktop-2FA supports multiple ways to provide passwords:
 
 2. **Command Line Option**:
    ```bash
-   d2fa list --password mypassword
+   d2fa --password mypassword list
    ```
 
 3. **Password File**:
    ```bash
    echo "mypassword" > ~/.vault_pass
-   d2fa list --password-file ~/.vault_pass
+   d2fa --password-file ~/.vault_pass list
    ```
 
 
@@ -499,7 +527,9 @@ By default, the vault is stored at:
 - Linux/macOS: `~/.desktop-2fa/vault`
 - Windows: `C:\Users\<username>\.desktop-2fa\vault`
 
-The vault file is automatically created on first use.
+The vault file is automatically created on first use. See [Selecting the Vault
+File](#selecting-the-vault-file) for custom paths and environment overrides.
+For safety, vault files must be regular files no larger than 10 MiB.
 
 ## Error Handling
 
@@ -557,12 +587,12 @@ The vault file is automatically created on first use.
 
 ```bash
 # Add multiple entries
-d2fa vault add GitHub GitHub JBSWY3DPEHPK3PXP
-d2fa vault add AWS Amazon ABCDEFGHIJKLMNOP
-d2fa vault add Google Google QRSTUVWXYZ123456
+d2fa add GitHub GitHub JBSWY3DPEHPK3PXP
+d2fa add AWS Amazon ABCDEFGHIJKLMNOP
+d2fa add Google Google QRSTUVWXYZ123456
 
 # List all
-d2fa vault list
+d2fa list
 
 # Generate codes for multiple services
 d2fa code GitHub
@@ -574,25 +604,25 @@ d2fa code Google
 
 ```bash
 # Regular backup
-d2fa vault backup
+d2fa backup
 
 # Export to external location
-d2fa vault export ~/Documents/vault-$(date +%Y%m%d).bin
+d2fa export ~/Documents/vault-$(date +%Y%m%d).bin
 
 # Import from backup
-d2fa vault import ~/Documents/vault-20231201.bin --force
+d2fa import ~/Documents/vault-20231201.bin --force
 ```
 
 ### Migration Between Machines
 
 ```bash
 # On source machine
-d2fa vault export transfer.bin
+d2fa export transfer.bin
 
 # Transfer transfer.bin to new machine
 
 # On destination machine
-d2fa vault import transfer.bin
+d2fa import transfer.bin
 ```
 
 ## Troubleshooting
@@ -642,17 +672,17 @@ This was allowed in older versions. You can resolve this by renaming entries usi
 ```
 
 **Resolution:**
-Use the `vault rename` command to give unique names to conflicting entries:
+Use the root-level `d2fa rename` command to give unique names to conflicting entries:
 
 ```bash
 # List current entries
-d2fa vault list
+d2fa list
 
 # Rename duplicates
-d2fa vault rename GitHub GitHub-personal
-d2fa vault rename GitHub GitHub-work
-d2fa vault rename AWS AWS-root
-d2fa vault rename AWS AWS-admin
+d2fa rename GitHub GitHub-personal
+d2fa rename GitHub GitHub-work
+d2fa rename AWS AWS-root
+d2fa rename AWS AWS-admin
 ```
 
 **Note:** The rename command updates both the account name (unique identifier) and issuer (display label) to the new name. After resolving duplicates, the warning will no longer appear.
@@ -668,6 +698,7 @@ d2fa --help                    # Show general help
 d2fa COMMAND --help           # Show help for specific command
 d2fa --version                # Show version
 d2fa                         # Show version (no args)
+d2fa vault path               # Show the selected vault path
 ```
 
 ## Security Best Practices
@@ -697,4 +728,4 @@ For issues and questions:
 
 ---
 
-*This manual covers desktop-2fa version 0.8.1*
+*This manual covers desktop-2fa version 0.8.2*
