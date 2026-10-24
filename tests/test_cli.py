@@ -292,7 +292,44 @@ def test_cli_vault_path_command_reports_resolved_path(
     result = runner.invoke(app, ["vault", "path"])
 
     assert result.exit_code == 0
-    assert result.output.strip() == str(vault_path)
+    assert result.output.strip() == repr(str(vault_path))
+
+
+def test_cli_vault_path_escapes_terminal_control_characters(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
+    vault_path = str(tmp_path / "vault\x1b[31mforged")
+    monkeypatch.setenv("DESKTOP_2FA_VAULT", vault_path)
+
+    result = runner.invoke(app, ["vault", "path"])
+
+    assert result.exit_code == 0
+    assert result.output.strip() == repr(vault_path)
+    assert "\x1b" not in result.output
+
+
+def test_cli_vault_path_falls_back_when_context_has_no_path(
+    monkeypatch: Any, capsys: Any, tmp_path: Path
+) -> None:
+    from desktop_2fa.cli.main import vault_path_cmd
+
+    vault_path = str(tmp_path / "fallback-vault")
+    monkeypatch.setenv("DESKTOP_2FA_VAULT", vault_path)
+    ctx = type("FakeContext", (), {"obj": {}})()
+
+    vault_path_cmd(ctx)
+
+    assert capsys.readouterr().out.strip() == repr(vault_path)
+
+
+def test_cli_version_survives_unknown_user_vault_path() -> None:
+    result = runner.invoke(
+        app,
+        ["--vault", "~desktop_2fa_unknown_user_123/vault", "--version"],
+    )
+
+    assert result.exit_code == 0
+    assert "Desktop-2FA v" in result.output
 
 
 def test_cli_init_vault_existing_no_force(fake_vault_env_cli: Path) -> None:

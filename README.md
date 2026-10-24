@@ -82,7 +82,7 @@ precedence over the environment variable; without either, the default remains
 
 ```bash
 # Use a separate vault for this command
-d2fa --vault ./development-vault vault list
+d2fa --vault ./development-vault list
 
 # Show the currently selected vault path
 d2fa vault path
@@ -102,7 +102,9 @@ d2fa vault add GitHub GitHub JBSWY3DPEHPK3PXP --password-file /path/to/passphras
 
 ## 📁 Vault Lifecycle
 
-The vault is an encrypted storage file located at `~/.desktop-2fa/vault`.
+The vault is an encrypted storage file located by default at
+`~/.desktop-2fa/vault`. A custom path can be selected with `--vault` or
+`DESKTOP_2FA_VAULT`.
 
 ### Vault Creation
 

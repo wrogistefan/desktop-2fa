@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -109,9 +110,10 @@ def _vault_exists(path: Path) -> bool | None:
         False if file does not exist,
         None if permission denied (caller should handle this case).
     """
+    fd: int | None = None
     try:
-        with open(path, "rb"):
-            return True
+        fd = os.open(path, os.O_RDONLY | getattr(os, "O_NONBLOCK", 0))
+        return True
     except FileNotFoundError:
         return False
     except PermissionError:
@@ -120,6 +122,9 @@ def _vault_exists(path: Path) -> bool | None:
     except OSError:
         # Other I/O errors (disk full, etc.) - re-raise for proper handling
         raise
+    finally:
+        if fd is not None:
+            os.close(fd)
 
 
 def add_entry_interactive(

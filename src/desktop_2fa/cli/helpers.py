@@ -155,11 +155,15 @@ def resolve_vault_path(vault_path: str | Path | None = None) -> str:
     Returns:
         Path to the vault file as a string.
     """
-    if vault_path is None:
+    if not vault_path:
         vault_path = os.getenv("DESKTOP_2FA_VAULT")
 
-    if vault_path is not None:
-        return str(Path(vault_path).expanduser())
+    if vault_path:
+        path = Path(vault_path)
+        try:
+            return str(path.expanduser())
+        except RuntimeError:
+            return str(path)
 
     return str(Path.home() / ".desktop-2fa" / "vault")
 
