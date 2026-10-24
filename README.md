@@ -75,6 +75,19 @@ d2fa vault list
 d2fa code GitHub
 ```
 
+Choose a vault file for any command with `--vault`, or set
+`DESKTOP_2FA_VAULT` to select one by default. An explicit `--vault` takes
+precedence over the environment variable; without either, the default remains
+`~/.desktop-2fa/vault`.
+
+```bash
+# Use a separate vault for this command
+d2fa --vault ./development-vault vault list
+
+# Show the currently selected vault path
+d2fa vault path
+```
+
 ### Non-Interactive Usage
 
 ```bash
@@ -147,6 +160,7 @@ The `rename` command enforces deterministic behavior when multiple entries match
 |--------|-------------|
 | `--password <pwd>` | Provide vault password directly |
 | `--password-file <path>` | Read vault password from file |
+| `--vault <path>` | Use the specified vault file instead of the configured/default path |
 | `--json` | Output in JSON format |
 | `--raw` | Raw output (no formatting) |
 | `--quiet` | Suppress non-essential output |

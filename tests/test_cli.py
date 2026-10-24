@@ -267,6 +267,34 @@ def test_cli_init_vault_new(fake_vault_env_cli: Path) -> None:
     assert fake_vault_env_cli.exists()
 
 
+def test_cli_vault_option_selects_path(monkeypatch: Any, tmp_path: Path) -> None:
+    vault_path = tmp_path / "selected-vault"
+    environment_vault_path = tmp_path / "environment-vault"
+    monkeypatch.setenv("DESKTOP_2FA_VAULT", str(environment_vault_path))
+
+    result = runner.invoke(
+        app,
+        ["--vault", str(vault_path), "--password", TEST_PASSWORD, "init-vault"],
+    )
+
+    assert result.exit_code == 0
+    assert f"Vault created at {vault_path}" in result.output
+    assert vault_path.exists()
+    assert not environment_vault_path.exists()
+
+
+def test_cli_vault_path_command_reports_resolved_path(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
+    vault_path = tmp_path / "selected-vault"
+    monkeypatch.setenv("DESKTOP_2FA_VAULT", str(vault_path))
+
+    result = runner.invoke(app, ["vault", "path"])
+
+    assert result.exit_code == 0
+    assert result.output.strip() == str(vault_path)
+
+
 def test_cli_init_vault_existing_no_force(fake_vault_env_cli: Path) -> None:
     from desktop_2fa.vault import Vault
 

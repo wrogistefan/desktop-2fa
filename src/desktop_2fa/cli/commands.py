@@ -83,13 +83,16 @@ def _handle_clipboard(
     return True
 
 
-def _path() -> Path:
+def _path(ctx: typer.Context) -> Path:
     """Get the path to the vault file.
 
     Returns:
         Path to the vault file.
     """
-    return Path(helpers.get_vault_path())
+    vault_path = ctx.obj.get("vault_path")
+    if vault_path is None:
+        vault_path = helpers.get_vault_path()
+    return Path(vault_path)
 
 
 def _vault_exists(path: Path) -> bool | None:
@@ -130,7 +133,7 @@ def add_entry_interactive(
         secret: The Base32-encoded TOTP secret.
         ctx: Typer context with password options.
     """
-    path = _path()
+    path = _path(ctx)
 
     # Validate Base32 secret
     if not helpers.validate_base32(secret):
@@ -192,7 +195,7 @@ def list_entries(ctx: typer.Context) -> None:
     Args:
         ctx: Typer context with password options.
     """
-    path = _path()
+    path = _path(ctx)
     interactive = ctx.obj.get("interactive", False)
 
     # DEF-02: Use safe vault existence check (avoids PermissionError from path.exists())
@@ -276,7 +279,7 @@ def add_entry(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
         secret: The Base32-encoded TOTP secret.
         ctx: Typer context with password options.
     """
-    path = _path()
+    path = _path(ctx)
 
     # Parse otpauth URL if provided
     if issuer.startswith("otpauth://"):
@@ -390,7 +393,7 @@ def generate_code(
         helpers.print_error(str(e))
         raise typer.Exit(ExitCode.VALIDATION_ERROR)
 
-    path = _path()
+    path = _path(ctx)
     # Check vault existence
     vault_exists = None
     try:
@@ -507,7 +510,7 @@ def remove_entry(name: str, ctx: typer.Context) -> None:
         name: The name of the entry to remove.
         ctx: Typer context with password options.
     """
-    path = _path()
+    path = _path(ctx)
     try:
         vault_exists = _vault_exists(path)
     except OSError:
@@ -553,7 +556,7 @@ def rename_entry(old: str, new: str, ctx: typer.Context) -> None:
         new: The new name for the entry.
         ctx: Typer context with password options.
     """
-    path = _path()
+    path = _path(ctx)
     try:
         vault_exists = _vault_exists(path)
     except OSError:
@@ -607,7 +610,7 @@ def export_vault(export_path: str, ctx: typer.Context) -> None:
         export_path: Path where the vault will be exported.
         ctx: Typer context with password options.
     """
-    path = _path()
+    path = _path(ctx)
     try:
         vault_exists = _vault_exists(path)
     except OSError:
@@ -648,7 +651,7 @@ def import_vault(source: str, force: bool, ctx: typer.Context) -> None:
         force: Whether to overwrite existing vault.
         ctx: Typer context with password options.
     """
-    path = _path()
+    path = _path(ctx)
     # DEF-02: Use safe vault existence check (avoids PermissionError from path.exists())
     try:
         vault_exists = _vault_exists(path)
@@ -710,7 +713,7 @@ def backup_vault(ctx: typer.Context) -> None:
     Args:
         ctx: Typer context with password options.
     """
-    path = _path()
+    path = _path(ctx)
     try:
         vault_exists = _vault_exists(path)
     except OSError:
@@ -751,7 +754,7 @@ def init_vault(force: bool, ctx: typer.Context) -> None:
         force: Whether to overwrite existing vault.
         ctx: Typer context with password options.
     """
-    path = _path()
+    path = _path(ctx)
     # DEF-02: Use safe vault existence check (avoids PermissionError from path.exists())
     try:
         vault_exists = _vault_exists(path)
@@ -800,7 +803,7 @@ def unlock_vault(ctx: typer.Context) -> None:
     Args:
         ctx: Typer context with password options.
     """
-    path = _path()
+    path = _path(ctx)
 
     # Ensure vault exists
     if not helpers.ensure_existing_vault(path):
@@ -841,7 +844,7 @@ def change_password(ctx: typer.Context) -> None:
     Args:
         ctx: Typer context with password options.
     """
-    path = _path()
+    path = _path(ctx)
 
     # Ensure vault exists
     if not helpers.ensure_existing_vault(path):
