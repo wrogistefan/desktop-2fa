@@ -22,7 +22,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install .[dev]
-          pip install black==26.5.1
+          pip install black==26.10.1
 
       - name: Run ruff
         run: ruff check .
