@@ -1,3 +1,4 @@
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -5,6 +6,20 @@ import pytest
 
 from desktop_2fa.vault import Vault
 from desktop_2fa.vault.models import TotpEntry, VaultData
+from desktop_2fa.vault.vault import UnsupportedFormat
+
+
+def _track_temp_paths(monkeypatch: Any) -> list[Path]:
+    original_mkstemp = tempfile.mkstemp
+    paths: list[Path] = []
+
+    def track_mkstemp(*args: Any, **kwargs: Any) -> tuple[int, str]:
+        fd, filename = original_mkstemp(*args, **kwargs)
+        paths.append(Path(filename))
+        return fd, filename
+
+    monkeypatch.setattr("desktop_2fa.vault.vault.tempfile.mkstemp", track_mkstemp)
+    return paths
 
 
 def test_vault_roundtrip(tmp_path: Path) -> None:
@@ -31,6 +46,41 @@ def test_vault_file_is_binary(tmp_path: Path) -> None:
     # upewniamy się, że jawne dane nie występują w pliku
     assert b"Test" not in raw
     assert b"JBSWY3DPEHPK3PXP" not in raw
+
+
+def test_vault_load_rejects_non_regular_files(tmp_path: Path, monkeypatch: Any) -> None:
+    import stat
+    from types import SimpleNamespace
+
+    path = tmp_path / "vault.bin"
+    path.touch()
+    monkeypatch.setattr(
+        "desktop_2fa.vault.vault.os.fstat",
+        lambda fd: SimpleNamespace(st_mode=stat.S_IFIFO),
+    )
+
+    with pytest.raises(UnsupportedFormat, match="not a regular file"):
+        Vault.load(path)
+
+
+def test_vault_load_rejects_files_over_size_limit(tmp_path: Path) -> None:
+    from desktop_2fa.vault.vault import MAX_VAULT_SIZE
+
+    path = tmp_path / "oversized-vault"
+    path.write_bytes(b"x" * (MAX_VAULT_SIZE + 1))
+
+    with pytest.raises(UnsupportedFormat, match="exceeds maximum supported size"):
+        Vault.load(path)
+
+
+def test_vault_save_supports_path_ending_in_tmp(tmp_path: Path) -> None:
+    path = tmp_path / "selected-vault.tmp"
+    vault = Vault()
+    vault.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP")
+
+    vault.save(path)
+
+    assert Vault.load(path).get_entry("GitHub").secret == "JBSWY3DPEHPK3PXP"
 
 
 def test_vault_tampering_detection(tmp_path: Path) -> None:
@@ -135,26 +185,22 @@ def test_vault_save_io_error(tmp_path: Path, monkeypatch: Any) -> None:
 
 def test_vault_save_cleanup_on_error(tmp_path: Path, monkeypatch: Any) -> None:
     path = tmp_path / "vault.bin"
-    temp_path = path.with_suffix(".tmp")
+    temp_paths = _track_temp_paths(monkeypatch)
 
     vault = Vault()
     vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
 
-    # Mock os.open to succeed but os.fdopen to fail
-    def mock_open(*args: Any, **kwargs: Any) -> int:
-        return 1  # fake file descriptor
-
     def mock_fdopen(*args: Any, **kwargs: Any) -> None:
         raise OSError("Write error")
 
-    monkeypatch.setattr("os.open", mock_open)
     monkeypatch.setattr("os.fdopen", mock_fdopen)
 
     with pytest.raises(Exception, match="Failed to save vault: Write error"):
         vault.save(str(path))
 
     # Temporary file should be cleaned up
-    assert not temp_path.exists()
+    assert len(temp_paths) == 1
+    assert not temp_paths[0].exists()
 
 
 def test_vault_load_malformed_json_edge_cases(tmp_path: Path) -> None:
@@ -199,26 +245,22 @@ def test_vault_save_os_level_errors(tmp_path: Path, monkeypatch: Any) -> None:
 
 def test_vault_save_cleanup_on_os_error(tmp_path: Path, monkeypatch: Any) -> None:
     path = tmp_path / "vault.bin"
-    temp_path = path.with_suffix(".tmp")
+    temp_paths = _track_temp_paths(monkeypatch)
 
     vault = Vault()
     vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
 
-    # Mock os.open to succeed but os.fsync to fail with OS error
-    def mock_open(*args: Any, **kwargs: Any) -> int:
-        return 1  # fake file descriptor
-
     def mock_fsync(fd: int) -> None:
         raise OSError(28, "No space left on device")
 
-    monkeypatch.setattr("os.open", mock_open)
     monkeypatch.setattr("os.fsync", mock_fsync)
 
     with pytest.raises(Exception, match="Failed to save vault:"):
         vault.save(str(path))
 
     # Temporary file should be cleaned up
-    assert not temp_path.exists()
+    assert len(temp_paths) == 1
+    assert not temp_paths[0].exists()
 
 
 def test_vault_load_json_validation_edge_cases(tmp_path: Path) -> None:
@@ -339,49 +381,33 @@ def test_vault_rename_entry_not_implemented() -> None:
         vault.rename_entry("Test", "NewName")
 
 
-def test_vault_load_permission_error(tmp_path: Path) -> None:
+def test_vault_load_permission_error(tmp_path: Path, monkeypatch: Any) -> None:
     path = tmp_path / "vault.bin"
-
-    # Create a mock that raises PermissionError
-    import builtins
-
-    original_open = builtins.open
 
     def mock_open(*args: Any, **kwargs: Any) -> None:
         raise PermissionError("Permission denied")
 
-    builtins.open = mock_open  # type: ignore[assignment]
-    try:
-        with pytest.raises(Exception, match="Cannot access vault file"):
-            Vault.load(str(path))
-    finally:
-        builtins.open = original_open
+    monkeypatch.setattr("os.open", mock_open)
+    with pytest.raises(Exception, match="Cannot access vault file"):
+        Vault.load(str(path))
 
 
-def test_vault_load_os_error(tmp_path: Path) -> None:
+def test_vault_load_os_error(tmp_path: Path, monkeypatch: Any) -> None:
     path = tmp_path / "vault.bin"
-
-    # Create a mock that raises OSError
-    import builtins
-
-    original_open = builtins.open
 
     def mock_open(*args: Any, **kwargs: Any) -> None:
         raise OSError("Disk error")
 
-    builtins.open = mock_open  # type: ignore[assignment]
-    try:
-        with pytest.raises(Exception, match="Failed to read vault file"):
-            Vault.load(str(path))
-    finally:
-        builtins.open = original_open
+    monkeypatch.setattr("os.open", mock_open)
+    with pytest.raises(Exception, match="Failed to read vault file"):
+        Vault.load(str(path))
 
 
 def test_vault_save_permission_error_cleanup(tmp_path: Path, monkeypatch: Any) -> None:
     from desktop_2fa.vault.vault import PermissionDenied
 
     path = tmp_path / "vault.bin"
-    temp_path = path.with_suffix(".tmp")
+    temp_paths = _track_temp_paths(monkeypatch)
 
     vault = Vault()
     vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
@@ -396,33 +422,30 @@ def test_vault_save_permission_error_cleanup(tmp_path: Path, monkeypatch: Any) -
         vault.save(str(path))
 
     # Temp file should be cleaned up
-    assert not temp_path.exists()
+    assert len(temp_paths) == 1
+    assert not temp_paths[0].exists()
 
 
 def test_vault_save_os_error_cleanup(tmp_path: Path, monkeypatch: Any) -> None:
     from desktop_2fa.vault.vault import VaultIOError
 
     path = tmp_path / "vault.bin"
-    temp_path = path.with_suffix(".tmp")
+    temp_paths = _track_temp_paths(monkeypatch)
 
     vault = Vault()
     vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
 
-    # Mock os.open to return a fake fd, then fail on fdopen
-    def mock_open(*args: Any, **kwargs: Any) -> int:
-        return 1  # fake file descriptor
-
     def mock_fdopen(fd: int, mode: str = "w") -> Any:
         raise OSError(28, "No space left on device")
 
-    monkeypatch.setattr("os.open", mock_open)
     monkeypatch.setattr("os.fdopen", mock_fdopen)
 
     with pytest.raises(VaultIOError):
         vault.save(str(path))
 
     # Temp file should be cleaned up
-    assert not temp_path.exists()
+    assert len(temp_paths) == 1
+    assert not temp_paths[0].exists()
 
 
 def test_vault_save_os_error_cleanup_on_unlink_failure(
@@ -435,14 +458,7 @@ def test_vault_save_os_error_cleanup_on_unlink_failure(
     vault = Vault()
     vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
 
-    # First mock os.open to succeed, then os.fsync to fail with OS error
-    # Then mock unlink to also fail
-    call_count = [0]
-
-    def mock_open(*args: Any, **kwargs: Any) -> int:
-        call_count[0] += 1
-        return 1  # fake file descriptor
-
+    # Make writing the temporary file fail, then make cleanup fail as well.
     def mock_fsync(fd: int) -> None:
         raise OSError(28, "No space left on device")
 
@@ -454,7 +470,6 @@ def test_vault_save_os_error_cleanup_on_unlink_failure(
     def mock_unlink(path: Any) -> None:
         raise OSError("Cannot remove temp file")
 
-    monkeypatch.setattr("os.open", mock_open)
     monkeypatch.setattr("os.fsync", mock_fsync)
     monkeypatch.setattr("pathlib.Path.exists", mock_exists)
     monkeypatch.setattr("pathlib.Path.unlink", mock_unlink)

@@ -4,20 +4,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.8.2] — Selectable Vault Paths, Reliability & Textual UI
 
 ### 🆕 Added
 
-- **`ui` CLI command**: Launches an interactive Textual-based TOTP UI (`d2fa ui --vault <path>`).
+- **Selectable vault paths**: Added global `--vault <path>` selection and the
+  `DESKTOP_2FA_VAULT` environment override while retaining
+  `~/.desktop-2fa/vault` as the default.
+- **Vault path command**: Added `d2fa vault path` to display the selected path.
+- **Textual interface**: Added the prototype `d2fa ui` command, which uses the
+  same selected vault path and password options as the CLI.
+
+### 🔄 Changed
+
+- Vault saves now use unique temporary files and atomically replace the destination.
+- Vault loading rejects non-regular files and limits input size to 10 MiB.
+- Vault-path resolution handles empty values and unknown-user `~` prefixes safely.
+
+### 📚 Documentation
+
+- Updated the README and user manual with the current command syntax, vault path
+  selection, Textual UI usage, and the vault file-size limit.
+- Refreshed CLI UX and security documentation.
 
 ### 🐛 Fixed
 
-- **Textual UI error handling**: `Vault.load` failures (invalid/unreadable vault) and empty vaults now display a clear message in the UI instead of crashing.
-- **Duplicate TOTP generation**: Extracted code generation into a single `_generate_code` helper to eliminate duplicated logic in the button handler.
-- **Clipboard robustness**: `pyperclip` import and clipboard errors are now caught and reflected in the UI output label.
-- **Import and attribute fixes**: Corrected `generate_totp` import to `generate` and `entry.name` to `entry.account_name`.
-- **Button handler error messages**: Distinguishes between vault load failures (surfaces the actual error), empty vaults ("Vault is empty"), and unloaded vaults ("Vault not loaded") instead of a single generic message.
-- **Mypy compliance**: Added `App[object]` generic type parameter and `query_one` widget type hints (`Label`, `ListView`) for strict mypy on Textual generics.
+- Textual UI load failures and empty vaults now display clear messages instead of crashing.
+- TOTP generation is shared by the UI's generate and copy actions.
+- Clipboard import and runtime errors are shown in the UI.
+- Corrected Textual UI imports and account-name attribute usage.
+- UI button handling now distinguishes load errors, empty vaults, and missing selections.
+- Added Textual generic typing required by strict mypy checks.
+
+## [Unreleased]
 
 ## [0.8.1] — zxcvbn Password Strength Integration
 

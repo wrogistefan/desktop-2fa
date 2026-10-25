@@ -222,10 +222,48 @@ def test_load_vault_failed(tmp_path: Path) -> None:
         helpers.load_vault(fake_vault, TEST_PASSWORD)
 
 
-def test_get_vault_path() -> None:
+def test_get_vault_path(monkeypatch: Any) -> None:
+    monkeypatch.delenv("DESKTOP_2FA_VAULT", raising=False)
     path = helpers.get_vault_path()
     assert isinstance(path, str)
     assert ".desktop-2fa" in path
+
+
+def test_resolve_vault_path_uses_environment(monkeypatch: Any, tmp_path: Path) -> None:
+    vault_path = tmp_path / "custom-vault"
+    monkeypatch.setenv("DESKTOP_2FA_VAULT", str(vault_path))
+
+    assert helpers.resolve_vault_path() == str(vault_path)
+
+
+def test_resolve_vault_path_explicit_overrides_environment(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
+    environment_path = tmp_path / "environment-vault"
+    selected_path = tmp_path / "selected-vault"
+    monkeypatch.setenv("DESKTOP_2FA_VAULT", str(environment_path))
+
+    assert helpers.resolve_vault_path(selected_path) == str(selected_path)
+
+
+def test_resolve_vault_path_empty_value_uses_environment(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
+    vault_path = tmp_path / "environment-vault"
+    monkeypatch.setenv("DESKTOP_2FA_VAULT", str(vault_path))
+
+    assert helpers.resolve_vault_path("") == str(vault_path)
+
+
+def test_resolve_vault_path_handles_unknown_user(monkeypatch: Any) -> None:
+    def raise_for_unknown_user(self: Path) -> Path:
+        raise RuntimeError("Unknown user")
+
+    monkeypatch.setattr(Path, "expanduser", raise_for_unknown_user)
+
+    assert helpers.resolve_vault_path("~missing-user/vault") == str(
+        Path("~missing-user/vault")
+    )
 
 
 def test_get_password_for_vault_passwords_not_match(monkeypatch: Any) -> None:

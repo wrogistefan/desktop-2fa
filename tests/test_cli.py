@@ -267,6 +267,76 @@ def test_cli_init_vault_new(fake_vault_env_cli: Path) -> None:
     assert fake_vault_env_cli.exists()
 
 
+def test_cli_vault_option_selects_path(monkeypatch: Any, tmp_path: Path) -> None:
+    vault_path = tmp_path / "selected-vault"
+    environment_vault_path = tmp_path / "environment-vault"
+    monkeypatch.setenv("DESKTOP_2FA_VAULT", str(environment_vault_path))
+
+    result = runner.invoke(
+        app,
+        ["--vault", str(vault_path), "--password", TEST_PASSWORD, "init-vault"],
+    )
+
+    assert result.exit_code == 0
+    assert f"Vault created at {vault_path}" in result.output
+    assert vault_path.exists()
+    assert not environment_vault_path.exists()
+
+
+def test_cli_vault_path_reports_resolved_path(monkeypatch: Any, tmp_path: Path) -> None:
+    vault_path = tmp_path / "selected-vault"
+    monkeypatch.setenv("DESKTOP_2FA_VAULT", str(vault_path))
+
+    result = runner.invoke(app, ["vault", "path"])
+
+    assert result.exit_code == 0
+    assert result.output.strip() == repr(str(vault_path))
+
+
+def test_cli_vault_path_escapes_terminal_controls(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
+    vault_path = str(tmp_path / "vault\x1b[31mforged")
+    monkeypatch.setenv("DESKTOP_2FA_VAULT", vault_path)
+
+    result = runner.invoke(app, ["vault", "path"])
+
+    assert result.exit_code == 0
+    assert result.output.strip() == repr(vault_path)
+    assert "\x1b" not in result.output
+
+
+def test_cli_ui_uses_resolved_global_vault_path(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
+    from desktop_2fa.ui_textual import app as textual_app
+
+    vault_path = tmp_path / "selected-vault"
+    selected: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        textual_app,
+        "run_textual",
+        lambda path, password: selected.append((path, password)),
+    )
+
+    result = runner.invoke(
+        app, ["--vault", str(vault_path), "--password", TEST_PASSWORD, "ui"]
+    )
+
+    assert result.exit_code == 0
+    assert selected == [(str(vault_path), TEST_PASSWORD)]
+
+
+def test_cli_version_survives_unknown_user_vault_path() -> None:
+    result = runner.invoke(
+        app,
+        ["--vault", "~desktop_2fa_unknown_user_123/vault", "--version"],
+    )
+
+    assert result.exit_code == 0
+    assert "Desktop-2FA v" in result.output
+
+
 def test_cli_init_vault_existing_no_force(fake_vault_env_cli: Path) -> None:
     from desktop_2fa.vault import Vault
 

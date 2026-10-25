@@ -13,13 +13,13 @@ class D2FAApp(App[object]):
     TITLE = "Desktop-2FA (Textual Prototype)"
     SUB_TITLE = "TOTP Vault UI"
 
-    def __init__(self, vault_path: str):
+    def __init__(self, vault_path: str, password: str):
         super().__init__()
         self.vault_path = vault_path
         self.vault: Vault | None = None
         self.error: str | None = None
         try:
-            self.vault = Vault.load(vault_path)
+            self.vault = Vault.load(vault_path, password)
         except VaultError as e:
             self.error = f"Unable to load vault: {e}"
 
@@ -106,6 +106,6 @@ class D2FAApp(App[object]):
             self._copy_to_clipboard(code)
 
 
-def run_textual(vault_path: str) -> None:
-    app = D2FAApp(vault_path)
+def run_textual(vault_path: str, password: str) -> None:
+    app = D2FAApp(vault_path, password)
     app.run()

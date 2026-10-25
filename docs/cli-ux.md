@@ -6,6 +6,22 @@ No behavioral changes, no new side‑effects, no new vault semantics.
 
 Everything here is **pure UI sugar** layered on top of the existing rules.
 
+## Vault Selection
+
+Vault selection follows this precedence:
+
+1. An explicit global `--vault PATH` placed before the command
+2. The `DESKTOP_2FA_VAULT` environment variable
+3. The default `~/.desktop-2fa/vault`
+
+Use `d2fa vault path` to display the selected path. The output is quoted so
+terminal control characters are not interpreted. Vault files must be regular
+files no larger than 10 MiB.
+
+The Textual prototype uses the same selected path and password options as the
+CLI. Launch it with `d2fa ui`; it displays an error if the selected vault does
+not exist.
+
 ---
 
 # 🌈 Color Palette (Rich-compatible)
@@ -31,7 +47,7 @@ AND only for commands where this does not violate the contract.
 Example:
 
 ```
-d2fa vault add
+d2fa add
 ```
 
 → Allowed, because vault creation rules remain unchanged  
@@ -49,7 +65,7 @@ Interactive prompts:
 If user provides arguments:
 
 ```
-d2fa vault add GitHub GitHub ABC123
+d2fa add GitHub GitHub ABC123
 ```
 
 → No interactivity  
@@ -75,7 +91,7 @@ A new encrypted vault will be created.
 [blue]No entries found.[/blue]
 ```
 
-### d2fa vault add NAME ISSUER SECRET
+### d2fa add NAME ISSUER SECRET
 
 ```
 [yellow]No vault found.[/yellow]
@@ -88,7 +104,7 @@ A new encrypted vault will be created.
 [green]Entry added:[/green] GitHub
 ```
 
-### d2fa generate
+### d2fa code NAME
 
 ```
 [yellow]No vault found.[/yellow]
@@ -111,7 +127,7 @@ Nothing to generate.
 - AWS (Amazon)
 ```
 
-### d2fa vault add NAME ISSUER SECRET
+### d2fa add NAME ISSUER SECRET
 
 ```
 [cyan]Enter vault password:[/cyan]
@@ -182,7 +198,7 @@ This does **not** violate the contract — it is a user input validation step.
 Allowed:
 
 ```
-d2fa vault add "otpauth://totp/GitHub:lukas?secret=ABC123&issuer=GitHub"
+d2fa add "otpauth://totp/GitHub:lukas?secret=ABC123&issuer=GitHub"
 ```
 
 CLI extracts:
@@ -209,10 +225,10 @@ Missing argument 'ISSUER'.
 [red]Missing argument: ISSUER[/red]
 
 Usage:
-  d2fa vault add NAME ISSUER SECRET
+  d2fa add NAME ISSUER SECRET
 
 Example:
-  d2fa vault add GitHub GitHub ABCDEFGHIJKL1234
+  d2fa add GitHub GitHub ABCDEFGHIJKL1234
 ```
 
 Still deterministic.  

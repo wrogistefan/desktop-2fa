@@ -61,7 +61,7 @@ Confirm vault password:
 Vault created at <path>.
 Entry added: NAME
 
-d2fa generate
+d2fa code NAME
 
 No vault found.
 Nothing to generate.

@@ -1,6 +1,8 @@
 """Vault implementation for storing and managing TOTP entries."""
 
 import os
+import stat
+import tempfile
 from pathlib import Path
 from typing import Optional
 
@@ -14,6 +16,7 @@ from .models import TotpEntry, VaultData
 VAULT_MAGIC = b"D2FA"
 VAULT_VERSION = b"\x01"
 HEADER_LEN = len(VAULT_MAGIC) + len(VAULT_VERSION)
+MAX_VAULT_SIZE = 10 * 1024 * 1024
 
 
 class VaultError(Exception):
@@ -168,9 +171,20 @@ class Vault:
             InvalidPassword: If the password is incorrect.
             CorruptedVault: If the vault data is corrupted.
         """
+        fd: int | None = None
         try:
-            with open(path, "rb") as f:
-                blob = f.read()
+            fd = os.open(path, os.O_RDONLY | getattr(os, "O_NONBLOCK", 0))
+            file_stat = os.fstat(fd)
+            if not stat.S_ISREG(file_stat.st_mode):
+                raise UnsupportedFormat("Vault path is not a regular file")
+
+            with os.fdopen(fd, "rb") as f:
+                fd = None
+                blob = f.read(MAX_VAULT_SIZE + 1)
+            if len(blob) > MAX_VAULT_SIZE:
+                raise UnsupportedFormat("Vault file exceeds maximum supported size")
+        except UnsupportedFormat:
+            raise
         except PermissionError:
             raise PermissionDenied(
                 "Cannot access vault file (permission denied)"
@@ -179,6 +193,12 @@ class Vault:
             raise VaultNotFound("Vault file not found") from None
         except OSError as e:
             raise VaultIOError(f"Failed to read vault file: {e}") from None
+        finally:
+            if fd is not None:
+                try:
+                    os.close(fd)
+                except OSError:
+                    pass
 
         if len(blob) < HEADER_LEN + 16:
             raise UnsupportedFormat("Vault file is too short or invalid format")
@@ -240,7 +260,8 @@ class Vault:
             VaultIOError: If saving fails due to IO errors.
         """
         path = Path(path)
-        temp_path = path.with_suffix(".tmp")
+        temp_path: Path | None = None
+        fd: int | None = None
 
         try:
             # DEF-02: Moved mkdir inside try block to catch PermissionError
@@ -258,19 +279,25 @@ class Vault:
             raw_json = self.data.model_dump_json().encode("utf-8")
             encrypted = encrypt(key, raw_json)
 
-            fd = os.open(str(temp_path), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-            try:
-                with os.fdopen(fd, "wb") as f:
-                    f.write(header + salt + encrypted)
-                    f.flush()
-                    os.fsync(fd)
-            except OSError:
-                os.close(fd)
-                raise
+            fd, temp_name = tempfile.mkstemp(
+                prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
+            )
+            temp_path = Path(temp_name)
+            with os.fdopen(fd, "wb") as f:
+                fd = None
+                f.write(header + salt + encrypted)
+                f.flush()
+                os.fsync(f.fileno())
 
             os.replace(temp_path, path)
+            temp_path = None
         except PermissionError:
-            if temp_path.exists():
+            if fd is not None:
+                try:
+                    os.close(fd)
+                except OSError:
+                    pass
+            if temp_path is not None and temp_path.exists():
                 try:
                     temp_path.unlink()
                 except OSError:
@@ -279,7 +306,12 @@ class Vault:
                 "Cannot access vault directory (permission denied)"
             ) from None
         except OSError as e:
-            if temp_path.exists():
+            if fd is not None:
+                try:
+                    os.close(fd)
+                except OSError:
+                    pass
+            if temp_path is not None and temp_path.exists():
                 try:
                     temp_path.unlink()
                 except OSError:
