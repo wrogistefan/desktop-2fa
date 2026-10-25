@@ -33,7 +33,7 @@ d2fa code GitHub
 
 ### Global Options
 
-All commands support these options:
+Place global options before the command:
 
 - `--vault PATH`: Select the vault file (place this global option before the command)
 - `--password PASSWORD`: Provide password directly
@@ -43,30 +43,33 @@ All commands support these options:
 
 ### Selecting the Vault File
 
-The default vault is `~/.desktop-2fa/vault`. To use another vault for a
-command, provide the global `--vault` option before the command:
+The default vault is `~/.desktop-2fa/vault`. Select another vault for an
+individual command by placing the global `--vault` option before the command:
 
 ```bash
-# List entries from a separate vault
+# List entries in a separate vault
 d2fa --vault ./development-vault list
 
-# Initialize a selected vault
+# Initialize the selected vault
 d2fa --vault ./development-vault vault init
 
-# Display the selected path (printed in a quoted, terminal-safe form)
+# Show the selected path in a terminal-safe quoted form
 d2fa --vault ./development-vault vault path
+
+# Launch the Textual prototype with the selected vault
+d2fa --vault ./development-vault ui
 ```
 
-Alternatively, set `DESKTOP_2FA_VAULT` to choose a path for commands that do
-not specify `--vault`:
+Alternatively, set `DESKTOP_2FA_VAULT` to choose the path by default:
 
 ```bash
 DESKTOP_2FA_VAULT=./development-vault d2fa list
 ```
 
-An explicit `--vault` takes precedence over `DESKTOP_2FA_VAULT`. If neither
-selects a path, the default remains unchanged. This makes it possible to keep
-development and test vaults separate from the normal vault.
+An explicit `--vault` takes precedence over `DESKTOP_2FA_VAULT`. If neither is
+set, the existing default path is used.
+
+Vault files must be regular files no larger than 10 MiB.
 
 ### `vault init` - Initialize New Vault
 
@@ -258,6 +261,23 @@ Desktop-2FA uses the pyperclip library for clipboard operations. On Linux, pyper
 macOS and Windows work out of the box without additional dependencies.
 
 If none of these tools are installed on Linux, clipboard operations will fail and desktop-2fa will fall back to printing the code normally.
+
+### Early Textual UI Prototype
+
+The optional Textual interface is at an **early prototype stage**. It displays
+vault entries and lets you generate or copy a TOTP code for the selected entry:
+
+```bash
+# Use the default vault
+d2fa ui
+
+# Select a vault and read its password from a file
+d2fa --vault ./development-vault --password-file ~/.vault_pass ui
+```
+
+When no password option is supplied, the CLI prompts for the vault password.
+The interface does not provide entry-management commands or create a missing
+vault; initialize one with `d2fa vault init` before launching the UI.
 
 **Examples:**
 ```bash
@@ -659,8 +679,19 @@ If you forget your password:
 
 ### Version Compatibility
 
-- Vaults created with desktop-2fa 0.6.0+ are forward compatible
+- Vaults created with desktop-2fa 0.6.0+ are designed to remain compatible with
+  newer releases
 - Older vaults (pre-0.6.0) are not compatible and must be recreated
+
+Although newer releases are designed to remain compatible with vaults from
+0.6.0 onward, we strongly recommend creating and securely storing an encrypted
+backup before every upgrade. Compatibility is not a substitute for a backup:
+an upgrade can still be interrupted or affected by local system issues.
+Create a backup with:
+
+```bash
+d2fa backup
+```
 
 ### Duplicate Names in Vault
 
@@ -699,6 +730,7 @@ d2fa COMMAND --help           # Show help for specific command
 d2fa --version                # Show version
 d2fa                         # Show version (no args)
 d2fa vault path               # Show the selected vault path
+d2fa ui                       # Launch the early Textual UI prototype
 ```
 
 ## Security Best Practices
@@ -728,4 +760,4 @@ For issues and questions:
 
 ---
 
-*This manual covers desktop-2fa version 0.8.2*
+*This manual covers desktop-2fa version 0.8.3*

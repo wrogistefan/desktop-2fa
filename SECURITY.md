@@ -124,8 +124,8 @@ This setting is recognized and automatically mapped to zxcvbn score >= 3. No act
 
 - **v0.7.3**: Password confirmation, entropy calculation
 - **v0.8.1**: zxcvbn integration, configuration mapping, vault unlock warning
-- **v0.8.2**: Configurable vault paths, atomic vault saves, and bounded reads that
-  reject non-regular vault files
+- **v0.8.2**: Selectable vault paths, bounded vault loading, and atomic saves
+- **v0.8.3**: Early Textual UI prototype; no changes to vault encryption or storage format
 
 ### Recommendations
 

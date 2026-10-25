@@ -6,6 +6,23 @@ No behavioral changes, no new side‑effects, no new vault semantics.
 
 Everything here is **pure UI sugar** layered on top of the existing rules.
 
+## Vault Selection
+
+Vault selection follows this precedence:
+
+1. An explicit global `--vault PATH` placed before the command
+2. The `DESKTOP_2FA_VAULT` environment variable
+3. The default `~/.desktop-2fa/vault`
+
+Use `d2fa vault path` to display the selected path. The output is quoted so
+terminal control characters are not interpreted. Vault files must be regular
+files no larger than 10 MiB.
+
+The early Textual UI prototype uses the same selected path and password
+options as the CLI. Launch it with `d2fa ui`; it displays an error if the
+selected vault does not exist. The prototype lists entries and supports TOTP
+generation and clipboard copying, but does not support entry management.
+
 ---
 
 # 🌈 Color Palette (Rich-compatible)
@@ -88,7 +105,7 @@ A new encrypted vault will be created.
 [green]Entry added:[/green] GitHub
 ```
 
-### d2fa code
+### d2fa code NAME
 
 ```
 [yellow]No vault found.[/yellow]

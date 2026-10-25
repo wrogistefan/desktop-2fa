@@ -283,9 +283,7 @@ def test_cli_vault_option_selects_path(monkeypatch: Any, tmp_path: Path) -> None
     assert not environment_vault_path.exists()
 
 
-def test_cli_vault_path_command_reports_resolved_path(
-    monkeypatch: Any, tmp_path: Path
-) -> None:
+def test_cli_vault_path_reports_resolved_path(monkeypatch: Any, tmp_path: Path) -> None:
     vault_path = tmp_path / "selected-vault"
     monkeypatch.setenv("DESKTOP_2FA_VAULT", str(vault_path))
 
@@ -308,6 +306,27 @@ def test_cli_vault_path_escapes_terminal_control_characters(
     assert "\x1b" not in result.output
 
 
+def test_cli_ui_uses_resolved_global_vault_path(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
+    from desktop_2fa.ui_textual import app as textual_app
+
+    vault_path = tmp_path / "selected-vault"
+    selected: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        textual_app,
+        "run_textual",
+        lambda path, password: selected.append((path, password)),
+    )
+
+    result = runner.invoke(
+        app, ["--vault", str(vault_path), "--password", TEST_PASSWORD, "ui"]
+    )
+
+    assert result.exit_code == 0
+    assert selected == [(str(vault_path), TEST_PASSWORD)]
+
+
 def test_cli_vault_path_falls_back_when_context_has_no_path(
     monkeypatch: Any, capsys: Any, tmp_path: Path
 ) -> None:
@@ -318,7 +337,6 @@ def test_cli_vault_path_falls_back_when_context_has_no_path(
     ctx = type("FakeContext", (), {"obj": {}})()
 
     vault_path_cmd(ctx)
-
     assert capsys.readouterr().out.strip() == repr(vault_path)
 
 

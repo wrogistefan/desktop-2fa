@@ -263,6 +263,32 @@ def test_resolve_vault_path_uses_default_for_empty_value(
     assert helpers.resolve_vault_path("") == str(Path.home() / ".desktop-2fa" / "vault")
 
 
+def test_resolve_vault_path_uses_environment(monkeypatch: Any, tmp_path: Path) -> None:
+    vault_path = tmp_path / "custom-vault"
+    monkeypatch.setenv("DESKTOP_2FA_VAULT", str(vault_path))
+
+    assert helpers.resolve_vault_path() == str(vault_path)
+
+
+def test_resolve_vault_path_explicit_overrides_environment(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
+    environment_path = tmp_path / "environment-vault"
+    selected_path = tmp_path / "selected-vault"
+    monkeypatch.setenv("DESKTOP_2FA_VAULT", str(environment_path))
+
+    assert helpers.resolve_vault_path(selected_path) == str(selected_path)
+
+
+def test_resolve_vault_path_empty_value_uses_environment(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
+    vault_path = tmp_path / "environment-vault"
+    monkeypatch.setenv("DESKTOP_2FA_VAULT", str(vault_path))
+
+    assert helpers.resolve_vault_path("") == str(vault_path)
+
+
 def test_get_password_for_vault_passwords_not_match(monkeypatch: Any) -> None:
     import typer
 

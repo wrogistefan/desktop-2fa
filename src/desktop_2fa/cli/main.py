@@ -273,3 +273,12 @@ def vault_path_cmd(ctx: typer.Context) -> None:
 
 # Register the group
 app.add_typer(vault_app, name="vault")
+
+
+@app.command("ui")
+def ui_cmd(ctx: typer.Context) -> None:
+    """Run the Textual UI."""
+    from desktop_2fa.ui_textual.app import run_textual
+
+    password = helpers.get_password_for_vault(ctx)
+    run_textual(ctx.obj["vault_path"], password)

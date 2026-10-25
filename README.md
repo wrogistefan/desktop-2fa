@@ -21,10 +21,11 @@ A secure, offline two-factor authentication (2FA) manager for desktop environmen
 | ⏱️ **TOTP Generation** | RFC 6238 compliant code generation |
 | 💻 **Full CLI** | Complete command-line interface for managing tokens |
 | 📋 **Clipboard Support** | Automatic copying of TOTP codes to clipboard |
-| 🔓 **Stateless Design** | Every command requires explicit password authentication |
+| 🔓 **Stateless Design** | Vault contents require authentication; no long-lived sessions |
 | 🛡️ **Password Policy** | Configurable password strength enforcement with zxcvbn |
-| 🧪 **Well Tested** | 302 tests passing with comprehensive coverage |
+| 🧪 **Well Tested** | 309 tests passing with comprehensive coverage |
 | 📖 **Security Model** | Detailed threat analysis and cryptographic design documentation |
+| 🖥️ **Textual UI** | Early prototype for listing accounts and generating or copying TOTP codes |
 
 ---
 
@@ -56,7 +57,7 @@ Verify installation:
 
 ```bash
 python -c "import desktop_2fa; print(desktop_2fa.__version__)"
-# Output: 0.8.2
+# Output: 0.8.3
 ```
 
 ### Basic Usage
@@ -75,8 +76,9 @@ d2fa list
 d2fa code GitHub
 ```
 
-Choose a vault file for any command with `--vault`, or set
-`DESKTOP_2FA_VAULT` to select one by default. An explicit `--vault` takes
+The vault is stored by default at `~/.desktop-2fa/vault`. Select a different
+file for any command with the global `--vault` option, or set
+`DESKTOP_2FA_VAULT` to choose one by default. An explicit `--vault` takes
 precedence over the environment variable; without either, the default remains
 `~/.desktop-2fa/vault`.
 
@@ -85,8 +87,16 @@ precedence over the environment variable; without either, the default remains
 d2fa --vault ./development-vault list
 
 # Show the currently selected vault path
-d2fa vault path
+d2fa --vault ./development-vault vault path
+
+# Launch the early Textual UI prototype with that vault
+d2fa --vault ./development-vault ui
 ```
+
+The Textual UI is at an **early prototype stage**. It prompts for the vault
+password unless one is supplied with `--password` or `--password-file`, and
+supports listing entries, generating codes, and copying codes to the clipboard.
+It does not support entry management or create a missing vault.
 
 ### Non-Interactive Usage
 
@@ -103,16 +113,30 @@ d2fa --password-file /path/to/passphrase.txt add GitHub GitHub JBSWY3DPEHPK3PXP
 ## 📁 Vault Lifecycle
 
 The vault is an encrypted storage file located by default at
-`~/.desktop-2fa/vault`. A custom path can be selected with `--vault` or
-`DESKTOP_2FA_VAULT`.
+`~/.desktop-2fa/vault`; use `--vault` or `DESKTOP_2FA_VAULT` to select another
+path. Vault files must be regular files no larger than 10 MiB.
+
+### Before Upgrading
+
+Vaults created with Desktop-2FA 0.6.0 and later are designed to remain
+compatible with newer releases. Even so, before upgrading, we strongly
+recommend creating an encrypted backup and storing it securely. Compatibility
+is not a substitute for a backup.
+
+```bash
+d2fa backup
+```
 
 ### Vault Creation
 
-When a command requires a vault and none exists:
+When a CLI command that creates or updates entries requires a vault and none exists:
 
 1. The CLI prompts for a new password (interactive mode) or requires `--password`/`--password-file` (non-interactive mode)
 2. An empty encrypted vault is created
 3. **A confirmation message is always printed:** `Vault created at <path>`
+
+The Textual UI does not create a missing vault; it displays the vault-loading
+error instead.
 
 ### Vault Loading
 
@@ -152,10 +176,11 @@ The `rename` command enforces deterministic behavior when multiple entries match
 | `d2fa vault init [--force]` | Initialize a new vault (`d2fa init-vault` is an alias) |
 | `d2fa vault unlock` | Open vault with weak password warning (if configured) |
 | `d2fa vault change-password` | Change the vault password |
-| `d2fa vault path` | Show the selected vault path |
+| `d2fa vault path` | Show the currently selected vault path |
 | `d2fa backup` | Create an encrypted backup of the vault |
 | `d2fa export <path>` | Export vault to file |
 | `d2fa import <path> [--force]` | Import vault from file |
+| `d2fa ui` | Launch the early Textual UI prototype |
 
 ### Global Options
 
@@ -169,8 +194,8 @@ The `rename` command enforces deterministic behavior when multiple entries match
 | `--help` | Show command help |
 
 The `--vault` option takes precedence over `DESKTOP_2FA_VAULT`. When neither
-is provided, Desktop-2FA uses `~/.desktop-2fa/vault`. The `--json`, `--raw`,
-`--quiet`, `--copy`, and `--copy-only` options belong to `d2fa code`; `--force`
+is provided, Desktop-2FA uses `~/.desktop-2fa/vault`. The `code` command also
+supports `--json`, `--raw`, `--quiet`, `--copy`, and `--copy-only`; `--force`
 is available on vault initialization and import commands.
 
 ---
@@ -183,7 +208,8 @@ The vault uses:
 - **zxcvbn** for password strength evaluation
 - **Versioned header** for forward compatibility
 
-Every command requires explicit password authentication. No session-based access.
+Every command that accesses vault contents requires password authentication.
+Path and version queries do not access vault contents. No session-based access.
 
 ### Password Strength Evaluation
 
@@ -217,14 +243,17 @@ When `reject_weak_passwords = true`:
 **Backward Compatibility:**
 If you have `min_password_entropy` set in your config (legacy option), it is recognized and treated as equivalent to requiring zxcvbn score >= 3.
 
-### Security Hardening (v0.8.0)
-Version 0.8.0 maintains all previous security hardening from v0.7.3 and introduces modular architecture for better code isolation:
+### Security Hardening
+Version 0.8.2 added bounded vault loading and atomic saves; version 0.8.3 adds
+the early Textual UI prototype:
 - Empty passwords are immediately rejected with a clear error message
 - Permission errors are distinguished from missing vault files
+- Vault loading accepts only regular files and reads at most 10 MiB
+- Vault saves use unique temporary files and atomic replacement
 - No Python stack traces are shown to users
 - User-friendly error messages for filesystem permission issues
 - Modular design separates CLI and core cryptographic components for enhanced security boundaries
-- zxcvbn-based password strength evaluation (new in v0.8.0)
+- zxcvbn-based password strength evaluation
 
 
 ---
@@ -257,7 +286,7 @@ src/desktop_2fa/
 ├── cli/           # Command-line interface
 ├── crypto/        # Encryption utilities
 ├── totp/          # TOTP generation
-├── ui/            # User interface components
+├── ui_textual/    # Early Textual UI prototype
 ├── vault/         # Vault management
 └── utils/         # Utilities
 ```

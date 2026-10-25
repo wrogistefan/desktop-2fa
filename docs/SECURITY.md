@@ -15,6 +15,10 @@ Desktop-2FA is an offline, stateless 2FA manager designed for secure local stora
 5. **Auditability**: All critical operations are logged with clear error messages
 6. **Autonomy**: No cloud dependencies, complete local control
 
+Vault loading accepts only regular files and reads no more than 10 MiB, which
+limits resource use for unexpected paths or oversized files. Vault updates are
+written to a unique temporary file and atomically replace the selected vault.
+
 ---
 
 ## Threat Model
@@ -229,7 +233,10 @@ Offset  Content
 
 ### Vault Backup
 
-**Recommendation**: Back up vault regularly
+**Recommendation**: Back up the vault regularly and always before upgrading
+Desktop-2FA. Vaults created with version 0.6.0 and later are designed to remain
+compatible with newer releases, but compatibility is not a substitute for a
+backup.
 
 **Security**:
 - Backups are encrypted with same cipher as primary vault
@@ -389,6 +396,7 @@ chmod 600 ~/.desktop-2fa/vault
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 0.8.3 | Oct 2026 | Early Textual UI prototype; no changes to vault encryption or storage format |
 | 0.8.2 | Oct 2026 | Configurable vault paths and vault file safety improvements |
 | 0.8.1 | Jan 2026 | zxcvbn password strength evaluation added |
 | 0.8.0 | Jan 2026 | Modular architecture and clipboard support |

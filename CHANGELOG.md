@@ -4,24 +4,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+## [0.8.3] — Early Textual UI Prototype
+
+### 🆕 Added
+
+- **Early Textual UI prototype**: Added `d2fa ui`, a terminal interface for
+  listing vault entries, generating TOTP codes, and copying codes to the
+  clipboard. The UI is at an early prototype stage and does not support entry
+  management or creating a missing vault.
+
+### 🔄 Changed
+
+- The Textual UI uses the same selected vault path and password options as the
+  CLI.
+
+### 🐛 Fixed
+
+- UI load failures and empty vaults now display clear messages instead of
+  crashing.
+- TOTP generation is shared by the UI's generate and copy actions.
+- Clipboard import and runtime errors are shown in the UI.
+- Corrected Textual UI imports and account-name attribute usage.
+- UI button handling distinguishes load errors, empty vaults, and missing
+  selections.
+- Added Textual generic typing required by strict mypy checks.
+
 ## [0.8.2] — Selectable Vault Paths & Reliability
 
-### Added
+### 🆕 Added
 
-- Added global `--vault <path>` selection and the `DESKTOP_2FA_VAULT` environment
-  override, with the existing `~/.desktop-2fa/vault` location retained as default.
-- Added `d2fa vault path` to display the currently selected vault path.
+- **Selectable vault paths**: Added global `--vault <path>` selection and the
+  `DESKTOP_2FA_VAULT` environment override while retaining
+  `~/.desktop-2fa/vault` as the default.
+- **Vault path command**: Added `d2fa vault path` to display the selected path.
 
-### Changed
+### 🔄 Changed
 
 - Vault saves now use unique temporary files and atomically replace the destination.
-- Vault loading rejects non-regular files and limits the input size to 10 MiB.
-- Resolved selected paths safely, including empty values and unknown-user `~` prefixes.
+- Vault loading rejects non-regular files and limits input size to 10 MiB.
+- Vault-path resolution handles empty values and unknown-user `~` prefixes safely.
 
-### Documentation
+### 📚 Documentation
 
-- Updated the README and user manual with vault path selection, precedence, and
-  current command syntax; refreshed CLI UX and security documentation.
+- Updated the README and user manual with the current command syntax, vault path
+  selection, and the vault file-size limit.
+- Refreshed CLI UX and security documentation.
 
 ## [0.8.1] — zxcvbn Password Strength Integration
 
