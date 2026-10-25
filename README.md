@@ -116,6 +116,17 @@ The vault is an encrypted storage file located by default at
 `~/.desktop-2fa/vault`; use `--vault` or `DESKTOP_2FA_VAULT` to select another
 path. Vault files must be regular files no larger than 10 MiB.
 
+### Before Upgrading
+
+Vaults created with Desktop-2FA 0.6.0 and later are designed to remain
+compatible with newer releases. Even so, before upgrading, we strongly
+recommend creating an encrypted backup and storing it securely. Compatibility
+is not a substitute for a backup.
+
+```bash
+d2fa backup
+```
+
 ### Vault Creation
 
 When a CLI command that creates or updates entries requires a vault and none exists:

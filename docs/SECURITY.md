@@ -233,7 +233,10 @@ Offset  Content
 
 ### Vault Backup
 
-**Recommendation**: Back up vault regularly
+**Recommendation**: Back up the vault regularly and always before upgrading
+Desktop-2FA. Vaults created with version 0.6.0 and later are designed to remain
+compatible with newer releases, but compatibility is not a substitute for a
+backup.
 
 **Security**:
 - Backups are encrypted with same cipher as primary vault

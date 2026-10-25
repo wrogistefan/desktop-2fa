@@ -679,8 +679,19 @@ If you forget your password:
 
 ### Version Compatibility
 
-- Vaults created with desktop-2fa 0.6.0+ are forward compatible
+- Vaults created with desktop-2fa 0.6.0+ are designed to remain compatible with
+  newer releases
 - Older vaults (pre-0.6.0) are not compatible and must be recreated
+
+Although newer releases are designed to remain compatible with vaults from
+0.6.0 onward, we strongly recommend creating and securely storing an encrypted
+backup before every upgrade. Compatibility is not a substitute for a backup:
+an upgrade can still be interrupted or affected by local system issues.
+Create a backup with:
+
+```bash
+d2fa backup
+```
 
 ### Duplicate Names in Vault
 
