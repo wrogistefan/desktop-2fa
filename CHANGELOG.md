@@ -4,7 +4,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [0.8.2] — Selectable Vault Paths, Reliability & Textual UI
+## [Unreleased]
+
+## [0.8.3] — Early Textual UI Prototype
+
+### 🆕 Added
+
+- **Early Textual UI prototype**: Added `d2fa ui`, a terminal interface for
+  listing vault entries, generating TOTP codes, and copying codes to the
+  clipboard. The UI is at an early prototype stage and does not support entry
+  management or creating a missing vault.
+
+### 🔄 Changed
+
+- The Textual UI uses the same selected vault path and password options as the
+  CLI.
+
+### 🐛 Fixed
+
+- UI load failures and empty vaults now display clear messages instead of
+  crashing.
+- TOTP generation is shared by the UI's generate and copy actions.
+- Clipboard import and runtime errors are shown in the UI.
+- Corrected Textual UI imports and account-name attribute usage.
+- UI button handling distinguishes load errors, empty vaults, and missing
+  selections.
+- Added Textual generic typing required by strict mypy checks.
+
+## [0.8.2] — Selectable Vault Paths & Reliability
 
 ### 🆕 Added
 
@@ -12,8 +39,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `DESKTOP_2FA_VAULT` environment override while retaining
   `~/.desktop-2fa/vault` as the default.
 - **Vault path command**: Added `d2fa vault path` to display the selected path.
-- **Textual interface**: Added the prototype `d2fa ui` command, which uses the
-  same selected vault path and password options as the CLI.
 
 ### 🔄 Changed
 
@@ -24,19 +49,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### 📚 Documentation
 
 - Updated the README and user manual with the current command syntax, vault path
-  selection, Textual UI usage, and the vault file-size limit.
+  selection, and the vault file-size limit.
 - Refreshed CLI UX and security documentation.
-
-### 🐛 Fixed
-
-- Textual UI load failures and empty vaults now display clear messages instead of crashing.
-- TOTP generation is shared by the UI's generate and copy actions.
-- Clipboard import and runtime errors are shown in the UI.
-- Corrected Textual UI imports and account-name attribute usage.
-- UI button handling now distinguishes load errors, empty vaults, and missing selections.
-- Added Textual generic typing required by strict mypy checks.
-
-## [Unreleased]
 
 ## [0.8.1] — zxcvbn Password Strength Integration
 

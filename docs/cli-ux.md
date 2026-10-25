@@ -18,9 +18,10 @@ Use `d2fa vault path` to display the selected path. The output is quoted so
 terminal control characters are not interpreted. Vault files must be regular
 files no larger than 10 MiB.
 
-The Textual prototype uses the same selected path and password options as the
-CLI. Launch it with `d2fa ui`; it displays an error if the selected vault does
-not exist.
+The early Textual UI prototype uses the same selected path and password
+options as the CLI. Launch it with `d2fa ui`; it displays an error if the
+selected vault does not exist. The prototype lists entries and supports TOTP
+generation and clipboard copying, but does not support entry management.
 
 ---
 

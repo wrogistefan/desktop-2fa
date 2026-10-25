@@ -23,9 +23,9 @@ A secure, offline two-factor authentication (2FA) manager for desktop environmen
 | 📋 **Clipboard Support** | Automatic copying of TOTP codes to clipboard |
 | 🔓 **Stateless Design** | Vault contents require authentication; no long-lived sessions |
 | 🛡️ **Password Policy** | Configurable password strength enforcement with zxcvbn |
-| 🧪 **Well Tested** | 302 tests passing with comprehensive coverage |
+| 🧪 **Well Tested** | 309 tests passing with comprehensive coverage |
 | 📖 **Security Model** | Detailed threat analysis and cryptographic design documentation |
-| 🖥️ **Textual UI** | Prototype interface for generating and copying TOTP codes |
+| 🖥️ **Textual UI** | Early prototype for listing accounts and generating or copying TOTP codes |
 
 ---
 
@@ -57,7 +57,7 @@ Verify installation:
 
 ```bash
 python -c "import desktop_2fa; print(desktop_2fa.__version__)"
-# Output: 0.8.2
+# Output: 0.8.3
 ```
 
 ### Basic Usage
@@ -89,13 +89,14 @@ d2fa --vault ./development-vault list
 # Show the currently selected vault path
 d2fa --vault ./development-vault vault path
 
-# Launch the Textual prototype with that vault
+# Launch the early Textual UI prototype with that vault
 d2fa --vault ./development-vault ui
 ```
 
-The Textual UI prompts for the vault password unless one is supplied with
-`--password` or `--password-file`. It supports listing entries, generating
-codes, and copying codes to the clipboard.
+The Textual UI is at an **early prototype stage**. It prompts for the vault
+password unless one is supplied with `--password` or `--password-file`, and
+supports listing entries, generating codes, and copying codes to the clipboard.
+It does not support entry management or create a missing vault.
 
 ### Non-Interactive Usage
 
@@ -168,7 +169,7 @@ The `rename` command enforces deterministic behavior when multiple entries match
 | `d2fa backup` | Create an encrypted backup of the vault |
 | `d2fa export <path>` | Export vault to file |
 | `d2fa import <path> [--force]` | Import vault from file |
-| `d2fa ui` | Launch the Textual prototype interface |
+| `d2fa ui` | Launch the early Textual UI prototype |
 
 ### Global Options
 
@@ -232,7 +233,8 @@ When `reject_weak_passwords = true`:
 If you have `min_password_entropy` set in your config (legacy option), it is recognized and treated as equivalent to requiring zxcvbn score >= 3.
 
 ### Security Hardening
-Version 0.8.2 maintains previous security hardening and adds bounded vault loading and atomic saves:
+Version 0.8.2 added bounded vault loading and atomic saves; version 0.8.3 adds
+the early Textual UI prototype:
 - Empty passwords are immediately rejected with a clear error message
 - Permission errors are distinguished from missing vault files
 - Vault loading accepts only regular files and reads at most 10 MiB
@@ -273,7 +275,7 @@ src/desktop_2fa/
 ├── cli/           # Command-line interface
 ├── crypto/        # Encryption utilities
 ├── totp/          # TOTP generation
-├── ui_textual/    # Textual prototype interface
+├── ui_textual/    # Early Textual UI prototype
 ├── vault/         # Vault management
 └── utils/         # Utilities
 ```

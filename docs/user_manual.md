@@ -262,10 +262,10 @@ macOS and Windows work out of the box without additional dependencies.
 
 If none of these tools are installed on Linux, clipboard operations will fail and desktop-2fa will fall back to printing the code normally.
 
-### Textual UI Prototype
+### Early Textual UI Prototype
 
-The optional Textual interface displays vault entries and lets you generate or
-copy a TOTP code for the selected entry:
+The optional Textual interface is at an **early prototype stage**. It displays
+vault entries and lets you generate or copy a TOTP code for the selected entry:
 
 ```bash
 # Use the default vault
@@ -276,9 +276,8 @@ d2fa --vault ./development-vault --password-file ~/.vault_pass ui
 ```
 
 When no password option is supplied, the CLI prompts for the vault password.
-The interface is a prototype and does not provide entry-management commands.
-It does not create a missing vault; initialize one with `d2fa vault init`
-before launching the UI.
+The interface does not provide entry-management commands or create a missing
+vault; initialize one with `d2fa vault init` before launching the UI.
 
 **Examples:**
 ```bash
@@ -720,7 +719,7 @@ d2fa COMMAND --help           # Show help for specific command
 d2fa --version                # Show version
 d2fa                         # Show version (no args)
 d2fa vault path               # Show the selected vault path
-d2fa ui                       # Launch the Textual UI prototype
+d2fa ui                       # Launch the early Textual UI prototype
 ```
 
 ## Security Best Practices
@@ -750,4 +749,4 @@ For issues and questions:
 
 ---
 
-*This manual covers desktop-2fa version 0.8.2*
+*This manual covers desktop-2fa version 0.8.3*

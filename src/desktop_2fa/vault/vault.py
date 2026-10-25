@@ -183,8 +183,6 @@ class Vault:
                 blob = f.read(MAX_VAULT_SIZE + 1)
             if len(blob) > MAX_VAULT_SIZE:
                 raise UnsupportedFormat("Vault file exceeds maximum supported size")
-        except UnsupportedFormat:
-            raise
         except PermissionError:
             raise PermissionDenied(
                 "Cannot access vault file (permission denied)"

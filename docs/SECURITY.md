@@ -393,6 +393,7 @@ chmod 600 ~/.desktop-2fa/vault
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 0.8.3 | Oct 2026 | Early Textual UI prototype; no changes to vault encryption or storage format |
 | 0.8.2 | Oct 2026 | Configurable vault paths and vault file safety improvements |
 | 0.8.1 | Jan 2026 | zxcvbn password strength evaluation added |
 | 0.8.0 | Jan 2026 | Modular architecture and clipboard support |
