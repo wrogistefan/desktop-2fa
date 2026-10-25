@@ -3,6 +3,7 @@ from typing import Any, Dict
 from unittest.mock import patch
 
 import pytest
+import typer
 from typer.testing import CliRunner
 
 from desktop_2fa.cli.helpers import get_password_from_cli
@@ -37,26 +38,20 @@ def test_get_password_both_flags_error(fake_ctx: Any) -> None:
     fake_ctx.obj["password"] = "test"
     fake_ctx.obj["password_file"] = "file"
     fake_ctx.obj["interactive"] = True
-    from click.exceptions import Exit
-
-    with pytest.raises(Exit):
+    with pytest.raises(typer.Exit):
         get_password_from_cli(fake_ctx)
 
 
 def test_get_password_file_not_found(fake_ctx: Any) -> None:
     fake_ctx.obj["password_file"] = "/nonexistent/file"
     fake_ctx.obj["interactive"] = True
-    from click.exceptions import Exit
-
-    with pytest.raises(Exit):
+    with pytest.raises(typer.Exit):
         get_password_from_cli(fake_ctx)
 
 
 def test_get_password_non_interactive_no_password(fake_ctx: Any) -> None:
     fake_ctx.obj["interactive"] = False
-    from click.exceptions import Exit
-
-    with pytest.raises(Exit):
+    with pytest.raises(typer.Exit):
         get_password_from_cli(fake_ctx)
 
 

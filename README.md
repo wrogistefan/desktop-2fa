@@ -23,7 +23,7 @@ A secure, offline two-factor authentication (2FA) manager for desktop environmen
 | 📋 **Clipboard Support** | Automatic copying of TOTP codes to clipboard |
 | 🔓 **Stateless Design** | Every command requires explicit password authentication |
 | 🛡️ **Password Policy** | Configurable password strength enforcement with zxcvbn |
-| 🧪 **Well Tested** | 289 tests passing with comprehensive coverage |
+| 🧪 **Well Tested** | 302 tests passing with comprehensive coverage |
 | 📖 **Security Model** | Detailed threat analysis and cryptographic design documentation |
 
 ---
@@ -56,7 +56,7 @@ Verify installation:
 
 ```bash
 python -c "import desktop_2fa; print(desktop_2fa.__version__)"
-# Output: 0.8.1dev
+# Output: 0.8.2
 ```
 
 ### Basic Usage
@@ -66,30 +66,45 @@ python -c "import desktop_2fa; print(desktop_2fa.__version__)"
 d2fa vault init
 
 # Add a new TOTP token
-d2fa vault add GitHub GitHub JBSWY3DPEHPK3PXP
+d2fa add GitHub GitHub JBSWY3DPEHPK3PXP
 
 # List all entries
-d2fa vault list
+d2fa list
 
 # Generate a code
 d2fa code GitHub
+```
+
+Choose a vault file for any command with `--vault`, or set
+`DESKTOP_2FA_VAULT` to select one by default. An explicit `--vault` takes
+precedence over the environment variable; without either, the default remains
+`~/.desktop-2fa/vault`.
+
+```bash
+# Use a separate vault for this command
+d2fa --vault ./development-vault list
+
+# Show the currently selected vault path
+d2fa vault path
 ```
 
 ### Non-Interactive Usage
 
 ```bash
 # Provide password via command line
-d2fa vault add GitHub GitHub JBSWY3DPEHPK3PXP --password mypassphrase
+d2fa --password mypassphrase add GitHub GitHub JBSWY3DPEHPK3PXP
 
 # Provide password via file
-d2fa vault add GitHub GitHub JBSWY3DPEHPK3PXP --password-file /path/to/passphrase.txt
+d2fa --password-file /path/to/passphrase.txt add GitHub GitHub JBSWY3DPEHPK3PXP
 ```
 
 ---
 
 ## 📁 Vault Lifecycle
 
-The vault is an encrypted storage file located at `~/.desktop-2fa/vault`.
+The vault is an encrypted storage file located by default at
+`~/.desktop-2fa/vault`. A custom path can be selected with `--vault` or
+`DESKTOP_2FA_VAULT`.
 
 ### Vault Creation
 
@@ -124,35 +139,39 @@ The `rename` command enforces deterministic behavior when multiple entries match
 
 | Command | Description |
 |---------|-------------|
-| `d2fa vault add <name> <issuer> <secret>` | Add a new TOTP entry |
-| `d2fa vault list` | List all stored TOTP entries |
-| `d2fa vault rename <old> <new>` | Rename an entry |
-| `d2fa vault remove <name>` | Remove an entry |
+| `d2fa add <name> <issuer> <secret>` | Add a new TOTP entry |
+| `d2fa list` | List all stored TOTP entries |
+| `d2fa rename <old> <new>` | Rename an entry |
+| `d2fa remove <name>` | Remove an entry |
 | `d2fa code <name> [--copy\|--copy-only]` | Generate TOTP code with clipboard copy options |
 
 ### Vault Management
 
 | Command | Description |
 |---------|-------------|
-| `d2fa vault init [--force]` | Initialize a new vault |
+| `d2fa vault init [--force]` | Initialize a new vault (`d2fa init-vault` is an alias) |
 | `d2fa vault unlock` | Open vault with weak password warning (if configured) |
 | `d2fa vault change-password` | Change the vault password |
-| `d2fa vault backup` | Create an encrypted backup of the vault |
-| `d2fa vault export <path>` | Export vault to file |
-| `d2fa vault import <path> [--force]` | Import vault from file |
+| `d2fa vault path` | Show the selected vault path |
+| `d2fa backup` | Create an encrypted backup of the vault |
+| `d2fa export <path>` | Export vault to file |
+| `d2fa import <path> [--force]` | Import vault from file |
 
 ### Global Options
 
 | Option | Description |
 |--------|-------------|
+| `--version` | Show the installed version |
 | `--password <pwd>` | Provide vault password directly |
 | `--password-file <path>` | Read vault password from file |
-| `--json` | Output in JSON format |
-| `--raw` | Raw output (no formatting) |
-| `--quiet` | Suppress non-essential output |
-| `--copy` | Copy TOTP code to clipboard and display |
-| `--copy-only` | Copy TOTP code to clipboard only |
-| `--force` | Force operation (bypass confirmations) |
+| `--vault <path>` | Select the vault file; place before the command |
+| `--allow-weak-passwords` | Allow weak passwords |
+| `--help` | Show command help |
+
+The `--vault` option takes precedence over `DESKTOP_2FA_VAULT`. When neither
+is provided, Desktop-2FA uses `~/.desktop-2fa/vault`. The `--json`, `--raw`,
+`--quiet`, `--copy`, and `--copy-only` options belong to `d2fa code`; `--force`
+is available on vault initialization and import commands.
 
 ---
 

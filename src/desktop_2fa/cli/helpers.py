@@ -149,13 +149,28 @@ def backup_vault(path: Path, backup_path: Path, password: str) -> None:
     print("Backup created:")
 
 
-def get_vault_path() -> str:
-    """Get the default path for the vault file.
+def resolve_vault_path(vault_path: str | Path | None = None) -> str:
+    """Resolve the vault path from an explicit value, environment, or default.
 
     Returns:
         Path to the vault file as a string.
     """
+    if not vault_path:
+        vault_path = os.getenv("DESKTOP_2FA_VAULT")
+
+    if vault_path:
+        path = Path(vault_path)
+        try:
+            return str(path.expanduser())
+        except RuntimeError:
+            return str(path)
+
     return str(Path.home() / ".desktop-2fa" / "vault")
+
+
+def get_vault_path() -> str:
+    """Get the resolved path for the vault file."""
+    return resolve_vault_path()
 
 
 def load_vault(path: Path, password: str) -> Vault:

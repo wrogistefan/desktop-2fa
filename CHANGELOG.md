@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.8.2] — Selectable Vault Paths & Reliability
+
+### Added
+
+- Added global `--vault <path>` selection and the `DESKTOP_2FA_VAULT` environment
+  override, with the existing `~/.desktop-2fa/vault` location retained as default.
+- Added `d2fa vault path` to display the currently selected vault path.
+
+### Changed
+
+- Vault saves now use unique temporary files and atomically replace the destination.
+- Vault loading rejects non-regular files and limits the input size to 10 MiB.
+- Resolved selected paths safely, including empty values and unknown-user `~` prefixes.
+
+### Documentation
+
+- Updated the README and user manual with vault path selection, precedence, and
+  current command syntax; refreshed CLI UX and security documentation.
+
 ## [0.8.1] — zxcvbn Password Strength Integration
 
 ### 🆕 Added

@@ -1,3 +1,4 @@
+import os
 import shutil
 from pathlib import Path
 from typing import Any
@@ -900,7 +901,7 @@ def test_list_entries_corrupted_vault(
 
 
 def test_list_entries_io_error(
-    fake_vault_env: Path, capsys: Any, fake_ctx: Any
+    fake_vault_env: Path, capsys: Any, fake_ctx: Any, monkeypatch: Any
 ) -> None:
     # Create a valid-looking vault that will fail on read
     from desktop_2fa.vault import Vault
@@ -908,21 +909,28 @@ def test_list_entries_io_error(
     vault = Vault()
     vault.save(fake_vault_env, TEST_PASSWORD)
 
-    # Mock open to raise OSError
-    import builtins
-
-    original_open = builtins.open
-
+    # Mock the low-level file open used by vault existence checks and loading.
     def mock_open(*args: Any, **kwargs: Any) -> None:
         raise OSError("Disk error")
 
-    builtins.open = mock_open  # type: ignore[assignment]
-    try:
-        commands.list_entries(fake_ctx)
-        out = capsys.readouterr().out.strip()
-        assert "Failed to access vault file" in out
-    finally:
-        builtins.open = original_open
+    monkeypatch.setattr("os.open", mock_open)
+    commands.list_entries(fake_ctx)
+    out = capsys.readouterr().out.strip()
+    assert "Failed to access vault file" in out
+
+
+def test_vault_exists_ignores_close_error(tmp_path: Path, monkeypatch: Any) -> None:
+    vault_path = tmp_path / "vault"
+    vault_path.touch()
+    original_close = os.close
+
+    def close_then_raise(fd: int) -> None:
+        original_close(fd)
+        raise OSError("close failed")
+
+    monkeypatch.setattr("os.close", close_then_raise)
+
+    assert commands._vault_exists(vault_path) is True
 
 
 def test_generate_code_json_vault_missing(

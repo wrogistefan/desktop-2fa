@@ -52,6 +52,7 @@ def main(
     allow_weak_passwords: bool = typer.Option(
         False, "--allow-weak-passwords", help="Allow weak passwords"
     ),
+    vault: str | None = typer.Option(None, "--vault", help="Path to the vault file"),
 ) -> None:
     """
     Global CLI callback — initializes context and handles --version and no-args case.
@@ -67,6 +68,11 @@ def main(
         "password_file": password_file,
         "interactive": is_interactive(),
         "allow_weak_passwords": allow_weak_passwords,
+        "vault_path": (
+            helpers.resolve_vault_path(vault)
+            if vault is not None
+            else helpers.get_vault_path()
+        ),
     }
 
     # If user provided --version OR no command was given,
@@ -257,6 +263,12 @@ def change_password_cmd(ctx: typer.Context) -> None:
 def init_cmd(ctx: typer.Context, force: bool = typer.Option(False, "--force")) -> None:
     """Initialize a new encrypted vault."""
     commands.init_vault(force, ctx)
+
+
+@vault_app.command("path")
+def vault_path_cmd(ctx: typer.Context) -> None:
+    """Show the path to the vault file currently in use."""
+    print(repr(ctx.obj.get("vault_path") or helpers.get_vault_path()))
 
 
 # Register the group
