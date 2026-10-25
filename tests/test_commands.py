@@ -1,3 +1,4 @@
+import os
 import shutil
 from pathlib import Path
 from typing import Any
@@ -908,6 +909,7 @@ def test_list_entries_io_error(
     vault = Vault()
     vault.save(fake_vault_env, TEST_PASSWORD)
 
+    # Mock the low-level file open used by vault existence checks and loading.
     def mock_open(*args: Any, **kwargs: Any) -> None:
         raise OSError("Disk error")
 
@@ -915,6 +917,20 @@ def test_list_entries_io_error(
     commands.list_entries(fake_ctx)
     out = capsys.readouterr().out.strip()
     assert "Failed to access vault file" in out
+
+
+def test_vault_exists_ignores_close_error(tmp_path: Path, monkeypatch: Any) -> None:
+    vault_path = tmp_path / "vault"
+    vault_path.touch()
+    original_close = os.close
+
+    def close_then_raise(fd: int) -> None:
+        original_close(fd)
+        raise OSError("close failed")
+
+    monkeypatch.setattr("os.close", close_then_raise)
+
+    assert commands._vault_exists(vault_path) is True
 
 
 def test_generate_code_json_vault_missing(

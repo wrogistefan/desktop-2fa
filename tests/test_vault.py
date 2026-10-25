@@ -6,7 +6,7 @@ import pytest
 
 from desktop_2fa.vault import Vault
 from desktop_2fa.vault.models import TotpEntry, VaultData
-from desktop_2fa.vault.vault import UnsupportedFormat
+from desktop_2fa.vault.vault import MAX_VAULT_SIZE, UnsupportedFormat
 
 
 def _track_temp_paths(monkeypatch: Any) -> list[Path]:
@@ -32,6 +32,50 @@ def test_vault_roundtrip(tmp_path: Path) -> None:
     loaded = Vault.load(str(path))
     entry = loaded.get_entry("GitHub")
     assert entry.secret == "JBSWY3DPEHPK3PXP"
+
+
+def test_vault_save_does_not_overwrite_tmp_sibling(tmp_path: Path) -> None:
+    path = tmp_path / "vault.bin"
+    sibling_path = tmp_path / "vault.tmp"
+    sibling_content = b"another file"
+    sibling_path.write_bytes(sibling_content)
+
+    vault = Vault()
+    vault.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP")
+    vault.save(path)
+
+    assert Vault.load(path).get_entry("GitHub").secret == "JBSWY3DPEHPK3PXP"
+    assert sibling_path.read_bytes() == sibling_content
+    assert list(tmp_path.glob(".vault.bin.*.tmp")) == []
+
+
+def test_vault_save_failure_preserves_selected_tmp_file(
+    tmp_path: Path, monkeypatch: Any
+) -> None:
+    path = tmp_path / "vault.tmp"
+    original_content = b"existing vault data"
+    path.write_bytes(original_content)
+    vault = Vault()
+    vault.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP")
+
+    def fail_fsync(fd: int) -> None:
+        raise OSError("write failed")
+
+    monkeypatch.setattr("os.fsync", fail_fsync)
+    with pytest.raises(Exception, match="Failed to save vault"):
+        vault.save(path)
+
+    assert path.read_bytes() == original_content
+    assert list(tmp_path.glob(".vault.tmp.*.tmp")) == []
+
+
+def test_vault_load_rejects_oversized_file(tmp_path: Path) -> None:
+    path = tmp_path / "oversized-vault"
+    with path.open("wb") as vault_file:
+        vault_file.truncate(MAX_VAULT_SIZE + 1)
+
+    with pytest.raises(UnsupportedFormat, match="exceeds maximum"):
+        Vault.load(path)
 
 
 def test_vault_file_is_binary(tmp_path: Path) -> None:
@@ -173,11 +217,11 @@ def test_vault_save_io_error(tmp_path: Path, monkeypatch: Any) -> None:
     vault = Vault()
     vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
 
-    # Mock os.open to raise an exception
-    def mock_open(*args: Any, **kwargs: Any) -> None:
+    # Mock temporary-file creation to raise an exception.
+    def mock_mkstemp(*args: Any, **kwargs: Any) -> None:
         raise OSError("Permission denied")
 
-    monkeypatch.setattr("os.open", mock_open)
+    monkeypatch.setattr("tempfile.mkstemp", mock_mkstemp)
 
     with pytest.raises(Exception, match="Failed to save vault: Permission denied"):
         vault.save(str(path))
@@ -190,6 +234,7 @@ def test_vault_save_cleanup_on_error(tmp_path: Path, monkeypatch: Any) -> None:
     vault = Vault()
     vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
 
+    # Mock fdopen to fail after the unique temporary file is created.
     def mock_fdopen(*args: Any, **kwargs: Any) -> None:
         raise OSError("Write error")
 
@@ -201,6 +246,7 @@ def test_vault_save_cleanup_on_error(tmp_path: Path, monkeypatch: Any) -> None:
     # Temporary file should be cleaned up
     assert len(temp_paths) == 1
     assert not temp_paths[0].exists()
+    assert list(tmp_path.glob(".vault.bin.*.tmp")) == []
 
 
 def test_vault_load_malformed_json_edge_cases(tmp_path: Path) -> None:
@@ -231,11 +277,11 @@ def test_vault_save_os_level_errors(tmp_path: Path, monkeypatch: Any) -> None:
     vault = Vault()
     vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
 
-    # Mock os.open to raise a specific OS error
-    def mock_open(*args: Any, **kwargs: Any) -> None:
+    # Mock temporary-file creation to raise a specific OS error.
+    def mock_mkstemp(*args: Any, **kwargs: Any) -> None:
         raise OSError(28, "No space left on device")
 
-    monkeypatch.setattr("os.open", mock_open)
+    monkeypatch.setattr("tempfile.mkstemp", mock_mkstemp)
 
     with pytest.raises(
         Exception, match="Failed to save vault: No space left on device"
@@ -250,6 +296,7 @@ def test_vault_save_cleanup_on_os_error(tmp_path: Path, monkeypatch: Any) -> Non
     vault = Vault()
     vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
 
+    # Mock fsync to fail after writing to the unique temporary file.
     def mock_fsync(fd: int) -> None:
         raise OSError(28, "No space left on device")
 
@@ -261,6 +308,7 @@ def test_vault_save_cleanup_on_os_error(tmp_path: Path, monkeypatch: Any) -> Non
     # Temporary file should be cleaned up
     assert len(temp_paths) == 1
     assert not temp_paths[0].exists()
+    assert list(tmp_path.glob(".vault.bin.*.tmp")) == []
 
 
 def test_vault_load_json_validation_edge_cases(tmp_path: Path) -> None:
@@ -408,7 +456,6 @@ def test_vault_save_permission_error_cleanup(tmp_path: Path, monkeypatch: Any) -
 
     path = tmp_path / "vault.bin"
     temp_paths = _track_temp_paths(monkeypatch)
-
     vault = Vault()
     vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
 
@@ -424,6 +471,7 @@ def test_vault_save_permission_error_cleanup(tmp_path: Path, monkeypatch: Any) -
     # Temp file should be cleaned up
     assert len(temp_paths) == 1
     assert not temp_paths[0].exists()
+    assert list(tmp_path.glob(".vault.bin.*.tmp")) == []
 
 
 def test_vault_save_os_error_cleanup(tmp_path: Path, monkeypatch: Any) -> None:
@@ -431,10 +479,10 @@ def test_vault_save_os_error_cleanup(tmp_path: Path, monkeypatch: Any) -> None:
 
     path = tmp_path / "vault.bin"
     temp_paths = _track_temp_paths(monkeypatch)
-
     vault = Vault()
     vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
 
+    # Mock fdopen to fail after creating the unique temporary file.
     def mock_fdopen(fd: int, mode: str = "w") -> Any:
         raise OSError(28, "No space left on device")
 
@@ -446,6 +494,7 @@ def test_vault_save_os_error_cleanup(tmp_path: Path, monkeypatch: Any) -> None:
     # Temp file should be cleaned up
     assert len(temp_paths) == 1
     assert not temp_paths[0].exists()
+    assert list(tmp_path.glob(".vault.bin.*.tmp")) == []
 
 
 def test_vault_save_os_error_cleanup_on_unlink_failure(
@@ -458,7 +507,7 @@ def test_vault_save_os_error_cleanup_on_unlink_failure(
     vault = Vault()
     vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
 
-    # Make writing the temporary file fail, then make cleanup fail as well.
+    # Mock fsync to fail, then make temporary-file cleanup fail.
     def mock_fsync(fd: int) -> None:
         raise OSError(28, "No space left on device")
 

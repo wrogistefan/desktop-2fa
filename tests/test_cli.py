@@ -293,7 +293,7 @@ def test_cli_vault_path_reports_resolved_path(monkeypatch: Any, tmp_path: Path) 
     assert result.output.strip() == repr(str(vault_path))
 
 
-def test_cli_vault_path_escapes_terminal_controls(
+def test_cli_vault_path_escapes_terminal_control_characters(
     monkeypatch: Any, tmp_path: Path
 ) -> None:
     vault_path = str(tmp_path / "vault\x1b[31mforged")
@@ -325,6 +325,19 @@ def test_cli_ui_uses_resolved_global_vault_path(
 
     assert result.exit_code == 0
     assert selected == [(str(vault_path), TEST_PASSWORD)]
+
+
+def test_cli_vault_path_falls_back_when_context_has_no_path(
+    monkeypatch: Any, capsys: Any, tmp_path: Path
+) -> None:
+    from desktop_2fa.cli.main import vault_path_cmd
+
+    vault_path = str(tmp_path / "fallback-vault")
+    monkeypatch.setenv("DESKTOP_2FA_VAULT", vault_path)
+    ctx = type("FakeContext", (), {"obj": {}})()
+
+    vault_path_cmd(ctx)
+    assert capsys.readouterr().out.strip() == repr(vault_path)
 
 
 def test_cli_version_survives_unknown_user_vault_path() -> None:

@@ -23,7 +23,7 @@ A secure, offline two-factor authentication (2FA) manager for desktop environmen
 | 📋 **Clipboard Support** | Automatic copying of TOTP codes to clipboard |
 | 🔓 **Stateless Design** | Vault contents require authentication; no long-lived sessions |
 | 🛡️ **Password Policy** | Configurable password strength enforcement with zxcvbn |
-| 🧪 **Well Tested** | Comprehensive automated test coverage |
+| 🧪 **Well Tested** | 302 tests passing with comprehensive coverage |
 | 📖 **Security Model** | Detailed threat analysis and cryptographic design documentation |
 | 🖥️ **Textual UI** | Prototype interface for generating and copying TOTP codes |
 
@@ -79,7 +79,8 @@ d2fa code GitHub
 The vault is stored by default at `~/.desktop-2fa/vault`. Select a different
 file for any command with the global `--vault` option, or set
 `DESKTOP_2FA_VAULT` to choose one by default. An explicit `--vault` takes
-precedence over the environment variable.
+precedence over the environment variable; without either, the default remains
+`~/.desktop-2fa/vault`.
 
 ```bash
 # Use a separate vault for this command
@@ -160,7 +161,7 @@ The `rename` command enforces deterministic behavior when multiple entries match
 
 | Command | Description |
 |---------|-------------|
-| `d2fa vault init [--force]` | Initialize a new vault |
+| `d2fa vault init [--force]` | Initialize a new vault (`d2fa init-vault` is an alias) |
 | `d2fa vault unlock` | Open vault with weak password warning (if configured) |
 | `d2fa vault change-password` | Change the vault password |
 | `d2fa vault path` | Show the currently selected vault path |
@@ -173,14 +174,17 @@ The `rename` command enforces deterministic behavior when multiple entries match
 
 | Option | Description |
 |--------|-------------|
-| `--vault <path>` | Select the vault file (place before the command) |
+| `--version` | Show the installed version |
 | `--password <pwd>` | Provide vault password directly |
 | `--password-file <path>` | Read vault password from file |
-| `--allow-weak-passwords` | Allow weak passwords when creating a vault |
+| `--vault <path>` | Select the vault file; place before the command |
+| `--allow-weak-passwords` | Allow weak passwords |
+| `--help` | Show command help |
 
-The `code` command also supports `--json`, `--raw`, `--quiet`, `--copy`, and
-`--copy-only`.
-| `--force` | Force operation (bypass confirmations) |
+The `--vault` option takes precedence over `DESKTOP_2FA_VAULT`. When neither
+is provided, Desktop-2FA uses `~/.desktop-2fa/vault`. The `code` command also
+supports `--json`, `--raw`, `--quiet`, `--copy`, and `--copy-only`; `--force`
+is available on vault initialization and import commands.
 
 ---
 

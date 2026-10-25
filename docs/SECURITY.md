@@ -393,9 +393,9 @@ chmod 600 ~/.desktop-2fa/vault
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 0.8.2 | 2026 | Selectable vault paths, bounded vault loading, and atomic saves |
-| 0.8.1dev | Jan 2026 | Development version |
-| 0.8.0 | Jan 2026 | zxcvbn password strength evaluation added |
+| 0.8.2 | Oct 2026 | Configurable vault paths and vault file safety improvements |
+| 0.8.1 | Jan 2026 | zxcvbn password strength evaluation added |
+| 0.8.0 | Jan 2026 | Modular architecture and clipboard support |
 | 0.7.3 | Oct 2025 | Security hardening improvements |
 | 0.7.0 | Aug 2025 | Initial stable release |
 

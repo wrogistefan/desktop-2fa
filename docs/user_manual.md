@@ -164,7 +164,7 @@ d2fa --password mypassword add GitHub GitHub JBSWY3DPEHPK3PXP
 - `issuer` is a display label and may repeat across entries
 - Names must be unique within the vault
 - Older versions allowed duplicate names; you may see warnings about this when loading existing vaults
-- Use the `vault rename` command to resolve duplicate names
+- Use the `d2fa rename` command to resolve duplicate names
 - Secrets must be valid Base32
 - otpauth URLs are automatically parsed
 - If vault doesn't exist, it will be created automatically
@@ -340,7 +340,7 @@ When using `--json` mode, errors are returned as JSON objects:
 - `unsupported_format`: Vault file format is unsupported
 - `clipboard_unavailable`: Clipboard not available on this system
 
-### `vault remove` - Remove Entry
+### `remove` - Remove Entry
 
 Deletes a TOTP entry from the vault.
 
@@ -359,7 +359,7 @@ d2fa remove GitHub
 d2fa remove "AWS:root"
 ```
 
-### `vault rename` - Rename Entry
+### `rename` - Rename Entry
 
 Changes the name and issuer of an existing entry. Both the unique identifier (account name) and display label (issuer) are updated to the new name.
 
@@ -384,7 +384,7 @@ Error: Multiple entries named '<name>' exist. Operation aborted. Resolve duplica
 ```
 This ensures deterministic behavior when duplicate names exist in older vaults.
 
-### `vault export` - Export Vault
+### `export` - Export Vault
 
 Exports the vault to a file (for backup or transfer).
 
@@ -403,7 +403,7 @@ d2fa export backup.bin
 d2fa export ~/vault_backup.bin
 ```
 
-### `vault import` - Import Vault
+### `import` - Import Vault
 
 Imports a vault from a file.
 
@@ -426,7 +426,7 @@ d2fa import backup.bin
 d2fa import new_vault.bin --force
 ```
 
-### `vault backup` - Create Backup
+### `backup` - Create Backup
 
 Creates an automatic backup of the current vault.
 
@@ -548,7 +548,9 @@ By default, the vault is stored at:
 - Linux/macOS: `~/.desktop-2fa/vault`
 - Windows: `C:\Users\<username>\.desktop-2fa\vault`
 
-The vault file is automatically created on first use.
+The vault file is automatically created on first use. See [Selecting the Vault
+File](#selecting-the-vault-file) for custom paths and environment overrides.
+For safety, vault files must be regular files no larger than 10 MiB.
 
 ## Error Handling
 
@@ -691,7 +693,7 @@ This was allowed in older versions. You can resolve this by renaming entries usi
 ```
 
 **Resolution:**
-Use the `vault rename` command to give unique names to conflicting entries:
+Use the root-level `d2fa rename` command to give unique names to conflicting entries:
 
 ```bash
 # List current entries
