@@ -57,7 +57,7 @@ Verify installation:
 
 ```bash
 python -c "import desktop_2fa; print(desktop_2fa.__version__)"
-# Output: 0.8.4
+# Output: 0.9.0
 ```
 
 ### Basic Usage
@@ -122,7 +122,7 @@ The current loader supports vault format version 1. Future releases are not
 guaranteed to support every older format. Before upgrading, create an encrypted
 backup and store it securely.
 
-Desktop-2FA 0.8.4 changes the public Python API: `Vault.save()` and
+Desktop-2FA 0.9.0 changes the public Python API: `Vault.save()` and
 `Vault.load()` require an explicit, non-empty password. Vaults created by
 earlier Python API versions with no password must be opened and re-saved with a
 non-empty password using the previous release before upgrading. CLI and
@@ -250,7 +250,7 @@ If you have `min_password_entropy` set in your config (legacy option), it is rec
 
 ### Security Hardening
 Version 0.8.2 added bounded vault loading and atomic saves; version 0.8.3 added
-the early Textual UI prototype; version 0.8.4 requires explicit, non-empty
+the early Textual UI prototype; version 0.9.0 requires explicit, non-empty
 passwords in the public Python vault API:
 - Empty passwords are immediately rejected with a clear error message
 - Permission errors are distinguished from missing vault files

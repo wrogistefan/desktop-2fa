@@ -144,7 +144,7 @@ This setting is recognized and automatically mapped to zxcvbn score >= 3. No act
 - **v0.8.1**: zxcvbn integration, configuration mapping, vault unlock warning
 - **v0.8.2**: Selectable vault paths, bounded vault loading, and atomic saves
 - **v0.8.3**: Early Textual UI prototype; no changes to vault encryption or storage format
-- **v0.8.4**: Vault API requires explicit, non-empty passwords; passwordless API vaults need migration
+- **v0.9.0**: Vault API requires explicit, non-empty passwords; passwordless API vaults need migration
 
 ### Recommendations
 

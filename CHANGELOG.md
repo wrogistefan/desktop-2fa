@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-## [0.8.4] — Vault API Password Hardening (2026-10-26)
+## [0.9.0] — Vault API Password Hardening (2026-10-26)
 
 ### 🛡️ Security
 
