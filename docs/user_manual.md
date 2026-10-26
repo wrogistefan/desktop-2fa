@@ -12,6 +12,12 @@ Desktop-2FA is a secure, offline two-factor authentication (2FA) manager for des
 pip install desktop-2fa
 ```
 
+This manual covers Desktop-2FA 0.9.0. The public Python `Vault.save()` and
+`Vault.load()` methods require an explicit, non-empty password. If you created
+a passwordless vault through the Python API in an earlier version, open and
+re-save it with a non-empty password using that previous version before
+upgrading.
+
 ### First Use
 
 1. Initialize your vault:
@@ -760,4 +766,4 @@ For issues and questions:
 
 ---
 
-*This manual covers desktop-2fa version 0.8.3*
+*This manual covers desktop-2fa version 0.9.0*

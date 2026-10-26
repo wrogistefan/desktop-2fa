@@ -2,7 +2,9 @@ from pathlib import Path
 
 import pytest
 
-from desktop_2fa.vault.vault import Vault
+from desktop_2fa.vault.vault import InvalidPassword, Vault
+
+TEST_PASSWORD = "test-vault-password"
 
 
 def test_vault_roundtrip(tmp_path: Path) -> None:
@@ -10,9 +12,9 @@ def test_vault_roundtrip(tmp_path: Path) -> None:
 
     vault = Vault()
     vault.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP")
-    vault.save(str(path))
+    vault.save(str(path), TEST_PASSWORD)
 
-    loaded = Vault.load(str(path))
+    loaded = Vault.load(str(path), TEST_PASSWORD)
     assert loaded.get_entry("GitHub").secret == "JBSWY3DPEHPK3PXP"
 
 
@@ -21,7 +23,7 @@ def test_vault_is_binary(tmp_path: Path) -> None:
 
     vault = Vault()
     vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
-    vault.save(str(path))
+    vault.save(str(path), TEST_PASSWORD)
 
     raw = path.read_bytes()
     assert raw != b""
@@ -34,10 +36,10 @@ def test_vault_backup_created(tmp_path: Path) -> None:
 
     vault = Vault()
     vault.add_entry("A", "A", "JBSWY3DPEHPK3PXP")
-    vault.save(str(path))
+    vault.save(str(path), TEST_PASSWORD)
 
     vault.add_entry("B", "B", "JBSWY3DPEHPK3PXS")
-    vault.save(str(path))
+    vault.save(str(path), TEST_PASSWORD)
 
     # Note: New vault implementation does not create backups
     # assert backup.exists()
@@ -49,14 +51,14 @@ def test_vault_tampering_detection(tmp_path: Path) -> None:
 
     vault = Vault()
     vault.add_entry("X", "X", "JBSWY3DPEHPK3PXP")
-    vault.save(str(path))
+    vault.save(str(path), TEST_PASSWORD)
 
     raw = bytearray(path.read_bytes())
-    raw[10] ^= 0xFF  # celowa korupcja
+    raw[33] ^= 0xFF
     path.write_bytes(raw)
 
-    with pytest.raises(Exception):
-        Vault.load(str(path))
+    with pytest.raises(InvalidPassword):
+        Vault.load(str(path), TEST_PASSWORD)
 
 
 def test_multiple_entries(tmp_path: Path) -> None:
@@ -66,9 +68,9 @@ def test_multiple_entries(tmp_path: Path) -> None:
     vault.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP")
     vault.add_entry("Google", "Google", "JBSWY3DPEHPK3PXS")
     vault.add_entry("AWS", "AWS", "JBSWY3DPEHPK3PXT")
-    vault.save(str(path))
+    vault.save(str(path), TEST_PASSWORD)
 
-    loaded = Vault.load(str(path))
+    loaded = Vault.load(str(path), TEST_PASSWORD)
     assert loaded.get_entry("GitHub").secret == "JBSWY3DPEHPK3PXP"
     assert loaded.get_entry("Google").secret == "JBSWY3DPEHPK3PXS"
     assert loaded.get_entry("AWS").secret == "JBSWY3DPEHPK3PXT"
@@ -128,30 +130,3 @@ def test_vault_password_roundtrip(tmp_path: Path) -> None:
     vault3 = Vault.load(str(path), password=password)
     assert vault3.get_entry("Entry1").secret == secret1
     assert vault3.get_entry("Entry2").secret == secret2
-
-
-def test_vault_no_password_vs_password(tmp_path: Path) -> None:
-    path_no_pass = tmp_path / "vault_no_pass.bin"
-    path_with_pass = tmp_path / "vault_with_pass.bin"
-    password = "some_password"
-
-    vault = Vault()
-    vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
-
-    # Save without password
-    vault.save(str(path_no_pass))
-
-    # Save with password
-    vault.save(str(path_with_pass), password=password)
-
-    # Files should be different
-    raw_no_pass = path_no_pass.read_bytes()
-    raw_with_pass = path_with_pass.read_bytes()
-    assert raw_no_pass != raw_with_pass
-
-    # Both should load correctly with appropriate methods
-    loaded_no_pass = Vault.load(str(path_no_pass))
-    loaded_with_pass = Vault.load(str(path_with_pass), password=password)
-
-    assert loaded_no_pass.get_entry("Test").secret == "JBSWY3DPEHPK3PXP"
-    assert loaded_with_pass.get_entry("Test").secret == "JBSWY3DPEHPK3PXP"

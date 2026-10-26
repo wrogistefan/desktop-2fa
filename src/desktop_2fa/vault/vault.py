@@ -154,23 +154,25 @@ class Vault:
         self.data.entries.remove(entry)
 
     @classmethod
-    def load(cls, path: str | Path, password: Optional[str] = None) -> "Vault":
+    def load(cls, path: str | Path, password: str) -> "Vault":
         """Load a vault from a file.
 
         Args:
             path: The file path to load from.
-            password: The password to decrypt the vault. If None, a default
-                internal password is used (for "no-password" vaults).
+            password: The non-empty password to decrypt the vault.
 
         Returns:
             The loaded Vault instance.
 
         Raises:
+            TypeError: If password is not a string.
+            ValueError: If password is empty.
             VaultIOError: If the vault file cannot be read due to IO errors.
             UnsupportedFormat: If the vault file format is invalid.
             InvalidPassword: If the password is incorrect.
             CorruptedVault: If the vault data is corrupted.
         """
+        _validate_password(password)
         fd: int | None = None
         try:
             fd = os.open(path, os.O_RDONLY | getattr(os, "O_NONBLOCK", 0))
@@ -213,10 +215,6 @@ class Vault:
         if len(encrypted) == 0:
             raise UnsupportedFormat("Vault file is invalid: empty encrypted blob")
 
-        # For "no-password" vaults we consistently use an empty password string.
-        if password is None:
-            password = ""
-
         key = derive_key(password, salt)
         try:
             raw_json = decrypt(key, encrypted)
@@ -246,17 +244,19 @@ class Vault:
 
         return vault
 
-    def save(self, path: str | Path, password: Optional[str] = None) -> None:
+    def save(self, path: str | Path, password: str) -> None:
         """Save the vault to a file.
 
         Args:
             path: The file path to save to.
-            password: The password to encrypt the vault. If None, a default
-                internal password is used (for "no-password" vaults).
+            password: The non-empty password to encrypt the vault.
 
         Raises:
+            TypeError: If password is not a string.
+            ValueError: If password is empty.
             VaultIOError: If saving fails due to IO errors.
         """
+        _validate_password(password)
         path = Path(path)
         temp_path: Path | None = None
         fd: int | None = None
@@ -267,10 +267,6 @@ class Vault:
 
             header = VAULT_MAGIC + VAULT_VERSION
             salt = os.urandom(16)
-
-            # For "no-password" vaults we consistently use an empty password string.
-            if password is None:
-                password = ""
 
             key = derive_key(password, salt)
 
@@ -316,3 +312,10 @@ class Vault:
                     pass
             error_msg = e.strerror if e.strerror else str(e)
             raise VaultIOError(f"Failed to save vault: {error_msg}") from None
+
+
+def _validate_password(password: str) -> None:
+    if not isinstance(password, str):
+        raise TypeError("Password must be a string.")
+    if not password:
+        raise ValueError("Password cannot be empty.")
