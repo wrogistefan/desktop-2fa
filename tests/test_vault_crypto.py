@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from desktop_2fa.vault.vault import Vault
+from desktop_2fa.vault.vault import InvalidPassword, Vault
 
 TEST_PASSWORD = "test-vault-password"
 
@@ -54,10 +54,10 @@ def test_vault_tampering_detection(tmp_path: Path) -> None:
     vault.save(str(path), TEST_PASSWORD)
 
     raw = bytearray(path.read_bytes())
-    raw[10] ^= 0xFF  # celowa korupcja
+    raw[33] ^= 0xFF
     path.write_bytes(raw)
 
-    with pytest.raises(Exception):
+    with pytest.raises(InvalidPassword):
         Vault.load(str(path), TEST_PASSWORD)
 
 

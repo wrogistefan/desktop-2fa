@@ -134,3 +134,10 @@ omitted and empty passwords, so those passwordless API-created vaults cannot
 be opened by this release. If such a vault contains data you need, use the
 previous release to open and re-save it with a non-empty password before
 upgrading.
+
+## Contact
+
+For security vulnerabilities, email
+[security@desktop-2fa.org](mailto:security@desktop-2fa.org). For general
+questions or support, email
+[contact@desktop-2fa.org](mailto:contact@desktop-2fa.org).

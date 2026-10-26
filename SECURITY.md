@@ -159,9 +159,12 @@ This setting is recognized and automatically mapped to zxcvbn score >= 3. No act
 If you discover a security vulnerability, please report it responsibly:
 
 1. Do NOT open a public GitHub issue
-2. Check the [repository Security tab](https://github.com/wrogistefan/desktop-2fa/security) for current private reporting options
+2. Email security concerns to [security@desktop-2fa.org](mailto:security@desktop-2fa.org)
 3. Include steps to reproduce and potential impact
 4. Allow time for a fix before public disclosure
+
+For general questions or support, contact
+[contact@desktop-2fa.org](mailto:contact@desktop-2fa.org).
 
 ---
 

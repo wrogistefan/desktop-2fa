@@ -129,10 +129,11 @@ audited, validated, or certified as compliant.
 
 ## Security reporting
 
-Before publishing a suspected vulnerability, check the
-[GitHub repository's Security tab](https://github.com/wrogistefan/desktop-2fa/security)
-for current reporting instructions. Do not include real vault files, passwords,
-or TOTP secrets in a report.
+Report suspected security vulnerabilities privately to
+[security@desktop-2fa.org](mailto:security@desktop-2fa.org). Do not open a
+public issue or include real vault files, passwords, or TOTP secrets in a
+report. For general questions and support, contact
+[contact@desktop-2fa.org](mailto:contact@desktop-2fa.org).
 
 ---
 

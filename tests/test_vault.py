@@ -6,7 +6,12 @@ import pytest
 
 from desktop_2fa.vault import Vault
 from desktop_2fa.vault.models import TotpEntry, VaultData
-from desktop_2fa.vault.vault import MAX_VAULT_SIZE, UnsupportedFormat
+from desktop_2fa.vault.vault import (
+    MAX_VAULT_SIZE,
+    CorruptedVault,
+    InvalidPassword,
+    UnsupportedFormat,
+)
 
 TEST_PASSWORD = "test-vault-password"
 
@@ -137,10 +142,10 @@ def test_vault_tampering_detection(tmp_path: Path) -> None:
     vault.save(str(path), TEST_PASSWORD)
 
     raw = bytearray(path.read_bytes())
-    raw[10] ^= 0xFF  # celowa korupcja
+    raw[33] ^= 0xFF
     path.write_bytes(raw)
 
-    with pytest.raises(Exception):
+    with pytest.raises(InvalidPassword):
         Vault.load(str(path), TEST_PASSWORD)
 
 
@@ -209,8 +214,8 @@ def test_vault_load_corrupted_json_data(tmp_path: Path) -> None:
     valid_data = b"D2FA" + b"\x01" + salt + encrypted
     path.write_bytes(valid_data)
 
-    with pytest.raises(Exception, match="Invalid password or corrupted vault"):
-        Vault.load(str(path), TEST_PASSWORD)
+    with pytest.raises(CorruptedVault, match="Vault contains invalid data"):
+        Vault.load(str(path), password)
 
 
 def test_vault_save_io_error(tmp_path: Path, monkeypatch: Any) -> None:
