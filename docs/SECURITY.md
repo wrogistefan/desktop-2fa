@@ -1,526 +1,125 @@
-# Security Model & Threat Analysis
+# Security Model
 
-## Overview
+This document summarizes the security properties and limitations of the
+currently implemented Desktop-2FA application. It is not an independent audit,
+certification, or guarantee that every deployment is secure.
 
-Desktop-2FA is an offline, stateless 2FA manager designed for secure local storage of TOTP secrets. This document describes the security architecture, threat model, and security guarantees provided by Desktop-2FA.
+## What the application does
 
----
+- Stores TOTP entries in a local encrypted vault; there is no cloud vault or
+  server-side password verifier.
+- Derives a 32-byte key using Argon2id (time cost 4, memory cost 128 MiB,
+  parallelism 2, 16-byte salt) and encrypts vault data using AES-256-GCM
+  (12-byte random nonce and 16-byte authentication tag).
+- Accepts regular vault files up to 10 MiB. Saves are written to a temporary
+  file and then replace the selected vault path.
+- Requires a password when a CLI operation loads an existing vault. The
+  `d2fa vault unlock` command checks the password and reports success; it does
+  not create a persistent unlocked session or bypass password entry for later
+  commands.
 
-## Security Goals
+For the exact binary layout, see [crypto.md](./crypto.md).
 
-1. **Confidentiality**: TOTP secrets are encrypted and protected from unauthorized access
-2. **Integrity**: Vault data cannot be modified without detection
-3. **Authenticity**: Users verify their identity with passwords before vault access
-4. **Availability**: Users can always access their TOTP secrets with correct credentials
-5. **Auditability**: All critical operations are logged with clear error messages
-6. **Autonomy**: No cloud dependencies, complete local control
+## Threat model
 
-Vault loading accepts only regular files and reads no more than 10 MiB, which
-limits resource use for unexpected paths or oversized files. Vault updates are
-written to a unique temporary file and atomically replace the selected vault.
+### Protection provided
 
----
+If an attacker obtains only a copy of the encrypted vault, AES-GCM protects its
+contents from direct reading and detects changes to the encrypted payload.
+Argon2id increases the cost of each offline password guess. The random salt
+prevents precomputed password tables from being reused directly across vaults.
 
-## Threat Model
+These controls depend on the user's password, the cryptographic libraries, and
+the integrity of the machine on which the application runs. They do not make
+weak passwords unguessable or eliminate the risk of offline guessing.
 
-### In Scope (Threats We Protect Against)
+### Not protected against
 
-| Threat | Risk | Mitigation |
-|--------|------|-----------|
-| **Unauthorized file access** | Attacker reads vault file | AES-256-GCM encryption |
-| **Vault tampering** | Attacker modifies vault data | GCM authentication tag |
-| **Password guessing** | Attacker brute-force attempts | Argon2id KDF, password strength checks |
-| **Memory attacks** | Attacker accesses RAM during operation | Python runtime limitations, brief key retention |
-| **Side-channel attacks** | Timing/power analysis on encryption | Hardware/OS responsibility, use of standard libraries |
-| **Backup compromise** | Backups are stolen | Same encryption as primary vault |
-| **Weak password selection** | User chooses guessable password | zxcvbn-based strength enforcement |
+- Malware, a compromised operating system, keyloggers, or an attacker with
+  access to the machine while the vault is open.
+- Theft of a password from command-line arguments, a password file, shell
+  history, process inspection, or other system tooling. Prefer the interactive
+  prompt where available; protect password files with operating-system
+  permissions.
+- Recovery of passwords or erasure of secrets from Python process memory.
+- Clipboard history or other software that observes copied TOTP codes.
+- Rollback to an older valid vault file. There is no freshness or
+  anti-rollback mechanism.
+- Online rate limiting: password checks are local, and the application does
+  not impose a failed-attempt lockout.
+- Automatic migration of vaults without the current versioned header.
 
-### Out of Scope (Threats We Don't Address)
+## Password handling
 
-| Threat | Reason | Recommendation |
-|--------|--------|-----------------|
-| **Configuration tampering** | Config file protection is user responsibility | Protect ~/.config/d2fa/ with file permissions |
-| **Compromised host OS** | Cannot protect if OS is infected | Use trusted/verified operating system |
-| **Malware on system** | Malware can read any decrypted data | Use antivirus/keep system updated |
-| **Shoulder surfing** | Visual observation during password entry | User responsibility to secure workspace |
-| **Weak system password** | User's login password is weak | Use strong OS password |
-| **Stolen hardware** | Physical device theft with powered-on state | Use full-disk encryption + power off device |
-| **TOTP code interception** | TOTP code transmitted to 2FA service (not Desktop-2FA's responsibility) | Trust the service provider |
-| **Compromised dependencies** | Supply chain attack on libraries | Use from trusted sources (PyPI) |
+The CLI rejects empty passwords. For interactive creation and password
+changes, it evaluates the proposed password with `zxcvbn` and treats scores
+below 3 as weak. By default, a weak password triggers a warning and
+confirmation; setting `security.reject_weak_passwords = true` in
+`~/.config/d2fa/config.toml` rejects it instead.
 
----
+This strength check is limited to the interactive new-password flow.
+Passwords provided through `--password` or `--password-file` are not checked
+by `zxcvbn`. The check estimates guessability; it is not an entropy guarantee
+or proof that a password will resist attack. The `--allow-weak-passwords` flag
+and `D2FA_ALLOW_WEAK_PASSWORDS=1` environment variable bypass the interactive
+strength check.
 
-## Cryptographic Architecture
+The password is not stored in the vault. `d2fa vault unlock` only verifies it
+for that command; later commands still need a password or interactive prompt.
+Avoid `--password` where command-line arguments may be visible to other users
+or recorded by tooling.
 
-### Vault Encryption
+## Files and backups
 
-**Algorithm**: AES-256-GCM (Galois/Counter Mode)
+The application rejects non-regular vault paths and files larger than 10 MiB.
+When saving, it writes a unique temporary file in the destination directory,
+flushes the file, and replaces the destination. This reduces the chance of a
+partially written vault but does not protect against filesystem failure,
+malicious replacement, or rollback to an older copy.
 
-**Advantages**:
-- ✅ Authenticated encryption (AEAD)
-- ✅ Detects tampering automatically
-- ✅ Industry standard for secure vaults
-- ✅ Hardware-accelerated on modern CPUs
-- ✅ No padding oracle vulnerabilities
+The `d2fa backup` command loads and decrypts the source vault, then saves a
+separately encrypted backup using the same password. A backup therefore
+contains the same secrets and should be protected like the original. Keep
+backups in a location protected by operating-system permissions and, where
+appropriate, full-disk encryption. Test recovery before relying on a backup.
 
-**Key Size**: 256 bits (32 bytes)
+The application does not explicitly set vault or directory permissions in a
+portable way. Review and configure access permissions using the facilities of
+your operating system. On Unix-like systems, restrict the vault directory and
+file to the account that needs access.
 
-**Authentication Tag**: 128 bits (16 bytes) - prevents tampering
+## Cryptographic details
 
-**Nonce/IV**: 96 bits (12 bytes) - randomly generated per encryption
+The current vault format has a `D2FA` magic value, one-byte format version
+(`0x01`), a 16-byte salt, and an AES-GCM blob containing a 12-byte nonce,
+ciphertext, and 16-byte tag. The key derivation and encryption parameters are
+described in [crypto.md](./crypto.md).
 
-### Key Derivation
+The format does not use AES-GCM associated data for the header. The parser
+checks the magic and version, while the salt is used to derive the key. There
+is no separate authenticated-header mechanism, rollback protection, key
+ratchet, or forward secrecy.
 
-**Algorithm**: Argon2id (RFC 9106 compliant)
+Cryptographic operations use `argon2-cffi` and `cryptography`; randomness is
+obtained through Python's `os.urandom()`. Derivation time depends on the
+hardware and system load. This documentation makes no fixed timing or
+password-cracking cost claims.
 
-**Parameters**:
-- Time Cost: 4 (4 iterations)
-- Memory Cost: 128 MiB (prevents GPU/ASIC attacks)
-- Parallelism: 2 (two parallel threads)
-- Output Length: 32 bytes (256 bits)
-- Salt: Randomly generated, 16 bytes
+## Standards references
 
-**Advantages**:
-- ✅ Memory-hard (resistant to GPU brute-force)
-- ✅ Time-hard (slows down password guessing)
-- ✅ Winner of Password Hashing Competition (2015)
-- ✅ Resistant to side-channel attacks
-- ✅ Configurable security parameters
+The implementation uses algorithms specified by RFC 9106 (Argon2), NIST
+SP 800-38D (GCM), FIPS 197 (AES), and RFC 6238 (TOTP). These references
+describe standards; they do not imply that Desktop-2FA has been independently
+audited, validated, or certified as compliant.
 
-**Security Against Brute-Force**:
-- Single attempt: ~500ms (slow enough to deter attacks)
-- 1 million attempts: ~139 hours on single CPU
-- Dictionary attacks are similarly slowed
+## Security reporting
 
-### Password Strength Evaluation
-
-**Library**: zxcvbn (Dropbox's realistic password strength estimator)
-
-**Scoring**:
-```
-Score 0-2: Weak (easily guessable)
-Score 3-4: Strong (resistant to attacks)
-```
-
-**What zxcvbn Analyzes**:
-- Dictionary words (common passwords, user info)
-- Repeated patterns (111, aaa, qwerty)
-- Sequences (abc, 123, qwer)
-- L33t speak (p@ssw0rd)
-- Spatial patterns (keyboard walks)
-- Temporal patterns (dates, years)
-
-**Enforcement Modes**:
-1. **Warning Mode** (default)
-   - Weak passwords trigger yellow warning
-   - User can confirm continuation
-   - Non-blocking, respects user autonomy
-
-2. **Rejection Mode** (strict)
-   - Weak passwords rejected immediately
-   - Suitable for organizational policies
-   - Configured via `reject_weak_passwords` option
+Before publishing a suspected vulnerability, check the
+[GitHub repository's Security tab](https://github.com/wrogistefan/desktop-2fa/security)
+for current reporting instructions. Do not include real vault files, passwords,
+or TOTP secrets in a report.
 
 ---
 
-## Vault Format & File Structure
-
-### Header (Version 1)
-
-```
-Offset  Size  Content
-------  ----  -------
-0       4     Magic: 0xDEADBEEF
-4       1     Version: 0x01
-5       16    Salt (for key derivation)
-21      16    Nonce/IV (for encryption)
-37      16    Authentication Tag (for integrity)
-```
-
-**Total Header Size**: 53 bytes
-
-### Encrypted Data
-
-```
-Offset  Content
-------  -------
-53      JSON-serialized vault data (encrypted)
-```
-
-### Data Format
-
-```json
-{
-  "entries": [
-    {
-      "account_name": "GitHub",
-      "issuer": "GitHub",
-      "secret": "JBSWY3DPEHPK3PXP",
-      "period": 30,
-      "digits": 6,
-      "algorithm": "SHA1"
-    }
-  ]
-}
-```
-
----
-
-## Security Properties
-
-### Confidentiality
-
-**Guarantees**:
-- Vault file is meaningless without correct password
-- Brute-force attack requires millions of Argon2id computations
-- Each vault uses unique random salt and nonce
-
-**Key Length**: 256 bits (sufficient against quantum computers with Grover's algorithm for 128-bit security equivalent)
-
-### Integrity
-
-**Guarantees**:
-- Any modification to vault file is detectable
-- GCM authentication tag prevents tampering
-- Header hash ensures metadata integrity
-- Corrupted vault is rejected immediately
-
-**Detection**: Decryption fails → `ValueError: Authentication tag verification failed`
-
-### Authentication
-
-**Guarantees**:
-- User proves knowledge of password
-- Password verified through Argon2id derivation
-- Incorrect password produces wrong key → decryption fails
-- No "close guess" attacks possible
-
-**Attack Resistance**:
-- Each wrong password attempt costs ~500ms (slow)
-- No information leakage on partial password matches
-
-### Availability
-
-**Guarantees**:
-- Vault is always accessible with correct password
-- No external dependencies required
-- No time-based lockouts (don't exist)
-- Vault format is version-compatible
-
-**Limitations**:
-- Forgotten password → vault inaccessible (by design)
-- Recommendation: Store password in password manager
-
----
-
-## Operational Security
-
-### Password Management
-
-**Best Practices**:
-1. ✅ Use passphrases (4+ words): `Battery-Horse-Staple-Correct`
-2. ✅ Store in password manager (e.g., KeePass, Bitwarden)
-3. ✅ Use unique password (not reused elsewhere)
-4. ✅ Change password regularly (e.g., annually)
-5. ✅ Never share password via insecure channels
-
-**Weak Passwords to Avoid**:
-- ❌ Dictionary words: `password`, `admin`, `vault`
-- ❌ Keyboard patterns: `qwerty`, `asdfgh`
-- ❌ Numeric sequences: `123456`, `111111`
-- ❌ Personal info: birth dates, names, pet names
-- ❌ Common phrases: `password123`, `admin2024`
-
-### Vault Backup
-
-**Recommendation**: Back up the vault regularly and always before upgrading
-Desktop-2FA. Vaults created with version 0.6.0 and later are designed to remain
-compatible with newer releases, but compatibility is not a substitute for a
-backup.
-
-**Security**:
-- Backups are encrypted with same cipher as primary vault
-- Use same password as primary vault
-- Store backups in secure location (encrypted disk, password manager, secure cloud)
-
-**Backup Command**:
-```bash
-d2fa backup
-```
-
-**Manual Backup**:
-```bash
-cp ~/.desktop-2fa/vault ~/backups/vault.backup
-```
-
-### Configuration Security
-
-**Config Location**: `~/.config/d2fa/config.toml`
-
-**Security Considerations**:
-- Config file is NOT encrypted
-- Contains non-sensitive settings only
-- Do NOT store passwords in config
-- Protect config file permissions: `chmod 600`
-
-**Recommended Settings**:
-```toml
-[security]
-reject_weak_passwords = true  # Enforce strong passwords
-```
-
-### Vault File Permissions
-
-**Recommended Setup**:
-```bash
-# Vault directory permissions
-chmod 700 ~/.desktop-2fa/
-
-# Vault file permissions
-chmod 600 ~/.desktop-2fa/vault
-```
-
-**Why**:
-- `700` on directory: only owner can read/write/execute
-- `600` on file: only owner can read/write
-- Prevents accidental access by other users
-
----
-
-## Attack Scenarios
-
-### Scenario 1: Attacker Steals Vault File
-
-**Attacker's Goal**: Decrypt vault and obtain TOTP secrets
-
-**Obstacles**:
-1. Vault file is encrypted with AES-256-GCM
-2. Key is derived from password using Argon2id
-3. Argon2id is slow: ~500ms per attempt
-4. Brute-force attack would take weeks/months
-
-**Time Estimates** (single attacker, modern CPU):
-- Common password (entropy ~40 bits): ~5 minutes
-- Strong password (entropy ~60 bits): ~200 years
-- Excellent passphrase (entropy ~90 bits): ~200 million years
-
-**Mitigation**: Use strong password (score ≥ 3 in zxcvbn)
-
-### Scenario 2: Attacker Modifies Vault File
-
-**Attacker's Goal**: Inject malicious entry or change existing entry
-
-**Obstacles**:
-1. Modification requires decryption (need correct password)
-2. Any change to ciphertext invalidates authentication tag
-3. Decryption fails with integrity error
-4. No information leakage on partial modifications
-
-**Defense**: GCM authentication tag prevents tampering
-
-### Scenario 3: Attacker Observes Password Entry
-
-**Attacker's Goal**: Capture password during user input
-
-**Obstacles**:
-1. User enters password on trusted terminal
-2. Desktop-2FA uses `getpass` for secure entry
-3. Password not echoed to screen
-4. Password not stored in command history
-
-**Mitigation**: Use trusted workspace, disable terminal logging
-
-### Scenario 4: Attacker Performs Dictionary Attack
-
-**Attacker's Goal**: Guess password using dictionary
-
-**Obstacles**:
-1. Argon2id requires ~500ms per attempt
-2. 100,000 dictionary words = ~50,000 seconds = ~14 hours
-3. Attacker cannot parallelize effectively (memory-hard)
-
-**Defense**: Strong password makes dictionary attack infeasible
-
-### Scenario 5: User Forgets Password
-
-**Scenario**: User loses access to vault
-
-**Recovery Options**:
-1. ✅ Restore from backup (if available)
-2. ✅ Retrieve original secrets from service providers
-3. ❌ Recover password (cryptographically impossible - by design)
-
-**Prevention**: Store password in password manager
-
----
-
-## Cryptographic Review
-
-### Dependencies
-
-| Library | Purpose | Version | Audit |
-|---------|---------|---------|-------|
-| cryptography | AES-GCM, random | ≥42.0.0 | Regularly audited |
-| argon2-cffi | Argon2id KDF | ≥23.1.0 | Based on libargon2 |
-| zxcvbn-python | Password strength | ≥4.0.0 | Based on Dropbox zxcvbn |
-
-### Security Assumptions
-
-1. **Python random**: Uses OS `urandom()` (cryptographically secure)
-2. **cryptography library**: Maintained by Python Packaging Authority
-3. **OpenSSL backend**: Hardware-accelerated on modern systems
-4. **Argon2**: IETF RFC 9106 compliant reference implementation
-
-### Known Limitations
-
-1. **Python runtime**: GC/memory management not constant-time
-2. **Timing attacks**: Possible but mitigated by Argon2id design
-3. **Side-channels**: OS and hardware responsibility
-4. **Key stretching**: Tradeoff between security and usability
-
----
-
-## Security Updates & Advisories
-
-### Reporting Security Issues
-
-**DO NOT** open public GitHub issues for security vulnerabilities.
-
-**Process**:
-1. Email: security@desktop-2fa.org (if applicable)
-2. Include: CVE information, affected versions, reproduction steps
-3. Wait: 90 days for patch before public disclosure
-4. Credit: Your name/organization in security advisory
-
-### Version History
-
-| Version | Date | Changes |
-|---------|------|---------|
-| 0.8.3 | Oct 2026 | Early Textual UI prototype; no changes to vault encryption or storage format |
-| 0.8.2 | Oct 2026 | Configurable vault paths and vault file safety improvements |
-| 0.8.1 | Jan 2026 | zxcvbn password strength evaluation added |
-| 0.8.0 | Jan 2026 | Modular architecture and clipboard support |
-| 0.7.3 | Oct 2025 | Security hardening improvements |
-| 0.7.0 | Aug 2025 | Initial stable release |
-
----
-
-## Compliance & Standards
-
-### RFC Standards
-
-- **RFC 6238**: TOTP (Time-based One-Time Passwords)
-- **RFC 3394**: AES Key Wrap Algorithm
-- **RFC 9106**: Argon2 Password Hashing Function
-
-### Security Standards
-
-- **OWASP**: [Password Storage Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)
-- **NIST SP 800-63B**: Digital Identity Guidelines
-- **NIST SP 800-132**: Password-Based Key Derivation
-
-### Cryptographic Standards
-
-- **FIPS 197**: AES (Advanced Encryption Standard)
-- **FIPS 202**: SHA-3 (Secure Hash Algorithm 3)
-
----
-
-## Future Security Improvements
-
-### Planned Features
-
-1. **Hardware Security Module (HSM) Support**
-   - Optional YubiKey integration
-   - PIN-protected key material
-
-2. **Biometric Authentication**
-   - Fingerprint unlock (optional)
-   - Falls back to password
-
-3. **Time-based Lockout**
-   - After N failed attempts, rate-limit attempts
-   - Optional per configuration
-
-4. **Encryption at Rest**
-   - Multiple encryption keys for segments
-   - Key rotation capabilities
-
-5. **Audit Logging**
-   - Operation history (encrypted)
-   - Access time tracking
-
-### Research Areas
-
-1. Post-quantum cryptography (Argon2 already quantum-resistant)
-2. Zero-knowledge proofs for password verification
-3. Distributed trust (multiple shares of encryption key)
-
----
-
-## References
-
-### Academic Papers
-
-1. Biryukov, A., Dinu, D., & Khovratovich, D. (2016). "Argon2: The Memory-Hard, GPU-Resistant Password Hashing and Key Derivation Function"
-2. Wheeler, D. L. (2016). "zxcvbn: Low-Budget Password Strength Estimation"
-3. McGrew, D. A., & Viega, J. (2005). "The Galois/Counter Mode of Operation (GCM)"
-
-### Security Resources
-
-- [OWASP Top 10](https://owasp.org/www-project-top-ten/)
-- [OWASP CryptoCheatSheet](https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html)
-- [Crypto101](https://www.crypto101.io/) - Free cryptography course
-
-### Tools & Utilities
-
-- [KeePass](https://keepass.info/) - Password manager for storing Desktop-2FA password
-- [Bitwarden](https://bitwarden.com/) - Cross-platform password manager
-- [hashcat](https://hashcat.net/) - Reference for password strength estimation
-
----
-
-## Security Checklist
-
-### User Setup
-
-- [ ] Use strong password (score ≥ 3 in zxcvbn)
-- [ ] Store password in password manager
-- [ ] Set vault file permissions to 600
-- [ ] Set vault directory permissions to 700
-- [ ] Enable `reject_weak_passwords = true` in config (recommended)
-- [ ] Back up vault to secure location
-- [ ] Keep system and dependencies updated
-
-### System Setup
-
-- [ ] Use trusted operating system
-- [ ] Install antivirus/anti-malware
-- [ ] Enable full-disk encryption
-- [ ] Regular OS security updates
-- [ ] Firewall enabled and configured
-- [ ] Regular system backups
-
-### Operational
-
-- [ ] Change vault password regularly (annually)
-- [ ] Review backup strategy
-- [ ] Test password recovery process
-- [ ] Monitor for security advisories
-- [ ] Update Desktop-2FA regularly
-
----
-
-## Contact & Support
-
-For security-related questions or concerns:
-
-- **Email**: security@desktop-2fa.org (if applicable)
-- **GitHub Issues**: Use for non-security bugs/features
-- **Discussions**: GitHub Discussions for general questions
-
----
-
-**Last Updated**: January 2026
-**Version**: 1.0
-**Status**: Current
+This document describes the implementation at Desktop-2FA 0.8.3. Review it
+alongside the source code for the exact behavior of a particular release.

@@ -2,7 +2,7 @@
 
 ## Password Strength Policy
 
-Desktop-2FA enforces password strength requirements using the **zxcvbn** library, which estimates password guessability based on common patterns, dictionary words, sequences, and other attack vectors.
+Desktop-2FA includes optional password strength checks using the **zxcvbn** library, which estimates password guessability based on common patterns, dictionary words, sequences, and other attack vectors. These checks run in interactive password creation and change flows; they are not applied to passwords supplied through `--password` or `--password-file`.
 
 ### Strength Scoring
 
@@ -14,7 +14,7 @@ zxcvbn returns scores from 0 to 4:
 | 3 | **Good** | `MyVault#2024`, `Correct-Horse` | ✅ Acceptable |
 | 4 | **Excellent** | `Battery-Horse-Staple-Correct`, `unique+complex+long` | ⭐ Ideal |
 
-Desktop-2FA requires a **minimum score of 3** when creating or changing vault passwords.
+In the interactive flows that run this check, scores below 3 are treated as weak. The score is an estimate, not a guarantee of resistance to guessing; examples below are illustrative and their actual scores can vary.
 
 ### Password Strength Examples
 
@@ -81,6 +81,11 @@ d2fa change-password
 
 This mode is useful for testing but should NOT be used in production.
 
+Passwords passed through `--password` or `--password-file` bypass the zxcvbn
+check without requiring this flag or environment variable. Protect these
+inputs appropriately, and avoid command-line passwords where process arguments
+may be visible to other users or captured by tooling.
+
 ### Best Practices
 
 1. **Use Passphrases**: Longer passphrases are often stronger than complex single words
@@ -116,7 +121,7 @@ This setting is recognized and automatically mapped to zxcvbn score >= 3. No act
 
 - **zxcvbn Library**: Industry-standard password strength estimator
 - **Threshold**: Score < 3 is treated as weak
-- **Non-blocking (default)**: Weak passwords do NOT prevent vault creation
+- **Interactive default**: Weak passwords show a warning and require confirmation
 - **Rejection Mode**: Set `reject_weak_passwords = true` to enforce strict policies
 - **No Entropy Calculation**: Desktop-2FA uses zxcvbn exclusively; legacy entropy functions are not used
 
@@ -141,11 +146,11 @@ This setting is recognized and automatically mapped to zxcvbn score >= 3. No act
 If you discover a security vulnerability, please report it responsibly:
 
 1. Do NOT open a public GitHub issue
-2. Email security concerns to: security@desktop-2fa.org (if applicable)
+2. Check the [repository Security tab](https://github.com/wrogistefan/desktop-2fa/security) for current private reporting options
 3. Include steps to reproduce and potential impact
 4. Allow time for a fix before public disclosure
 
 ---
 
-**Last Updated:** January 2026
-**zxcvbn Integration:** v0.8.0
+**Last Updated:** October 2026
+**zxcvbn Integration:** v0.8.1

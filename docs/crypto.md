@@ -1,206 +1,123 @@
-# Cryptographic Contract
+# Cryptographic Design
 
-This document specifies the cryptographic implementation and security guarantees for Desktop 2FA.
+This document describes the vault format and cryptographic operations currently
+implemented by Desktop-2FA. It is an implementation description, not a security
+certification or a guarantee that future releases will preserve this format.
 
-## Overview
+## Summary
 
-Desktop 2FA uses a hybrid cryptographic system combining Argon2id key derivation with AES-GCM encryption to provide secure offline storage of TOTP secrets.
+The application derives a 256-bit key from the vault password with Argon2id and
+encrypts the serialized vault with AES-256-GCM. The vault is stored locally; the
+application has no server-side password verifier or key recovery service.
 
-## Security Goals
+## Algorithms and parameters
 
-- **Confidentiality**: TOTP secrets must remain inaccessible without the user passphrase
-- **Integrity**: Detect any tampering with stored data
-- **Authentication**: Ensure data authenticity and prevent replay attacks
-- **Forward Security**: Compromise of encrypted data should not reveal historical secrets
+### Key derivation
 
-## Cryptographic Primitives
+The implementation calls Argon2id through `argon2-cffi` with:
 
-### Key Derivation: Argon2id
+| Parameter | Value |
+|-----------|-------|
+| Variant | Argon2id |
+| Version | 19 (Argon2 1.3) |
+| Time cost | 4 |
+| Memory cost | 131,072 KiB (128 MiB) |
+| Parallelism | 2 |
+| Output length | 32 bytes |
+| Salt | 16 random bytes per save |
 
-**Algorithm**: Argon2id (version 1.3)
-**Purpose**: Derive a 256-bit encryption key from user passphrase
+The password is encoded as UTF-8 before derivation. These parameters make
+password guessing more expensive, but do not make a weak or reused password
+safe. Derivation time varies by hardware and system load; this project does not
+claim a fixed time per attempt or a specific attack cost.
 
-**Parameters**:
-- `time_cost`: 4 iterations
-- `memory_cost`: 131,072 KiB (128 MiB)
-- `parallelism`: 2 threads
-- `hash_len`: 32 bytes (256 bits)
-- `salt_len`: 16 bytes
+### Encryption
 
-**Rationale**:
-- Argon2id provides resistance against both CPU and GPU-based attacks
-- Parameters chosen to provide ~100ms derivation time on modern hardware (2025-era)
-- Memory cost of 128 MiB provides strong resistance to GPU attacks
-- Parallelism of 2 is suitable for most desktop systems
+Vault data is encrypted with AES-256-GCM using the 32-byte derived key and a
+fresh 12-byte nonce generated with `os.urandom()` for each save. The
+`cryptography` AES-GCM API appends a 16-byte authentication tag to the
+ciphertext. No associated authenticated data (AAD) is supplied.
 
-### Symmetric Encryption: AES-GCM
+AES-GCM provides confidentiality and detects modifications to the encrypted
+payload, subject to the security of the key and correct nonce use. Random
+nonces and salts make accidental reuse unlikely, not mathematically impossible.
 
-**Algorithm**: AES-256-GCM
-**Key Size**: 256 bits
-**Purpose**: Encrypt/decrypt vault data with authenticated encryption
+## Vault format, version 1
 
-**Parameters**:
-- `key`: 32 bytes (256 bits) derived from Argon2id
-- `nonce`: 12 bytes (96 bits) randomly generated per encryption
-- `tag`: 16 bytes (128 bits) authentication tag
+The serialized file is laid out as follows:
 
-**Format**: `nonce (12 bytes) + ciphertext + tag (16 bytes)`
+| Offset | Size | Content |
+|--------|------|---------|
+| 0 | 4 bytes | Magic value: ASCII `D2FA` |
+| 4 | 1 byte | Format version: `0x01` |
+| 5 | 16 bytes | Argon2id salt |
+| 21 | 12 bytes | AES-GCM nonce |
+| 33 | Variable | Encrypted JSON followed by the 16-byte GCM tag |
 
-**Rationale**:
-- AES-GCM provides authenticated encryption (confidentiality + integrity)
-- 256-bit key provides adequate security margin for the foreseeable future
-- 96-bit nonce provides 2^96 possible values, virtually eliminating collision risk
-- 128-bit authentication tag provides strong integrity guarantees
+The encrypted JSON represents the vault data model, including its entries and
+vault data version. The nonce, ciphertext, and tag are produced by the
+AES-GCM implementation as one blob after the magic, format version, and salt.
 
-## Vault File Format
+Loading currently accepts only the `D2FA` magic and format version `0x01`.
+There is no migration path in the current loader for older files that lack this
+header, nor support for other format versions.
 
-### ⚠️ IMPORTANT NOTICE — Vault Format Change (0.6.0)
+### Save and load
 
-Starting with desktop‑2fa 0.6.0, the vault file format has been fully audited and stabilized as part of the Vault Security Audit (Phases 1–5).
+On save, the application generates a 16-byte salt, derives a key, serializes
+the vault to JSON, encrypts it with AES-GCM using a random 12-byte nonce, and
+writes the header and encrypted blob to a temporary file before replacing the
+destination.
 
-This audit introduced a strict, versioned vault header and hardened cryptographic parameters.
+On load, it checks that the path is a regular file and reads at most 10 MiB. It
+then checks the magic and format version, derives the key from the supplied
+password and stored salt, decrypts the blob, and validates the JSON as vault
+data.
 
-As a result:
+The header is not supplied to AES-GCM as AAD. The magic and version are checked
+by the parser, and the salt is used for key derivation; the format does not
+provide a separate authenticated-header mechanism.
 
-Vaults created with versions prior to 0.6.0 are not compatible with 0.6.0+.
+## Security properties and limitations
 
-Older vaults did not include:
+- **Confidentiality:** A copy of the vault does not reveal its plaintext
+  entries without a successful password guess, assuming the cryptographic
+  libraries and the user's system are trustworthy.
+- **Payload integrity:** AES-GCM detects modifications to the encrypted
+  payload. A password failure and payload corruption both prevent successful
+  decryption; the application reports them as an invalid password or corrupted
+  vault as appropriate.
+- **No rollback protection:** An attacker able to replace the file can restore
+  an older valid copy. There is no monotonic counter or freshness check.
+- **No forward secrecy:** Re-encrypting a vault does not use a ratcheting key
+  scheme. A later compromise of the password and an available vault copy may
+  expose the entries in that copy.
+- **No online lockout:** Password verification is performed locally. There is
+  no server-side rate limit or failed-attempt lockout, so a stolen vault can
+  be attacked offline.
+- **Password strength checks are not universal:** The CLI's zxcvbn check is
+  applied to passwords entered through the interactive new-password prompt.
+  Passwords supplied with `--password` or `--password-file` are not checked by
+  that flow.
+- **Memory and host protections:** Python does not guarantee that password or
+  key material is securely erased from memory. The application does not
+  protect against malware, a compromised operating system, or observation of
+  decrypted entries and generated codes.
 
-- a version field in the header,
-- the finalized magic header (D2FA),
-- the audited Argon2id parameters,
-- the stable ciphertext layout introduced after the audit.
+## Dependencies and standards
 
-Because these fields are now required for safe parsing and forward compatibility, vaults created before the audit cannot be imported by current versions of the application.
+The implementation uses `argon2-cffi` for Argon2id and `cryptography` for
+AES-GCM. These algorithms are specified in RFC 9106 and NIST SP 800-38D
+respectively; AES is specified in FIPS 197. TOTP generation is implemented
+separately and follows the algorithm described in RFC 6238. Use of these
+algorithms does not by itself mean the application is certified or compliant
+with a particular security standard.
 
-This is intentional and was required to guarantee:
+## Compatibility
 
-- deterministic parsing rules,
-- safe rejection of malformed or ambiguous vaults,
-- future‑proofing for format evolution,
-- cryptographic correctness validated in the audit.
-
-#### What this means for users
-If your vault was created with 0.5.6 or earlier, it will be rejected as "unsupported format".
-
-You will need to initialize a new vault using `d2fa init-vault`.
-
-All vaults created with 0.6.0 and later include a versioned header and will remain compatible with future releases.
-
-#### Why no automatic migration?
-The pre‑audit vaults lacked the metadata required to safely migrate them:
-
-- no version field → impossible to reliably detect layout,
-- inconsistent Argon2id parameters → unsafe to reinterpret,
-- no stable header → cannot distinguish valid vaults from corrupted files,
-- ciphertext structure changed during the audit.
-
-Attempting to "guess" the format would introduce ambiguity and weaken the security guarantees established by the audit.
-
-#### Going forward
-From 0.6.0 onward:
-
-- every vault includes a versioned header,
-- the format is stable and forward‑compatible,
-- future changes will be handled through explicit version bumps,
-- no further breaking changes are expected.
-
-This ensures that vaults created today will remain readable in all future versions.
-
----
-
-### Structure
-```
-+-------------+-------------+---------------------+
-| Magic (4B)  | Version (1B)| Salt (16B)          |
-+-------------+-------------+---------------------+
-| Encrypted Blob (nonce + ciphertext + tag)     |
-+------------------------------------------------+
-```
-
-### Constants
-- `VAULT_MAGIC`: `b"D2FA"` (4 bytes)
-- `VAULT_VERSION`: `b"\x01"` (1 byte, current version)
-- `HEADER_LEN`: 5 bytes (magic + version)
-
-### Encryption Process
-1. Generate random 16-byte salt
-2. Derive 32-byte key using Argon2id(password, salt)
-3. Generate random 12-byte nonce
-4. Serialize vault data to JSON bytes
-5. Encrypt JSON bytes using AES-GCM(key, nonce)
-6. Concatenate: `magic + version + salt + nonce + ciphertext + tag`
-
-### Decryption Process
-1. Verify magic header (`D2FA`)
-2. Verify version (`\x01`)
-3. Extract salt (16 bytes)
-4. Derive key using Argon2id(password, salt)
-5. Extract encrypted blob (nonce + ciphertext + tag)
-6. Decrypt using AES-GCM(key, encrypted_blob)
-7. Parse decrypted JSON into VaultData structure
-
-## Security Guarantees
-
-### Vault Unlocking Security
-- Password authentication is mandated for every vault access, even during the unlock window
-- The unlock timeout requires explicit password provision via `--password` or `--password-file` options
-- The `.vault-unlocked` file contains only a timestamp and no sensitive data
-
-### Confidentiality
-- AES-256-GCM ensures that vault contents are unintelligible without the correct passphrase
-- Argon2id key derivation prevents brute-force attacks on weak passphrases
-
-### Integrity & Authentication
-- AES-GCM authentication tag detects any modification of encrypted data
-- Invalid password or corrupted data will fail decryption with high probability
-
-### Forward Security
-- Each encryption uses a unique random nonce and salt
-- Compromise of one vault file does not compromise others (even with same password)
-
-### Resistance to Attacks
-- **Offline Brute Force**: Argon2id parameters provide ~100ms minimum work per attempt
-- **GPU Attacks**: 128 MiB memory requirement makes GPU attacks economically unfeasible
-- **Rainbow Tables**: Per-vault salt prevents precomputation attacks
-- **Nonce Reuse**: Random 96-bit nonces prevent nonce reuse attacks
-
-## Implementation Notes
-
-### Dependencies
-- `cryptography` library for AES-GCM implementation
-- `argon2-cffi` library for Argon2id implementation
-
-### Error Handling
-- `InvalidPassword`: Raised when decryption fails (wrong password or corruption)
-- `CorruptedVault`: Raised when decrypted data fails JSON/Pydantic validation
-- `UnsupportedFormat`: Raised for invalid file format or version
-
-### Performance Characteristics
-- Key derivation: ~100ms on modern hardware
-- Encryption/Decryption: Fast (< 1ms for typical vault sizes)
-- Memory usage: ~128 MiB peak during key derivation
-
-## Compliance
-
-This implementation follows industry best practices:
-- NIST SP 800-38D (GCM mode)
-- RFC 9106 (Argon2)
-- OWASP recommendations for password hashing
-- RFC 6238 (TOTP, indirectly via secure secret storage)
-
-## Future Considerations
-
-### Parameter Updates
-Parameters may be updated in future versions to maintain security as hardware advances. Backward compatibility will be maintained through version negotiation.
-
-### Algorithm Migration
-If cryptographic weaknesses are discovered, migration paths will be provided to transition to stronger algorithms while maintaining data accessibility.
-
-## Contact
-
-For questions or support, contact us at contact@desktop-2fa.org
-
----
-
-*This contract is binding for all implementations of Desktop 2FA vault encryption.*
+The current loader supports vault format version 1 only. The version byte
+allows a future implementation to distinguish formats, but does not guarantee
+that future releases will support every older format. Back up the vault before
+upgrading. Vaults from releases before the versioned `D2FA` format are not
+accepted by the current loader; their contents must be recovered from another
+backup or re-created from the original TOTP providers.
