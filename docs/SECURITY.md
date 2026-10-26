@@ -137,5 +137,5 @@ report. For general questions and support, contact
 
 ---
 
-This document describes the implementation at Desktop-2FA 0.8.3. Review it
+This document describes the implementation at Desktop-2FA 0.8.4. Review it
 alongside the source code for the exact behavior of a particular release.

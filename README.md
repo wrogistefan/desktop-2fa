@@ -23,7 +23,7 @@ A secure, offline two-factor authentication (2FA) manager for desktop environmen
 | 📋 **Clipboard Support** | Automatic copying of TOTP codes to clipboard |
 | 🔓 **Stateless Design** | Vault contents require authentication; no long-lived sessions |
 | 🛡️ **Password Policy** | Configurable password strength enforcement with zxcvbn |
-| 🧪 **Well Tested** | 309 tests passing with comprehensive coverage |
+| 🧪 **Well Tested** | 312 tests passing with comprehensive coverage |
 | 📖 **Security Model** | Detailed threat analysis and cryptographic design documentation |
 | 🖥️ **Textual UI** | Early prototype for listing accounts and generating or copying TOTP codes |
 
@@ -57,7 +57,7 @@ Verify installation:
 
 ```bash
 python -c "import desktop_2fa; print(desktop_2fa.__version__)"
-# Output: 0.8.3
+# Output: 0.8.4
 ```
 
 ### Basic Usage
@@ -118,10 +118,15 @@ path. Vault files must be regular files no larger than 10 MiB.
 
 ### Before Upgrading
 
-Vaults created with Desktop-2FA 0.6.0 and later are designed to remain
-compatible with newer releases. Even so, before upgrading, we strongly
-recommend creating an encrypted backup and storing it securely. Compatibility
-is not a substitute for a backup.
+The current loader supports vault format version 1. Future releases are not
+guaranteed to support every older format. Before upgrading, create an encrypted
+backup and store it securely.
+
+Desktop-2FA 0.8.4 changes the public Python API: `Vault.save()` and
+`Vault.load()` require an explicit, non-empty password. Vaults created by
+earlier Python API versions with no password must be opened and re-saved with a
+non-empty password using the previous release before upgrading. CLI and
+Textual UI flows already require a non-empty password.
 
 ```bash
 d2fa backup
@@ -206,7 +211,7 @@ The vault uses:
 - **AES-256-GCM** for authenticated encryption
 - **Argon2id** for key derivation (time_cost=4, memory_cost=128MiB, parallelism=2)
 - **zxcvbn** for password strength evaluation
-- **Versioned header** for forward compatibility
+- **Versioned header** to identify the vault format
 
 Every command that accesses vault contents requires password authentication.
 Path and version queries do not access vault contents. No session-based access.
@@ -244,8 +249,9 @@ When `reject_weak_passwords = true`:
 If you have `min_password_entropy` set in your config (legacy option), it is recognized and treated as equivalent to requiring zxcvbn score >= 3.
 
 ### Security Hardening
-Version 0.8.2 added bounded vault loading and atomic saves; version 0.8.3 adds
-the early Textual UI prototype:
+Version 0.8.2 added bounded vault loading and atomic saves; version 0.8.3 added
+the early Textual UI prototype; version 0.8.4 requires explicit, non-empty
+passwords in the public Python vault API:
 - Empty passwords are immediately rejected with a clear error message
 - Permission errors are distinguished from missing vault files
 - Vault loading accepts only regular files and reads at most 10 MiB

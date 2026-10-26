@@ -6,11 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.4] — Vault API Password Hardening (2026-10-26)
+
 ### 🛡️ Security
 
 - Vault API `save()` and `load()` now require an explicit, non-empty password.
   Vaults created by older API versions without a password must be re-saved with
   a non-empty password using the previous release before upgrading.
+- AES-GCM authentication failures now have explicit regression coverage,
+  separate from decrypted vault data validation failures.
+- Security documentation now clarifies CLI password-strength warnings,
+  passwordless API compatibility, and security reporting contacts.
 
 ## [0.8.3] — Early Textual UI Prototype
 
