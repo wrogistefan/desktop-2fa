@@ -59,10 +59,21 @@ confirmation; setting `security.reject_weak_passwords = true` in
 
 This strength check is limited to the interactive new-password flow.
 Passwords provided through `--password` or `--password-file` are not checked
-by `zxcvbn`. The check estimates guessability; it is not an entropy guarantee
-or proof that a password will resist attack. The `--allow-weak-passwords` flag
-and `D2FA_ALLOW_WEAK_PASSWORDS=1` environment variable bypass the interactive
-strength check.
+by the creation/change enforcement flow. However, if
+`security.warn_on_weak_existing_passwords = true`, `d2fa vault unlock` also
+evaluates the existing password and warns when its zxcvbn score is below 3,
+including passwords supplied with those options. The score estimates
+guessability; it is not an entropy guarantee or proof that a password will
+resist attack. The `--allow-weak-passwords` flag and
+`D2FA_ALLOW_WEAK_PASSWORDS=1` environment variable bypass the interactive
+creation/change strength check.
+
+The public `Vault.save()` and `Vault.load()` API require an explicit, non-empty
+password. Omitting the argument raises `TypeError`; passing an empty string
+raises `ValueError`. Earlier versions allowed the API to create vaults with an
+empty password. Such vaults must be opened and re-saved with a non-empty
+password using the previous release before upgrading; the current API will not
+open them.
 
 The password is not stored in the vault. `d2fa vault unlock` only verifies it
 for that command; later commands still need a password or interactive prompt.
@@ -94,6 +105,10 @@ The current vault format has a `D2FA` magic value, one-byte format version
 (`0x01`), a 16-byte salt, and an AES-GCM blob containing a 12-byte nonce,
 ciphertext, and 16-byte tag. The key derivation and encryption parameters are
 described in [crypto.md](./crypto.md).
+
+AES-GCM authentication failures (including wrong passwords and modified
+encrypted payloads) raise `InvalidPassword`. `CorruptedVault` is raised only
+when decryption succeeds but JSON or vault-model validation fails.
 
 The format does not use AES-GCM associated data for the header. The parser
 checks the magic and version, while the salt is used to derive the key. There

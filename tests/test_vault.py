@@ -8,6 +8,8 @@ from desktop_2fa.vault import Vault
 from desktop_2fa.vault.models import TotpEntry, VaultData
 from desktop_2fa.vault.vault import MAX_VAULT_SIZE, UnsupportedFormat
 
+TEST_PASSWORD = "test-vault-password"
+
 
 def _track_temp_paths(monkeypatch: Any) -> list[Path]:
     original_mkstemp = tempfile.mkstemp
@@ -27,9 +29,9 @@ def test_vault_roundtrip(tmp_path: Path) -> None:
 
     vault = Vault()
     vault.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP")
-    vault.save(str(path))
+    vault.save(str(path), TEST_PASSWORD)
 
-    loaded = Vault.load(str(path))
+    loaded = Vault.load(str(path), TEST_PASSWORD)
     entry = loaded.get_entry("GitHub")
     assert entry.secret == "JBSWY3DPEHPK3PXP"
 
@@ -42,9 +44,9 @@ def test_vault_save_does_not_overwrite_tmp_sibling(tmp_path: Path) -> None:
 
     vault = Vault()
     vault.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP")
-    vault.save(path)
+    vault.save(path, TEST_PASSWORD)
 
-    assert Vault.load(path).get_entry("GitHub").secret == "JBSWY3DPEHPK3PXP"
+    assert Vault.load(path, TEST_PASSWORD).get_entry("GitHub").secret == "JBSWY3DPEHPK3PXP"
     assert sibling_path.read_bytes() == sibling_content
     assert list(tmp_path.glob(".vault.bin.*.tmp")) == []
 
@@ -63,7 +65,7 @@ def test_vault_save_failure_preserves_selected_tmp_file(
 
     monkeypatch.setattr("os.fsync", fail_fsync)
     with pytest.raises(Exception, match="Failed to save vault"):
-        vault.save(path)
+        vault.save(path, TEST_PASSWORD)
 
     assert path.read_bytes() == original_content
     assert list(tmp_path.glob(".vault.tmp.*.tmp")) == []
@@ -75,7 +77,7 @@ def test_vault_load_rejects_oversized_file(tmp_path: Path) -> None:
         vault_file.truncate(MAX_VAULT_SIZE + 1)
 
     with pytest.raises(UnsupportedFormat, match="exceeds maximum"):
-        Vault.load(path)
+        Vault.load(path, TEST_PASSWORD)
 
 
 def test_vault_file_is_binary(tmp_path: Path) -> None:
@@ -83,7 +85,7 @@ def test_vault_file_is_binary(tmp_path: Path) -> None:
 
     vault = Vault()
     vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
-    vault.save(str(path))
+    vault.save(str(path), TEST_PASSWORD)
 
     raw = path.read_bytes()
     assert raw != b""
@@ -104,7 +106,7 @@ def test_vault_load_rejects_non_regular_files(tmp_path: Path, monkeypatch: Any) 
     )
 
     with pytest.raises(UnsupportedFormat, match="not a regular file"):
-        Vault.load(path)
+        Vault.load(path, TEST_PASSWORD)
 
 
 def test_vault_load_rejects_files_over_size_limit(tmp_path: Path) -> None:
@@ -114,7 +116,7 @@ def test_vault_load_rejects_files_over_size_limit(tmp_path: Path) -> None:
     path.write_bytes(b"x" * (MAX_VAULT_SIZE + 1))
 
     with pytest.raises(UnsupportedFormat, match="exceeds maximum supported size"):
-        Vault.load(path)
+        Vault.load(path, TEST_PASSWORD)
 
 
 def test_vault_save_supports_path_ending_in_tmp(tmp_path: Path) -> None:
@@ -122,9 +124,9 @@ def test_vault_save_supports_path_ending_in_tmp(tmp_path: Path) -> None:
     vault = Vault()
     vault.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP")
 
-    vault.save(path)
+    vault.save(path, TEST_PASSWORD)
 
-    assert Vault.load(path).get_entry("GitHub").secret == "JBSWY3DPEHPK3PXP"
+    assert Vault.load(path, TEST_PASSWORD).get_entry("GitHub").secret == "JBSWY3DPEHPK3PXP"
 
 
 def test_vault_tampering_detection(tmp_path: Path) -> None:
@@ -132,14 +134,14 @@ def test_vault_tampering_detection(tmp_path: Path) -> None:
 
     vault = Vault()
     vault.add_entry("X", "X", "JBSWY3DPEHPK3PXP")
-    vault.save(str(path))
+    vault.save(str(path), TEST_PASSWORD)
 
     raw = bytearray(path.read_bytes())
     raw[10] ^= 0xFF  # celowa korupcja
     path.write_bytes(raw)
 
     with pytest.raises(Exception):
-        Vault.load(str(path))
+        Vault.load(str(path), TEST_PASSWORD)
 
 
 def test_totp_entry_invalid_secret() -> None:
@@ -164,7 +166,7 @@ def test_vault_load_invalid_magic_header(tmp_path: Path) -> None:
     with pytest.raises(
         Exception, match="Invalid vault file format: incorrect magic header"
     ):
-        Vault.load(str(path))
+        Vault.load(str(path), TEST_PASSWORD)
 
 
 def test_vault_load_unsupported_version(tmp_path: Path) -> None:
@@ -175,7 +177,7 @@ def test_vault_load_unsupported_version(tmp_path: Path) -> None:
     path.write_bytes(invalid_data)
 
     with pytest.raises(Exception, match="Unsupported vault file version"):
-        Vault.load(str(path))
+        Vault.load(str(path), TEST_PASSWORD)
 
 
 def test_vault_load_empty_encrypted_blob(tmp_path: Path) -> None:
@@ -186,7 +188,7 @@ def test_vault_load_empty_encrypted_blob(tmp_path: Path) -> None:
     path.write_bytes(invalid_data)
 
     with pytest.raises(Exception, match="Vault file is invalid: empty encrypted blob"):
-        Vault.load(str(path))
+        Vault.load(str(path), TEST_PASSWORD)
 
 
 def test_vault_load_corrupted_json_data(tmp_path: Path) -> None:
@@ -208,7 +210,7 @@ def test_vault_load_corrupted_json_data(tmp_path: Path) -> None:
     path.write_bytes(valid_data)
 
     with pytest.raises(Exception, match="Invalid password or corrupted vault"):
-        Vault.load(str(path))
+        Vault.load(str(path), TEST_PASSWORD)
 
 
 def test_vault_save_io_error(tmp_path: Path, monkeypatch: Any) -> None:
@@ -224,7 +226,7 @@ def test_vault_save_io_error(tmp_path: Path, monkeypatch: Any) -> None:
     monkeypatch.setattr("tempfile.mkstemp", mock_mkstemp)
 
     with pytest.raises(Exception, match="Failed to save vault: Permission denied"):
-        vault.save(str(path))
+        vault.save(str(path), TEST_PASSWORD)
 
 
 def test_vault_save_cleanup_on_error(tmp_path: Path, monkeypatch: Any) -> None:
@@ -241,7 +243,7 @@ def test_vault_save_cleanup_on_error(tmp_path: Path, monkeypatch: Any) -> None:
     monkeypatch.setattr("os.fdopen", mock_fdopen)
 
     with pytest.raises(Exception, match="Failed to save vault: Write error"):
-        vault.save(str(path))
+        vault.save(str(path), TEST_PASSWORD)
 
     # Temporary file should be cleaned up
     assert len(temp_paths) == 1
@@ -286,7 +288,7 @@ def test_vault_save_os_level_errors(tmp_path: Path, monkeypatch: Any) -> None:
     with pytest.raises(
         Exception, match="Failed to save vault: No space left on device"
     ):
-        vault.save(str(path))
+        vault.save(str(path), TEST_PASSWORD)
 
 
 def test_vault_save_cleanup_on_os_error(tmp_path: Path, monkeypatch: Any) -> None:
@@ -303,7 +305,7 @@ def test_vault_save_cleanup_on_os_error(tmp_path: Path, monkeypatch: Any) -> Non
     monkeypatch.setattr("os.fsync", mock_fsync)
 
     with pytest.raises(Exception, match="Failed to save vault:"):
-        vault.save(str(path))
+        vault.save(str(path), TEST_PASSWORD)
 
     # Temporary file should be cleaned up
     assert len(temp_paths) == 1
@@ -333,42 +335,37 @@ def test_vault_load_json_validation_edge_cases(tmp_path: Path) -> None:
         Vault.load(str(path), password="test_password")
 
 
-def test_vault_load_no_password_default(tmp_path: Path) -> None:
-    path = tmp_path / "vault.bin"
-
-    vault = Vault()
-    vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
-    vault.save(str(path), password=None)  # Save with no password
-
-    # Load with no password (should use default empty string)
-    loaded = Vault.load(str(path), password=None)
-    entry = loaded.get_entry("Test")
-    assert entry.secret == "JBSWY3DPEHPK3PXP"
+@pytest.mark.parametrize(("password", "error"), [("", ValueError), (None, TypeError)])
+def test_vault_load_rejects_empty_or_missing_password(
+    tmp_path: Path, password: str | None, error: type[Exception]
+) -> None:
+    with pytest.raises(error, match="Password"):
+        Vault.load(tmp_path / "vault.bin", password)  # type: ignore[arg-type]
 
 
-def test_vault_save_no_password_default(tmp_path: Path) -> None:
-    path = tmp_path / "vault.bin"
+@pytest.mark.parametrize(("password", "error"), [("", ValueError), (None, TypeError)])
+def test_vault_save_rejects_empty_or_missing_password(
+    tmp_path: Path, password: str | None, error: type[Exception]
+) -> None:
+    with pytest.raises(error, match="Password"):
+        Vault().save(tmp_path / "vault.bin", password)  # type: ignore[arg-type]
 
-    vault = Vault()
-    vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
 
-    # Save with no password (should use default empty string)
-    vault.save(str(path), password=None)
+def test_vault_save_requires_password_argument(tmp_path: Path) -> None:
+    with pytest.raises(TypeError):
+        Vault().save(tmp_path / "vault.bin")  # type: ignore[call-arg]
 
-    # File should be created
-    assert path.exists()
 
-    # Should be able to load with no password
-    loaded = Vault.load(str(path), password=None)
-    entry = loaded.get_entry("Test")
-    assert entry.secret == "JBSWY3DPEHPK3PXP"
+def test_vault_load_requires_password_argument(tmp_path: Path) -> None:
+    with pytest.raises(TypeError):
+        Vault.load(tmp_path / "vault.bin")  # type: ignore[call-arg]
 
 
 def test_vault_load_file_not_found(tmp_path: Path) -> None:
     path = tmp_path / "nonexistent.bin"
 
     with pytest.raises(Exception, match="Vault file not found"):
-        Vault.load(str(path))
+        Vault.load(str(path), TEST_PASSWORD)
 
 
 def test_vault_load_file_too_short(tmp_path: Path) -> None:
@@ -379,7 +376,7 @@ def test_vault_load_file_too_short(tmp_path: Path) -> None:
     path.write_bytes(short_data)
 
     with pytest.raises(Exception, match="Vault file is too short or invalid format"):
-        Vault.load(str(path))
+        Vault.load(str(path), TEST_PASSWORD)
 
 
 def test_vault_add_entry_duplicate_name() -> None:
@@ -405,10 +402,10 @@ def test_vault_load_duplicate_names_warning(tmp_path: Path, capsys: Any) -> None
         ]
     )
     vault = Vault(data)
-    vault.save(str(path))
+    vault.save(str(path), TEST_PASSWORD)
 
     # Load the vault - should show warning but succeed
-    loaded = Vault.load(str(path))
+    loaded = Vault.load(str(path), TEST_PASSWORD)
 
     # Check that warning was printed
     captured = capsys.readouterr()
@@ -437,7 +434,7 @@ def test_vault_load_permission_error(tmp_path: Path, monkeypatch: Any) -> None:
 
     monkeypatch.setattr("os.open", mock_open)
     with pytest.raises(Exception, match="Cannot access vault file"):
-        Vault.load(str(path))
+        Vault.load(str(path), TEST_PASSWORD)
 
 
 def test_vault_load_os_error(tmp_path: Path, monkeypatch: Any) -> None:
@@ -448,7 +445,7 @@ def test_vault_load_os_error(tmp_path: Path, monkeypatch: Any) -> None:
 
     monkeypatch.setattr("os.open", mock_open)
     with pytest.raises(Exception, match="Failed to read vault file"):
-        Vault.load(str(path))
+        Vault.load(str(path), TEST_PASSWORD)
 
 
 def test_vault_save_permission_error_cleanup(tmp_path: Path, monkeypatch: Any) -> None:
@@ -466,7 +463,7 @@ def test_vault_save_permission_error_cleanup(tmp_path: Path, monkeypatch: Any) -
     monkeypatch.setattr("os.replace", mock_replace)
 
     with pytest.raises(PermissionDenied):
-        vault.save(str(path))
+        vault.save(str(path), TEST_PASSWORD)
 
     # Temp file should be cleaned up
     assert len(temp_paths) == 1
@@ -489,7 +486,7 @@ def test_vault_save_os_error_cleanup(tmp_path: Path, monkeypatch: Any) -> None:
     monkeypatch.setattr("os.fdopen", mock_fdopen)
 
     with pytest.raises(VaultIOError):
-        vault.save(str(path))
+        vault.save(str(path), TEST_PASSWORD)
 
     # Temp file should be cleaned up
     assert len(temp_paths) == 1
@@ -524,7 +521,7 @@ def test_vault_save_os_error_cleanup_on_unlink_failure(
     monkeypatch.setattr("pathlib.Path.unlink", mock_unlink)
 
     with pytest.raises(VaultIOError):
-        vault.save(str(path))
+        vault.save(str(path), TEST_PASSWORD)
 
     # The test passes if VaultIOError is raised (unlink failure doesn't propagate)
 
@@ -552,6 +549,6 @@ def test_vault_save_permission_error_cleanup_on_unlink_failure(
     monkeypatch.setattr("pathlib.Path.unlink", mock_unlink)
 
     with pytest.raises(PermissionDenied):
-        vault.save(str(path))
+        vault.save(str(path), TEST_PASSWORD)
 
     # The test passes if PermissionDenied is raised (unlink failure doesn't propagate)

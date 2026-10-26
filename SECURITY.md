@@ -2,7 +2,7 @@
 
 ## Password Strength Policy
 
-Desktop-2FA includes optional password strength checks using the **zxcvbn** library, which estimates password guessability based on common patterns, dictionary words, sequences, and other attack vectors. These checks run in interactive password creation and change flows; they are not applied to passwords supplied through `--password` or `--password-file`.
+Desktop-2FA includes optional password strength checks using the **zxcvbn** library, which estimates password guessability based on common patterns, dictionary words, sequences, and other attack vectors. Enforcement runs in interactive password creation and change flows; passwords supplied through `--password` or `--password-file` bypass that enforcement. When `security.warn_on_weak_existing_passwords = true`, `d2fa vault unlock` may still evaluate an existing password and display a warning.
 
 ### Strength Scoring
 
@@ -81,10 +81,22 @@ d2fa change-password
 
 This mode is useful for testing but should NOT be used in production.
 
-Passwords passed through `--password` or `--password-file` bypass the zxcvbn
-check without requiring this flag or environment variable. Protect these
-inputs appropriately, and avoid command-line passwords where process arguments
-may be visible to other users or captured by tooling.
+Passwords passed through `--password` or `--password-file` bypass interactive
+creation/change enforcement without requiring this flag or environment
+variable. The optional existing-password warning on `d2fa vault unlock` can
+still evaluate them. Protect these inputs appropriately, and avoid
+command-line passwords where process arguments may be visible to other users
+or captured by tooling.
+
+The public Python `Vault.save()` and `Vault.load()` API require an explicit,
+non-empty password. Omitting the argument raises `TypeError`; passing an empty
+string raises `ValueError`. Passwordless vaults created by older API versions
+must be re-saved with a non-empty password using the previous release before
+upgrading; the current API will not open them.
+
+AES-GCM authentication failures, including wrong passwords and modified
+encrypted payloads, raise `InvalidPassword`. `CorruptedVault` is raised only
+when decryption succeeds but JSON or vault-model validation fails.
 
 ### Best Practices
 
@@ -122,6 +134,7 @@ This setting is recognized and automatically mapped to zxcvbn score >= 3. No act
 - **zxcvbn Library**: Industry-standard password strength estimator
 - **Threshold**: Score < 3 is treated as weak
 - **Interactive default**: Weak passwords show a warning and require confirmation
+- **Existing-password warning**: `d2fa vault unlock` can check the existing password when `warn_on_weak_existing_passwords = true`
 - **Rejection Mode**: Set `reject_weak_passwords = true` to enforce strict policies
 - **No Entropy Calculation**: Desktop-2FA uses zxcvbn exclusively; legacy entropy functions are not used
 

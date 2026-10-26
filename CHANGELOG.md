@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### 🛡️ Security
+
+- Vault API `save()` and `load()` now require an explicit, non-empty password.
+  Vaults created by older API versions without a password must be re-saved with
+  a non-empty password using the previous release before upgrading.
+
 ## [0.8.3] — Early Textual UI Prototype
 
 ### 🆕 Added

@@ -81,12 +81,16 @@ provide a separate authenticated-header mechanism.
 ## Security properties and limitations
 
 - **Confidentiality:** A copy of the vault does not reveal its plaintext
-  entries without a successful password guess, assuming the cryptographic
-  libraries and the user's system are trustworthy.
+  entries without a successful guess of the non-empty password used to save
+  it, assuming the cryptographic libraries and the user's system are
+  trustworthy. The public `Vault.save()` and `Vault.load()` API now require an
+  explicit, non-empty password; omitting it raises `TypeError`, and an empty
+  string is rejected.
 - **Payload integrity:** AES-GCM detects modifications to the encrypted
-  payload. A password failure and payload corruption both prevent successful
-  decryption; the application reports them as an invalid password or corrupted
-  vault as appropriate.
+  payload. A wrong password or modified encrypted payload fails AES-GCM
+  authentication and raises `InvalidPassword`. `CorruptedVault` is raised
+  only after successful decryption when the JSON or vault model fails
+  validation.
 - **No rollback protection:** An attacker able to replace the file can restore
   an older valid copy. There is no monotonic counter or freshness check.
 - **No forward secrecy:** Re-encrypting a vault does not use a ratcheting key
@@ -95,10 +99,12 @@ provide a separate authenticated-header mechanism.
 - **No online lockout:** Password verification is performed locally. There is
   no server-side rate limit or failed-attempt lockout, so a stolen vault can
   be attacked offline.
-- **Password strength checks are not universal:** The CLI's zxcvbn check is
-  applied to passwords entered through the interactive new-password prompt.
-  Passwords supplied with `--password` or `--password-file` are not checked by
-  that flow.
+- **Password strength checks are not universal:** The CLI's zxcvbn strength
+  enforcement runs for passwords entered through interactive creation or
+  change-password prompts. Passwords supplied with `--password` or
+  `--password-file` bypass those creation/change checks. An optional warning
+  for existing passwords may still evaluate them during `d2fa vault unlock`
+  when `security.warn_on_weak_existing_passwords` is enabled.
 - **Memory and host protections:** Python does not guarantee that password or
   key material is securely erased from memory. The application does not
   protect against malware, a compromised operating system, or observation of
@@ -121,3 +127,10 @@ that future releases will support every older format. Back up the vault before
 upgrading. Vaults from releases before the versioned `D2FA` format are not
 accepted by the current loader; their contents must be recovered from another
 backup or re-created from the original TOTP providers.
+
+Earlier versions of the Python API allowed callers to omit the password,
+creating a vault encrypted with an empty password. The current API rejects
+omitted and empty passwords, so those passwordless API-created vaults cannot
+be opened by this release. If such a vault contains data you need, use the
+previous release to open and re-save it with a non-empty password before
+upgrading.
