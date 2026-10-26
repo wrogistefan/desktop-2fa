@@ -51,7 +51,9 @@ def test_vault_save_does_not_overwrite_tmp_sibling(tmp_path: Path) -> None:
     vault.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP")
     vault.save(path, TEST_PASSWORD)
 
-    assert Vault.load(path, TEST_PASSWORD).get_entry("GitHub").secret == "JBSWY3DPEHPK3PXP"
+    assert (
+        Vault.load(path, TEST_PASSWORD).get_entry("GitHub").secret == "JBSWY3DPEHPK3PXP"
+    )
     assert sibling_path.read_bytes() == sibling_content
     assert list(tmp_path.glob(".vault.bin.*.tmp")) == []
 
@@ -131,7 +133,9 @@ def test_vault_save_supports_path_ending_in_tmp(tmp_path: Path) -> None:
 
     vault.save(path, TEST_PASSWORD)
 
-    assert Vault.load(path, TEST_PASSWORD).get_entry("GitHub").secret == "JBSWY3DPEHPK3PXP"
+    assert (
+        Vault.load(path, TEST_PASSWORD).get_entry("GitHub").secret == "JBSWY3DPEHPK3PXP"
+    )
 
 
 def test_vault_tampering_detection(tmp_path: Path) -> None:
