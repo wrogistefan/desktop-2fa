@@ -106,7 +106,9 @@ def remove_entry(path: Path, name: str, password: str) -> None:
     print(f"Removed entry: {name}")
 
 
-def rename_entry(path: Path, old: str, new: str, password: str) -> None:
+def rename_entry(
+    path: Path, old: str, new: str, password: str, *, index: int | None = None
+) -> None:
     """Rename an entry in the vault.
 
     Args:
@@ -114,11 +116,10 @@ def rename_entry(path: Path, old: str, new: str, password: str) -> None:
         old: The current name of the entry.
         new: The new name for the entry.
         password: Password to decrypt the vault.
+        index: Optional one-based index shown by list --indices.
     """
     vault = Vault.load(path, password)
-    entry = vault.get_entry(old)
-    entry.account_name = new
-    entry.issuer = new
+    vault.rename_entry(old, new, index=index)
 
     vault.save(path, password)
     print(f"Renamed '{old}' → '{new}'")
@@ -497,15 +498,20 @@ def print_header(message: str) -> None:
     rprint(Text(message, style="bold white"))
 
 
-def print_entries_table(entries: list["TotpEntry"]) -> None:
+def print_entries_table(
+    entries: list["TotpEntry"], *, show_indices: bool = False
+) -> None:
     """Print entries in a formatted table."""
     if not entries:
         print_info("No entries found.")
         return
 
-    # For now, print simple format to keep tests passing
-    for entry in entries:
-        print(f"- {entry.account_name} ({entry.issuer})")
+    for index, entry in enumerate(entries, start=1):
+        if show_indices:
+            # Escape line breaks so one numbered record stays on one line.
+            print(f"[{index}] {entry.account_name!r} ({entry.issuer!r})")
+        else:
+            print(f"- {entry.account_name} ({entry.issuer})")
 
 
 def validate_base32(secret: str) -> bool:

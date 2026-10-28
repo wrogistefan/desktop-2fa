@@ -743,14 +743,16 @@ def test_rename_entry_with_duplicates_aborts(
     vault.data.entries.append(entry2)
     vault.save(fake_vault_env, TEST_PASSWORD)
 
-    # Try to rename - should abort with error message
-    commands.rename_entry("GitHub", "NewName", fake_ctx)
+    # Ambiguity must still refuse mutation; validation errors now exit with 6.
+    import typer
+
+    with pytest.raises(typer.Exit) as err:
+        commands.rename_entry("GitHub", "NewName", fake_ctx)
+    assert err.value.exit_code == 6
 
     out = capsys.readouterr().out.strip()
-    assert (
-        "Multiple entries named 'GitHub' exist. Operation aborted. Resolve duplicates first."
-        in out
-    )
+    assert "Ambiguous entry 'GitHub'" in out
+    assert "--index N" in out
 
     # Verify no entry was renamed (vault unchanged)
     vault = helpers.load_vault(fake_vault_env, TEST_PASSWORD)

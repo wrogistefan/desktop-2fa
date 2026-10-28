@@ -17,6 +17,7 @@ from desktop_2fa.vault.password_strength import evaluate_password_strength
 from desktop_2fa.vault.vault import (
     AmbiguousEntry,
     CorruptedVault,
+    EntryRenameError,
     InvalidPassword,
     PermissionDenied,
     UnsupportedFormat,
@@ -231,7 +232,7 @@ def add_entry_interactive(
             helpers.print_error("Failed to access vault file.")
 
 
-def list_entries(ctx: typer.Context) -> None:
+def list_entries(ctx: typer.Context, *, show_indices: bool = False) -> None:
     """List all entries in the vault.
 
     Args:
@@ -312,7 +313,7 @@ def list_entries(ctx: typer.Context) -> None:
                 helpers.print_error("Failed to access vault file.")
             return
         if vault.entries:
-            helpers.print_entries_table(vault.entries)
+            helpers.print_entries_table(vault.entries, show_indices=show_indices)
         else:
             if interactive:
                 helpers.print_info("No entries found.")
@@ -612,13 +613,16 @@ def remove_entry(name: str, ctx: typer.Context) -> None:
         helpers.print_error("Failed to access vault file.")
 
 
-def rename_entry(old: str, new: str, ctx: typer.Context) -> None:
+def rename_entry(
+    old: str, new: str, ctx: typer.Context, *, index: int | None = None
+) -> None:
     """Rename an entry in the vault.
 
     Args:
         old: The current name of the entry.
         new: The new name for the entry.
         ctx: Typer context with password options.
+        index: Optional one-based index shown by list --indices.
     """
     path = _path(ctx)
     try:
@@ -639,20 +643,17 @@ def rename_entry(old: str, new: str, ctx: typer.Context) -> None:
     password = helpers.get_password_for_vault(ctx, new_vault=False)
     try:
         vault = Vault.load(path, password)
-        # Check for duplicates before renaming
-        old_matches = vault.find_entries(old)
-        if len(old_matches) > 1:
-            print(
-                f"Multiple entries named '{old}' exist. Operation aborted. Resolve duplicates first."
-            )
-            return
-        entry = vault.get_entry(old)
-        entry.account_name = new
-        entry.issuer = new
+        vault.rename_entry(old, new, index=index)
         vault.save(path, password)
         helpers.print_success(f"Renamed '{old}' → '{new}'")
     except VaultValidationError as e:
         helpers.print_error(str(e))
+        raise typer.Exit(ExitCode.VALIDATION_ERROR) from None
+    except (AmbiguousEntry, EntryRenameError) as e:
+        helpers.print_error(str(e))
+        helpers.print_info(
+            "Use 'd2fa list --indices' and 'd2fa rename OLD NEW --index N'."
+        )
         raise typer.Exit(ExitCode.VALIDATION_ERROR) from None
     except PermissionDenied:
         helpers.print_error("Error: Cannot access vault directory (permission denied).")

@@ -84,9 +84,14 @@ def main(
 
 
 @app.command("list")
-def list_cmd(ctx: typer.Context) -> None:
+def list_cmd(
+    ctx: typer.Context,
+    indices: bool = typer.Option(
+        False, "--indices", help="Show one-based entry indices for duplicate repair"
+    ),
+) -> None:
     """List all TOTP entries in the vault."""
-    commands.list_entries(ctx)
+    commands.list_entries(ctx, show_indices=indices)
 
 
 @app.command("add")
@@ -194,7 +199,14 @@ def remove_cmd(ctx: typer.Context, name: str) -> None:
 
 
 @app.command("rename")
-def rename_cmd(ctx: typer.Context, old: str, new: str) -> None:
+def rename_cmd(
+    ctx: typer.Context,
+    old: str,
+    new: str,
+    index: int | None = typer.Option(
+        None, "--index", help="Select an entry using its number from list --indices"
+    ),
+) -> None:
     """Rename a TOTP entry in the vault.
 
     Args:
@@ -202,7 +214,7 @@ def rename_cmd(ctx: typer.Context, old: str, new: str) -> None:
         old: Current name of the entry.
         new: New name for the entry.
     """
-    commands.rename_entry(old, new, ctx)
+    commands.rename_entry(old, new, ctx, index=index)
 
 
 @app.command("export")

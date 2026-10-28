@@ -71,6 +71,10 @@ class AmbiguousEntry(ValueError):
     """Raised when a name cannot identify a single vault entry."""
 
 
+class EntryRenameError(ValueError):
+    """Raised for an occupied rename destination or an invalid entry selector."""
+
+
 class Vault:
     """Vault using Pydantic models for validation and structure."""
 
@@ -128,9 +132,46 @@ class Vault:
         )
         self.data.entries.append(entry)
 
-    def rename_entry(self, old: str, new: str) -> None:
-        """Rename an entry (placeholder for future implementation)."""
-        raise NotImplementedError("rename will be implemented in a future version")
+    def rename_entry(self, old: str, new: str, *, index: int | None = None) -> None:
+        """Update account name and issuer without creating duplicate names.
+
+        Resolve old as an exact account name, then a unique issuer. An explicit
+        one-based index into entries may select among matches at that same tier.
+        Validate the selector and destination before mutating either field.
+        Renaming a uniquely named entry to itself still updates its issuer.
+
+        Raises:
+            AmbiguousEntry: If old is ambiguous without an index.
+            EntryRenameError: If the index is invalid or new is already occupied.
+            ValueError: If old is not found.
+        """
+        if index is None:
+            entry = self.get_entry(old)
+        else:
+            if type(index) is not int or not 1 <= index <= len(self.entries):
+                raise EntryRenameError(
+                    "Invalid entry index; use a number from 'd2fa list --indices'."
+                )
+            entry = self.entries[index - 1]
+            if not any(entry is match for match in self._matching_entries(old)):
+                raise EntryRenameError(
+                    "Entry index does not match the old name at the selected "
+                    "account/issuer tier; run 'd2fa list --indices' again."
+                )
+
+        if any(
+            other is not entry and other.account_name == new for other in self.entries
+        ):
+            raise EntryRenameError(
+                f'An entry with name "{new}" already exists. Choose a unique name.'
+            )
+        entry.account_name = new
+        entry.issuer = new
+
+    def _matching_entries(self, name: str) -> list[TotpEntry]:
+        """Return matches at the first non-empty account-name/issuer tier."""
+        matches = [entry for entry in self.entries if entry.account_name == name]
+        return matches or [entry for entry in self.entries if entry.issuer == name]
 
     def get_entry(self, issuer: str) -> TotpEntry:
         """Resolve an exact account name, then a unique issuer fallback.
@@ -148,9 +189,7 @@ class Vault:
             AmbiguousEntry: If multiple entries match at the selected tier.
             ValueError: If no entry is found.
         """
-        matches = [entry for entry in self.entries if entry.account_name == issuer]
-        if not matches:
-            matches = [entry for entry in self.entries if entry.issuer == issuer]
+        matches = self._matching_entries(issuer)
         if len(matches) > 1:
             raise AmbiguousEntry(
                 f"Ambiguous entry '{issuer}': multiple entries match. Operation aborted."
@@ -269,7 +308,8 @@ class Vault:
                 f"Warning: Your vault contains multiple entries with the same name: {', '.join(chr(34) + name + chr(34) for name in duplicates)}."
             )
             print(
-                "This was allowed in older versions. You can resolve this by renaming entries using the rename command."
+                "This was allowed in older versions. Run 'd2fa list --indices', "
+                "then 'd2fa rename OLD NEW --index N' to select one entry."
             )
 
         return vault
