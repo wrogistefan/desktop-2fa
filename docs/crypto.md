@@ -64,8 +64,17 @@ header, nor support for other format versions.
 
 ### Save and load
 
-On save, the application generates a 16-byte salt, derives a key, serializes
-the vault to JSON, encrypts it with AES-GCM using a random 12-byte nonce, and
+On save, the application serializes the vault to UTF-8 JSON and validates that
+exact snapshot using the loader's model. It rejects output exceeding 10 MiB
+(10,485,760 bytes), counting the JSON bytes plus 49 bytes for the header, salt,
+nonce and authentication tag. JSON escaping and multibyte UTF-8 characters
+are included in that count. Validation happens before key derivation or any
+filesystem changes. Invalid or oversized data raises `VaultValidationError`
+(a `ValueError` and `VaultError` subclass) without replacing the existing file.
+The same model rules preserve supported legacy entries; no migration is needed.
+
+After validation, the application generates a 16-byte salt, derives a key,
+encrypts the validated JSON with AES-GCM using a random 12-byte nonce, and
 writes the header and encrypted blob to a temporary file before replacing the
 destination.
 
