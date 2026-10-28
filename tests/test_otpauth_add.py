@@ -142,6 +142,31 @@ def test_invalid_uri_is_rejected(url: str) -> None:
         parse_otpauth_url(url)
 
 
+@pytest.mark.parametrize(
+    "secret",
+    [
+        "INVALID!",
+        "JBSWY3DP!HPK3PXP",
+        "JBSWY3DP0HPK3PXP",
+        "JBSWY3DP1HPK3PXP",
+        "JBSWY3DP8HPK3PXP",
+        "JBSWY3DP HPK3PXP",
+        "JBSWY3DP\nHPK3PXP",
+        "JBſWY3DPEHPK3PXP",
+        "JBßWY3DPEHPK3PXP",
+        "JBSWY3DP=HPK3PXP",
+    ],
+)
+def test_non_base32_characters_are_rejected_without_echoing_secret(secret: str) -> None:
+    with pytest.raises(ValueError, match="^Invalid Base32 TOTP secret$"):
+        parse_otpauth_url(uri(secret=secret))
+
+
+@pytest.mark.parametrize("secret", [SECRET, SECRET.lower(), "jBsWy3DpEhPk3PxP"])
+def test_ascii_secret_case_preserves_decoded_bytes(secret: str) -> None:
+    assert parse_otpauth_url(uri(secret=secret))["secret"] == SECRET
+
+
 @pytest.mark.parametrize("existing", [False, True])
 @pytest.mark.parametrize("flow", ["single-uri", "interactive"])
 @pytest.mark.parametrize(
@@ -152,6 +177,8 @@ def test_invalid_uri_is_rejected(url: str) -> None:
         uri(period="0"),
         uri(secret=""),
         uri(issuer="Conflicting"),
+        uri(secret="INVALID!"),
+        uri(secret="JBſWY3DPEHPK3PXP"),
     ],
 )
 def test_invalid_uri_never_changes_vault(

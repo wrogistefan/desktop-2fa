@@ -577,8 +577,10 @@ def parse_otpauth_url(url: str) -> ParsedOtpauth:
 
     # Provisioning secrets may omit Base32 padding. Canonicalize this URI input
     # for the existing model/generator; shared manual-secret decoding is S06.
+    # b32decode rejects non-alphabet characters (unlike permissive b64decode).
+    # Its casefold accepts ASCII lowercase without Unicode str.upper folding.
     try:
-        decoded = base64.b32decode(secret.upper() + "=" * (-len(secret) % 8))
+        decoded = base64.b32decode(secret + "=" * (-len(secret) % 8), casefold=True)
         if not decoded:
             raise ValueError
     except (ValueError, binascii.Error):
