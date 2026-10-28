@@ -198,7 +198,7 @@ are ignored. See [Key URI Format](https://github.com/google/google-authenticator
 - `issuer` is a display label and may repeat across entries
 - Names must be unique within the vault
 - Older versions allowed duplicate names; you may see warnings about this when loading existing vaults
-- Use the `d2fa rename` command to resolve duplicate names
+- Use `d2fa list --indices` and `d2fa rename OLD NEW --index N` to repair duplicates
 - Secrets must be valid Base32
 - otpauth URLs are automatically parsed
 - If vault doesn't exist, it will be created automatically
@@ -409,12 +409,13 @@ d2fa remove "AWS:root"
 Changes the name and issuer of an existing entry. Both the unique identifier (account name) and display label (issuer) are updated to the new name.
 
 ```bash
-d2fa rename OLD_NAME NEW_NAME
+d2fa rename OLD_NAME NEW_NAME [--index N]
 ```
 
 **Parameters:**
 - `OLD_NAME`: Current issuer/account name
 - `NEW_NAME`: New name (will update both account name and issuer)
+- `--index N`: Select the one-based entry number displayed by `d2fa list --indices`
 
 **Examples:**
 ```bash
@@ -422,12 +423,24 @@ d2fa rename GitHub GitHub-work
 # Output: Renamed 'GitHub' → 'GitHub-work'
 ```
 
-**Duplicate Detection:**
-If multiple entries match the `OLD_NAME` (same issuer or account_name), the rename operation is aborted with an error:
-```
-Error: Multiple entries named '<name>' exist. Operation aborted. Resolve duplicates first.
-```
-This ensures deterministic behavior when duplicate names exist in older vaults.
+Rename first matches the exact account name, then falls back to the issuer if
+no account name matches. Ambiguity without `--index` refuses the change.
+With `--index`, the selected entry must match `OLD_NAME` at that same lookup
+tier; an unrelated entry number is rejected. Matching is case-sensitive.
+
+The new account name must not belong to any other entry, even when an index
+is supplied. A name that only matches another entry's issuer is allowed:
+subsequent lookups still prefer the exact account name. Renaming a uniquely
+named entry to its own name is allowed and updates its issuer to that name;
+a self-rename that retains a duplicated account name is rejected.
+
+Occupied destinations, ambiguity and out-of-range or mismatched indices exit
+with status 6 and leave the vault file unchanged. Non-integer CLI arguments
+are usage errors (status 2). `Vault.rename_entry(old, new, index=N)` and
+the public rename helper apply the same rules. Python callers receive
+`EntryRenameError` for invalid indices or occupied destinations, and
+`AmbiguousEntry` for unresolved ambiguity (both are `ValueError` subclasses).
+The previously unimplemented `Vault.rename_entry()` now performs the rename.
 
 ### `export` - Export Vault
 
@@ -745,24 +758,36 @@ If you have a vault created with an older version of desktop-2fa that allowed du
 
 ```
 Warning: Your vault contains multiple entries with the same name: "GitHub", "AWS".
-This was allowed in older versions. You can resolve this by renaming entries using the rename command.
+This was allowed in older versions. Run 'd2fa list --indices', then 'd2fa rename OLD NEW --index N' to select one entry.
 ```
 
 **Resolution:**
-Use the root-level `d2fa rename` command to give unique names to conflicting entries:
+Back up the selected vault and display its current entry numbers. For example,
+if `./legacy-vault.bin` contains three entries named `GitHub` at indices 1–3:
 
 ```bash
-# List current entries
-d2fa list
+d2fa --vault ./legacy-vault.bin backup
+d2fa --vault ./legacy-vault.bin list --indices
+# [1] 'GitHub' ('personal')
+# [2] 'GitHub' ('work')
+# [3] 'GitHub' ('test')
 
-# Rename duplicates
-d2fa rename GitHub GitHub-personal
-d2fa rename GitHub GitHub-work
-d2fa rename AWS AWS-root
-d2fa rename AWS AWS-admin
+d2fa --vault ./legacy-vault.bin rename GitHub GitHub-personal --index 1
+d2fa --vault ./legacy-vault.bin rename GitHub GitHub-work --index 2
+d2fa --vault ./legacy-vault.bin rename GitHub GitHub-test --index 3
+d2fa --vault ./legacy-vault.bin list --indices
 ```
 
-**Note:** The rename command updates both the account name (unique identifier) and issuer (display label) to the new name. After resolving duplicates, the warning will no longer appear.
+Rename keeps list order, secret bytes, algorithm, digits and period; only the
+selected entry's account name and issuer change. After all duplicate names
+are repaired, the warning disappears. Loading and listing do not migrate data.
+
+Indices refer to the current full list and are not stored identifiers. List
+again after additions or removals, check `OLD_NAME` and the selected number,
+and avoid concurrent edits during repair. An index is range-checked and must
+match the old name, but it cannot detect another process reordering identical
+duplicates between commands. The default `list` output is unchanged; the
+optional numbered view escapes line breaks in labels and shows no secrets.
 
 ## Contact
 

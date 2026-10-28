@@ -80,6 +80,19 @@ for that command; later commands still need a password or interactive prompt.
 Avoid `--password` where command-line arguments may be visible to other users
 or recorded by tooling.
 
+## Entry selection and duplicate repair
+
+Rename resolves an exact account name before an issuer fallback and refuses
+ambiguous names without an explicit selector. It checks destination uniqueness
+before changing account name or issuer. Legacy duplicates can be repaired with
+the one-based numbers from `list --indices` and `rename OLD NEW --index N`;
+the chosen entry must match the old name at the selected lookup tier. Secret
+bytes and TOTP parameters are preserved without a format migration.
+
+These indices describe current list positions, not persistent identifiers.
+They do not protect against concurrent edits between listing and renaming;
+avoid concurrent changes and refresh the list after additions or removals.
+
 ## Files and backups
 
 The application rejects non-regular vault paths and files larger than 10 MiB.

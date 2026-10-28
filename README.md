@@ -172,12 +172,18 @@ with an `Ambiguous entry` error (exit status 6); the vault is left unchanged.
 `Vault.remove_entry()`, and the public code/removal helpers, use the same rule;
 ambiguous lookups raise `desktop_2fa.vault.AmbiguousEntry`, a `ValueError` subclass.
 
-The `rename` command enforces deterministic behavior when multiple entries match the target name:
+The `rename` command uses the same exact-account-name/unique-issuer rule and
+rejects an occupied destination account name before mutation. Ambiguity without
+an explicit selector, invalid selectors and occupied destinations exit with
+status 6. Both account name and issuer are updated; renaming a uniquely named
+entry to itself is allowed and still updates its issuer.
 
-- If **multiple entries** match the provided name (issuer or account_name), the rename is **aborted**
-- Error message: `Error: Multiple entries named '<name>' exist. Operation aborted. Resolve duplicates first.`
-- No entry is renamed in this case
-- This check occurs **before** any mutation
+For legacy duplicates, run `d2fa list --indices`, then
+`d2fa rename OLD NEW --index N` using a displayed one-based entry number.
+The selected entry must match `OLD` at the account-name/issuer tier that ordinary
+lookup would use. Indices describe the current list order, not permanent IDs;
+list again after adding/removing entries and avoid concurrent vault edits.
+See [duplicate recovery](docs/user_manual.md#duplicate-names-in-vault).
 
 ---
 

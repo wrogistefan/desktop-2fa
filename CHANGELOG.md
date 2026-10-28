@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Rename now checks destination account-name uniqueness before mutation and
+  uses the same exact-name/unique-issuer resolution in the CLI, helper and
+  `Vault.rename_entry()` API. `list --indices` and `rename OLD NEW --index N`
+  provide explicit repair of legacy duplicates. Invalid selectors, occupied
+  destinations and unresolved ambiguity exit with status 6 in the CLI.
+  Renames still update both account name and issuer; a unique self-rename is
+  allowed and updates the issuer. The optional one-based selector does not
+  change vault format or TOTP data.
 - Vault saves now reject invalid mutated data and output larger than 10 MiB
   before filesystem changes, preserving the existing file. The exact limit
   includes UTF-8 JSON and 49 bytes of D2FA v1 overhead. Python callers receive

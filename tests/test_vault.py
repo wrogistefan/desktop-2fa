@@ -431,12 +431,13 @@ def test_vault_load_duplicate_names_warning(tmp_path: Path, capsys: Any) -> None
     assert len(loaded.entries) == 2
 
 
-def test_vault_rename_entry_not_implemented() -> None:
+def test_vault_rename_entry_updates_account_and_issuer() -> None:
     vault = Vault()
     vault.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP")
 
-    with pytest.raises(NotImplementedError, match="rename will be implemented"):
-        vault.rename_entry("Test", "NewName")
+    vault.rename_entry("Test", "NewName")
+    assert vault.entries[0].account_name == "NewName"
+    assert vault.entries[0].issuer == "NewName"
 
 
 def test_vault_load_permission_error(tmp_path: Path, monkeypatch: Any) -> None:
