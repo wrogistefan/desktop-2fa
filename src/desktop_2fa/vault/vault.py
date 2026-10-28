@@ -76,6 +76,14 @@ class EntryRenameError(ValueError):
     """Raised for an occupied rename destination or an invalid entry selector."""
 
 
+class EntryNotFound(ValueError):
+    """Raised when no entry matches the requested account name or issuer."""
+
+
+class EntryAlreadyExists(ValueError):
+    """Raised when adding an account name that is already occupied."""
+
+
 class Vault:
     """Vault using Pydantic models for validation and structure."""
 
@@ -117,13 +125,14 @@ class Vault:
             period: TOTP period in seconds (default 30).
 
         Raises:
+            EntryAlreadyExists: If the account name is occupied.
             InvalidSecret: If the key is invalid or empty. Validation happens
                 before mutation; successful creation stores canonical Base32.
         """
         # Check for duplicate names
         for entry in self.entries:
             if entry.account_name == name:
-                raise ValueError(
+                raise EntryAlreadyExists(
                     f'An entry with name "{name}" already exists. Names must be unique.'
                 )
 
@@ -149,7 +158,7 @@ class Vault:
         Raises:
             AmbiguousEntry: If old is ambiguous without an index.
             EntryRenameError: If the index is invalid or new is already occupied.
-            ValueError: If old is not found.
+            EntryNotFound: If old is not found.
         """
         if index is None:
             entry = self.get_entry(old)
@@ -193,7 +202,7 @@ class Vault:
 
         Raises:
             AmbiguousEntry: If multiple entries match at the selected tier.
-            ValueError: If no entry is found.
+            EntryNotFound: If no entry is found.
         """
         matches = self._matching_entries(issuer)
         if len(matches) > 1:
@@ -202,7 +211,7 @@ class Vault:
             )
         if matches:
             return matches[0]
-        raise ValueError(f"Entry '{issuer}' not found")
+        raise EntryNotFound(f"Entry '{issuer}' not found")
 
     def find_entries(self, name: str) -> list[TotpEntry]:
         """Find all entries matching the given name (issuer or account_name).

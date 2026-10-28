@@ -105,6 +105,14 @@ avoid concurrent changes and refresh the list after additions or removals.
 
 ## Files and backups
 
+Expected CLI failures are classified by exception type and return non-zero
+status without printing raw exception data that may contain secrets. Failed
+authentication is never treated as a request to initialize an empty vault;
+a detected vault that cannot be loaded is not replaced with an empty one.
+CLI helper failures propagate a non-zero status instead of a success sentinel.
+This improves automation's ability to detect a failed operation; it does not
+add concurrency or filesystem durability guarantees.
+
 The application rejects non-regular vault paths and files larger than 10 MiB.
 Before saving, it validates the serialized data using the loader's model and
 checks the exact output size, including the 49-byte D2FA v1 overhead. Invalid

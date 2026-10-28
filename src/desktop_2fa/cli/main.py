@@ -11,6 +11,7 @@ from desktop_2fa import __version__
 from desktop_2fa.constants import ExitCode
 
 from . import commands, helpers
+from .errors import command_errors
 
 
 def _validate_code_options(
@@ -38,6 +39,7 @@ app = typer.Typer(help="Desktop‑2FA — secure offline TOTP authenticator")
 
 
 @app.callback(invoke_without_command=True)
+@command_errors
 def main(
     ctx: typer.Context,
     version: bool = typer.Option(False, "--version", help="Show version and exit"),
@@ -143,7 +145,7 @@ def add_cmd(
         helpers.print_error("Missing arguments: NAME, ISSUER and SECRET are required")
         rprint("Usage: d2fa add NAME ISSUER SECRET")
         rprint("Example: d2fa add GitHub GitHub ABCDEFGHIJKL1234")
-        raise typer.Exit(1)
+        raise typer.Exit(ExitCode.VALIDATION_ERROR)
 
     commands.add_entry(name, issuer, secret, ctx)
 
@@ -290,6 +292,7 @@ def init_cmd(ctx: typer.Context, force: bool = typer.Option(False, "--force")) -
 
 
 @vault_app.command("path")
+@command_errors
 def vault_path_cmd(ctx: typer.Context) -> None:
     """Show the path to the vault file currently in use."""
     print(repr(ctx.obj.get("vault_path") or helpers.get_vault_path()))
@@ -300,6 +303,7 @@ app.add_typer(vault_app, name="vault")
 
 
 @app.command("ui")
+@command_errors
 def ui_cmd(ctx: typer.Context) -> None:
     """Run the Textual UI."""
     from desktop_2fa.ui_textual.app import run_textual

@@ -238,7 +238,7 @@ def test_cli_version_no_args(fake_vault_env_cli: Path) -> None:
 
 def test_cli_add_missing_arguments(fake_vault_env_cli: Path) -> None:
     result = runner.invoke(app, ["--password", TEST_PASSWORD, "add"])
-    assert result.exit_code == 1
+    assert result.exit_code == 6
     assert "Missing arguments: NAME, ISSUER and SECRET are required" in result.output
     assert "Usage: d2fa add NAME ISSUER SECRET" in result.output
     assert "Example: d2fa add GitHub GitHub ABCDEFGHIJKL1234" in result.output
@@ -362,7 +362,7 @@ def test_cli_init_vault_existing_no_force(fake_vault_env_cli: Path) -> None:
     vault.save(fake_vault_env_cli, TEST_PASSWORD)
 
     result = runner.invoke(app, ["--password", TEST_PASSWORD, "init-vault"])
-    assert result.exit_code == 0
+    assert result.exit_code == 6
     assert "Vault already exists." in result.output
     assert "Use --force to overwrite." in result.output
 

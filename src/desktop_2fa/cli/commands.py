@@ -16,35 +16,10 @@ from desktop_2fa.utils.base32 import InvalidSecret, normalize_base32
 from desktop_2fa.vault import Vault
 from desktop_2fa.vault.password_strength import evaluate_password_strength
 from desktop_2fa.vault.vault import (
-    AmbiguousEntry,
-    CorruptedVault,
-    EntryRenameError,
-    InvalidPassword,
     PermissionDenied,
-    UnsupportedFormat,
-    VaultIOError,
-    VaultNotFound,
-    VaultValidationError,
 )
 
-
-def _exit_with_error(
-    code: int, err_id: str, message: str, json_mode: bool, quiet: bool
-) -> None:
-    """Print error message in appropriate format and exit with code.
-
-    Args:
-        code: Exit code.
-        err_id: Error identifier for JSON mode.
-        message: Human-readable error message.
-        json_mode: Whether to output in JSON format.
-        quiet: Whether to suppress output.
-    """
-    if json_mode:
-        print(json.dumps({"error": err_id, "message": message}))
-    elif not quiet:
-        helpers.print_error(message)
-    sys.exit(code)
+from .errors import CLI_ERRORS, command_errors, exit_for_error, report_error
 
 
 def _handle_clipboard(
@@ -79,11 +54,11 @@ def _handle_clipboard(
                         }
                     )
                 )
-                sys.exit(5)
+                sys.exit(ExitCode.CLIPBOARD_UNAVAILABLE)
             elif not quiet:
                 helpers.print_warning("Clipboard not available on this system.")
             if copy_only:
-                sys.exit(5)
+                sys.exit(ExitCode.CLIPBOARD_UNAVAILABLE)
             return False
     return True
 
@@ -161,6 +136,7 @@ def _prepare_add(name: str, issuer: str, secret: str) -> helpers.ParsedOtpauth:
     }
 
 
+@command_errors
 def add_entry_interactive(
     name: str, issuer: str, secret: str, ctx: typer.Context
 ) -> None:
@@ -184,15 +160,12 @@ def add_entry_interactive(
     # DEF-02: Use safe vault existence check (avoids PermissionError from path.exists())
     try:
         vault_exists = _vault_exists(path)
-    except OSError:
-        # DEF-02: I/O error during existence check
-        helpers.print_error("Failed to access vault file.")
-        return
+    except CLI_ERRORS as error:
+        exit_for_error(error)
 
     # DEF-02: Handle permission denied during existence check
     if vault_exists is None:
-        helpers.print_error("Error: Cannot access vault directory (permission denied).")
-        return
+        exit_for_error(PermissionDenied())
 
     if not vault_exists:
         helpers.print_warning("No vault found.")
@@ -202,12 +175,8 @@ def add_entry_interactive(
         vault.add_entry(name=name, issuer=issuer, secret=secret, **parameters)
         try:
             vault.save(path, password)
-        except VaultValidationError as e:
-            helpers.print_error(str(e))
-            raise typer.Exit(ExitCode.VALIDATION_ERROR) from None
-        except PermissionDenied:
-            helpers.print_error("Cannot access vault directory (permission denied).")
-            return
+        except CLI_ERRORS as error:
+            exit_for_error(error)
         print(f"Vault created at {path}")
         print(f"Entry added: {name}")
     else:
@@ -217,24 +186,11 @@ def add_entry_interactive(
             vault.add_entry(name=name, issuer=issuer, secret=secret, **parameters)
             vault.save(path, password)
             helpers.print_success(f"Entry added: {name}")
-        except VaultValidationError as e:
-            helpers.print_error(str(e))
-            raise typer.Exit(ExitCode.VALIDATION_ERROR) from None
-        except ValueError as e:
-            if "already exists" in str(e):
-                helpers.print_error(str(e))
-            else:
-                helpers.print_error("Invalid vault password.")
-        except InvalidPassword:
-            helpers.print_error("Invalid vault password.")
-        except CorruptedVault:
-            helpers.print_error("Vault file is corrupted.")
-        except UnsupportedFormat:
-            helpers.print_error("Vault file format is unsupported.")
-        except VaultIOError:
-            helpers.print_error("Failed to access vault file.")
+        except CLI_ERRORS as error:
+            exit_for_error(error)
 
 
+@command_errors
 def list_entries(ctx: typer.Context, *, show_indices: bool = False) -> None:
     """List all entries in the vault.
 
@@ -247,15 +203,12 @@ def list_entries(ctx: typer.Context, *, show_indices: bool = False) -> None:
     # DEF-02: Use safe vault existence check (avoids PermissionError from path.exists())
     try:
         vault_exists = _vault_exists(path)
-    except OSError:
-        # DEF-02: I/O error during existence check
-        helpers.print_error("Failed to access vault file.")
-        return
+    except CLI_ERRORS as error:
+        exit_for_error(error)
 
     # DEF-02: Handle permission denied during existence check
     if vault_exists is None:
-        helpers.print_error("Error: Cannot access vault directory (permission denied).")
-        return
+        exit_for_error(PermissionDenied())
 
     if not vault_exists:
         helpers.print_warning("No vault found.")
@@ -264,57 +217,16 @@ def list_entries(ctx: typer.Context, *, show_indices: bool = False) -> None:
         vault = Vault()
         try:
             vault.save(path, password)
-        except VaultValidationError as e:
-            helpers.print_error(str(e))
-            raise typer.Exit(ExitCode.VALIDATION_ERROR) from None
-        except PermissionDenied:
-            helpers.print_error("Cannot access vault directory (permission denied).")
-            return
+        except CLI_ERRORS as error:
+            exit_for_error(error)
         print(f"Vault created at {path}")
         print("No entries found.")
     else:
         password = helpers.get_password_for_vault(ctx, new_vault=False)
         try:
             vault = Vault.load(path, password)
-        except PermissionDenied:
-            helpers.print_error(
-                "Error: Cannot access vault directory (permission denied)."
-            )
-            return
-        except VaultNotFound:
-            helpers.print_warning("No vault found.")
-            helpers.print_info("A new encrypted vault will be created.")
-            password = helpers.get_password_for_vault(ctx, new_vault=True)
-            vault = Vault()
-            try:
-                vault.save(path, password)
-            except VaultValidationError as e:
-                helpers.print_error(str(e))
-                raise typer.Exit(ExitCode.VALIDATION_ERROR) from None
-            except PermissionDenied:
-                helpers.print_error(
-                    "Cannot access vault directory (permission denied)."
-                )
-                return
-            print(f"Vault created at {path}")
-            print("No entries found.")
-            return
-        except InvalidPassword:
-            if interactive:
-                helpers.print_error("Invalid vault password.")
-            return
-        except CorruptedVault:
-            if interactive:
-                helpers.print_error("Vault file is corrupted.")
-            return
-        except UnsupportedFormat:
-            if interactive:
-                helpers.print_error("Vault file format is unsupported.")
-            return
-        except VaultIOError:
-            if interactive:
-                helpers.print_error("Failed to access vault file.")
-            return
+        except CLI_ERRORS as error:
+            exit_for_error(error)
         if vault.entries:
             helpers.print_entries_table(vault.entries, show_indices=show_indices)
         else:
@@ -322,6 +234,7 @@ def list_entries(ctx: typer.Context, *, show_indices: bool = False) -> None:
                 helpers.print_info("No entries found.")
 
 
+@command_errors
 def add_entry(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
     """Add an entry to the vault.
 
@@ -344,15 +257,12 @@ def add_entry(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
     # DEF-02: Use safe vault existence check (avoids PermissionError from path.exists())
     try:
         vault_exists = _vault_exists(path)
-    except OSError:
-        # DEF-02: I/O error during existence check
-        helpers.print_error("Failed to access vault file.")
-        return
+    except CLI_ERRORS as error:
+        exit_for_error(error)
 
     # DEF-02: Handle permission denied during existence check
     if vault_exists is None:
-        helpers.print_error("Error: Cannot access vault directory (permission denied).")
-        return
+        exit_for_error(PermissionDenied())
 
     if not vault_exists:
         helpers.print_warning("No vault found.")
@@ -362,12 +272,8 @@ def add_entry(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
         vault.add_entry(name=name, issuer=issuer, secret=secret, **parameters)
         try:
             vault.save(path, password)
-        except VaultValidationError as e:
-            helpers.print_error(str(e))
-            raise typer.Exit(ExitCode.VALIDATION_ERROR) from None
-        except PermissionDenied:
-            helpers.print_error("Cannot access vault directory (permission denied).")
-            return
+        except CLI_ERRORS as error:
+            exit_for_error(error)
         print(f"Vault created at {path}")
         print(f"Entry added: {name}")
     else:
@@ -377,47 +283,11 @@ def add_entry(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
             vault.add_entry(name=name, issuer=issuer, secret=secret, **parameters)
             vault.save(path, password)
             helpers.print_success(f"Entry added: {name}")
-        except VaultValidationError as e:
-            helpers.print_error(str(e))
-            raise typer.Exit(ExitCode.VALIDATION_ERROR) from None
-        except PermissionDenied:
-            helpers.print_error(
-                "Error: Cannot access vault directory (permission denied)."
-            )
-        except VaultNotFound:
-            helpers.print_warning("No vault found.")
-            helpers.print_info("A new encrypted vault will be created.")
-            password = helpers.get_password_for_vault(ctx, new_vault=True)
-            vault = Vault()
-            vault.add_entry(name=name, issuer=issuer, secret=secret, **parameters)
-            try:
-                vault.save(path, password)
-            except VaultValidationError as e:
-                helpers.print_error(str(e))
-                raise typer.Exit(ExitCode.VALIDATION_ERROR) from None
-            except PermissionDenied:
-                helpers.print_error(
-                    "Cannot access vault directory (permission denied)."
-                )
-                return
-            print(f"Vault created at {path}")
-            # CodeQL [py/clear-text-logging-sensitive-data]: false positive, secret is never logged
-            print(f"Entry added: {name}")
-        except ValueError as e:
-            if "already exists" in str(e):
-                helpers.print_error(str(e))
-            else:
-                helpers.print_error("Invalid vault password.")
-        except InvalidPassword:
-            helpers.print_error("Invalid vault password.")
-        except CorruptedVault:
-            helpers.print_error("Vault file is corrupted.")
-        except UnsupportedFormat:
-            helpers.print_error("Vault file format is unsupported.")
-        except VaultIOError:
-            helpers.print_error("Failed to access vault file.")
+        except CLI_ERRORS as error:
+            exit_for_error(error)
 
 
+@command_errors
 def generate_code(
     name: str,
     ctx: typer.Context,
@@ -450,18 +320,14 @@ def generate_code(
     vault_exists = None
     try:
         vault_exists = _vault_exists(path)
-    except OSError:
-        _exit_with_error(
-            1, "vault_io_error", "Failed to access vault file.", json_mode, quiet
-        )
+    except CLI_ERRORS as error:
+        raise SystemExit(
+            report_error(error, json_mode=json_mode, quiet=quiet)
+        ) from None
 
     if vault_exists is None:
-        _exit_with_error(
-            1,
-            "permission_denied",
-            "Cannot access vault directory (permission denied).",
-            json_mode,
-            quiet,
+        raise SystemExit(
+            report_error(PermissionDenied(), json_mode=json_mode, quiet=quiet)
         )
 
     if not vault_exists:
@@ -470,7 +336,7 @@ def generate_code(
         elif not quiet:
             helpers.print_warning("No vault found.")
             helpers.print_info("Nothing to generate.")
-        sys.exit(4)
+        sys.exit(ExitCode.VAULT_MISSING)
 
     # Get password
     password = helpers.get_password_for_vault(ctx, new_vault=False)
@@ -516,58 +382,13 @@ def generate_code(
             else:
                 print(f"{code} (valid {remaining}s)")
 
-    except InvalidPassword:
-        _exit_with_error(
-            2, "invalid_password", "Invalid vault password.", json_mode, quiet
-        )
-    except AmbiguousEntry as e:
-        _exit_with_error(
-            ExitCode.VALIDATION_ERROR, "entry_ambiguous", str(e), json_mode, quiet
-        )
-    except InvalidSecret:
-        _exit_with_error(
-            ExitCode.VALIDATION_ERROR,
-            "invalid_secret",
-            "Invalid TOTP secret. Add a valid replacement from the provider "
-            "before removing the legacy entry.",
-            json_mode,
-            quiet,
-        )
-    except ValueError as e:
-        if "not found" in str(e):
-            _exit_with_error(
-                3, "entry_not_found", f"Entry '{name}' not found.", json_mode, quiet
-            )
-        else:
-            _exit_with_error(
-                2, "invalid_password", "Invalid vault password.", json_mode, quiet
-            )
-    except CorruptedVault:
-        _exit_with_error(
-            1, "corrupted_vault", "Vault file is corrupted.", json_mode, quiet
-        )
-    except UnsupportedFormat:
-        _exit_with_error(
-            1,
-            "unsupported_format",
-            "Vault file format is unsupported.",
-            json_mode,
-            quiet,
-        )
-    except PermissionDenied:
-        _exit_with_error(
-            1,
-            "permission_denied",
-            "Cannot access vault directory (permission denied).",
-            json_mode,
-            quiet,
-        )
-    except VaultIOError:
-        _exit_with_error(
-            1, "vault_io_error", "Failed to access vault file.", json_mode, quiet
-        )
+    except CLI_ERRORS as error:
+        raise SystemExit(
+            report_error(error, json_mode=json_mode, quiet=quiet)
+        ) from None
 
 
+@command_errors
 def remove_entry(name: str, ctx: typer.Context) -> None:
     """Remove an entry from the vault.
 
@@ -578,47 +399,27 @@ def remove_entry(name: str, ctx: typer.Context) -> None:
     path = _path(ctx)
     try:
         vault_exists = _vault_exists(path)
-    except OSError:
-        # DEF-02: I/O error during existence check
-        helpers.print_error("Failed to access vault file.")
-        return
+    except CLI_ERRORS as error:
+        exit_for_error(error)
 
     # DEF-02: Handle permission denied during existence check
     if vault_exists is None:
-        helpers.print_error("Error: Cannot access vault directory (permission denied).")
-        return
+        exit_for_error(PermissionDenied())
 
     if not vault_exists:
         helpers.print_warning("No vault found.")
-        return
+        raise typer.Exit(ExitCode.VAULT_MISSING)
     password = helpers.get_password_for_vault(ctx, new_vault=False)
     try:
         vault = Vault.load(path, password)
         vault.remove_entry(name)
         vault.save(path, password)
         helpers.print_success(f"Removed entry: {name}")
-    except VaultValidationError as e:
-        helpers.print_error(str(e))
-        raise typer.Exit(ExitCode.VALIDATION_ERROR) from None
-    except AmbiguousEntry as e:
-        helpers.print_error(str(e))
-        raise typer.Exit(ExitCode.VALIDATION_ERROR) from e
-    except PermissionDenied:
-        helpers.print_error("Error: Cannot access vault directory (permission denied).")
-    except ValueError as e:
-        if "not found" in str(e):
-            raise
-        helpers.print_error("Invalid vault password.")
-    except InvalidPassword:
-        helpers.print_error("Invalid vault password.")
-    except CorruptedVault:
-        helpers.print_error("Vault file is corrupted.")
-    except UnsupportedFormat:
-        helpers.print_error("Vault file format is unsupported.")
-    except VaultIOError:
-        helpers.print_error("Failed to access vault file.")
+    except CLI_ERRORS as error:
+        exit_for_error(error)
 
 
+@command_errors
 def rename_entry(
     old: str, new: str, ctx: typer.Context, *, index: int | None = None
 ) -> None:
@@ -633,50 +434,27 @@ def rename_entry(
     path = _path(ctx)
     try:
         vault_exists = _vault_exists(path)
-    except OSError:
-        # DEF-02: I/O error during existence check
-        helpers.print_error("Failed to access vault file.")
-        return
+    except CLI_ERRORS as error:
+        exit_for_error(error)
 
     # DEF-02: Handle permission denied during existence check
     if vault_exists is None:
-        helpers.print_error("Error: Cannot access vault directory (permission denied).")
-        return
+        exit_for_error(PermissionDenied())
 
     if not vault_exists:
         helpers.print_warning("No vault found.")
-        return
+        raise typer.Exit(ExitCode.VAULT_MISSING)
     password = helpers.get_password_for_vault(ctx, new_vault=False)
     try:
         vault = Vault.load(path, password)
         vault.rename_entry(old, new, index=index)
         vault.save(path, password)
         helpers.print_success(f"Renamed '{old}' → '{new}'")
-    except VaultValidationError as e:
-        helpers.print_error(str(e))
-        raise typer.Exit(ExitCode.VALIDATION_ERROR) from None
-    except (AmbiguousEntry, EntryRenameError) as e:
-        helpers.print_error(str(e))
-        helpers.print_info(
-            "Use 'd2fa list --indices' and 'd2fa rename OLD NEW --index N'."
-        )
-        raise typer.Exit(ExitCode.VALIDATION_ERROR) from None
-    except PermissionDenied:
-        helpers.print_error("Error: Cannot access vault directory (permission denied).")
-    except ValueError as e:
-        if "not found" in str(e):
-            raise
-        helpers.print_error("Invalid vault password.")
-    except InvalidPassword:
-        helpers.print_error("Invalid vault password.")
-    except CorruptedVault:
-        helpers.print_error("Vault file is corrupted.")
-    except UnsupportedFormat:
-        helpers.print_error("Vault file format is unsupported.")
-    except VaultIOError:
-        helpers.print_error("Failed to access vault file.")
+    except CLI_ERRORS as error:
+        exit_for_error(error)
 
 
+@command_errors
 def export_vault(export_path: str, ctx: typer.Context) -> None:
     """Export the vault to a new file.
 
@@ -687,39 +465,26 @@ def export_vault(export_path: str, ctx: typer.Context) -> None:
     path = _path(ctx)
     try:
         vault_exists = _vault_exists(path)
-    except OSError:
-        # DEF-02: I/O error during existence check
-        helpers.print_error("Failed to access vault file.")
-        return
+    except CLI_ERRORS as error:
+        exit_for_error(error)
 
     # DEF-02: Handle permission denied during existence check
     if vault_exists is None:
-        helpers.print_error("Error: Cannot access vault directory (permission denied).")
-        return
+        exit_for_error(PermissionDenied())
 
     if not vault_exists:
         helpers.print_warning("No vault found.")
-        return
+        raise typer.Exit(ExitCode.VAULT_MISSING)
     password = helpers.get_password_for_vault(ctx, new_vault=False)
     try:
         vault = Vault.load(path, password)
         vault.save(Path(export_path), password)
         helpers.print_success(f"Exported vault to: {export_path}")
-    except VaultValidationError as e:
-        helpers.print_error(str(e))
-        raise typer.Exit(ExitCode.VALIDATION_ERROR) from None
-    except PermissionDenied:
-        helpers.print_error("Error: Cannot access vault directory (permission denied).")
-    except InvalidPassword:
-        helpers.print_error("Invalid vault password.")
-    except CorruptedVault:
-        helpers.print_error("Vault file is corrupted.")
-    except UnsupportedFormat:
-        helpers.print_error("Vault file format is unsupported.")
-    except VaultIOError:
-        helpers.print_error("Failed to access vault file.")
+    except CLI_ERRORS as error:
+        exit_for_error(error)
 
 
+@command_errors
 def import_vault(source: str, force: bool, ctx: typer.Context) -> None:
     """Import a vault from a source file.
 
@@ -732,21 +497,18 @@ def import_vault(source: str, force: bool, ctx: typer.Context) -> None:
     # DEF-02: Use safe vault existence check (avoids PermissionError from path.exists())
     try:
         vault_exists = _vault_exists(path)
-    except OSError:
-        # DEF-02: I/O error during existence check
-        helpers.print_error("Failed to access vault file.")
-        return
+    except CLI_ERRORS as error:
+        exit_for_error(error)
 
     # DEF-02: Handle permission denied during existence check
     if vault_exists is None:
-        helpers.print_error("Error: Cannot access vault directory (permission denied).")
-        return
+        exit_for_error(PermissionDenied())
 
     if vault_exists and not force:
         helpers.print_error(
             "Refusing to overwrite existing vault. Use --force to proceed."
         )
-        raise typer.Exit(1)
+        raise typer.Exit(ExitCode.VALIDATION_ERROR)
     if vault_exists and force:
         helpers.print_error("Existing vault will be overwritten.")
     password = helpers.get_password_for_vault(ctx, new_vault=False)
@@ -754,17 +516,8 @@ def import_vault(source: str, force: bool, ctx: typer.Context) -> None:
         vault = Vault.load(Path(source), password)
         vault.save(path, password)
         helpers.print_success(f"Vault imported from {source}")
-    except VaultValidationError as e:
-        helpers.print_error(str(e))
-        raise typer.Exit(ExitCode.VALIDATION_ERROR) from None
-    except VaultIOError:
-        raise
-    except InvalidPassword:
-        helpers.print_error("Invalid vault password.")
-    except CorruptedVault:
-        helpers.print_error("Source vault file is corrupted.")
-    except UnsupportedFormat:
-        helpers.print_error("Source vault file format is unsupported.")
+    except CLI_ERRORS as error:
+        exit_for_error(error)
 
 
 def _get_backup_path(base_path: Path) -> Path:
@@ -787,6 +540,7 @@ def _get_backup_path(base_path: Path) -> Path:
         counter += 1
 
 
+@command_errors
 def backup_vault(ctx: typer.Context) -> None:
     """Create a backup of the vault.
 
@@ -796,40 +550,27 @@ def backup_vault(ctx: typer.Context) -> None:
     path = _path(ctx)
     try:
         vault_exists = _vault_exists(path)
-    except OSError:
-        # DEF-02: I/O error during existence check
-        helpers.print_error("Failed to access vault file.")
-        return
+    except CLI_ERRORS as error:
+        exit_for_error(error)
 
     # DEF-02: Handle permission denied during existence check
     if vault_exists is None:
-        helpers.print_error("Error: Cannot access vault directory (permission denied).")
-        return
+        exit_for_error(PermissionDenied())
 
     if not vault_exists:
         helpers.print_warning("No vault found.")
-        return
+        raise typer.Exit(ExitCode.VAULT_MISSING)
     password = helpers.get_password_for_vault(ctx, new_vault=False)
     try:
         vault = Vault.load(path, password)
         backup_path = _get_backup_path(path)
         vault.save(backup_path, password)
         helpers.print_success(f"Backup created: {backup_path}")
-    except VaultValidationError as e:
-        helpers.print_error(str(e))
-        raise typer.Exit(ExitCode.VALIDATION_ERROR) from None
-    except PermissionDenied:
-        helpers.print_error("Error: Cannot access vault directory (permission denied).")
-    except InvalidPassword:
-        helpers.print_error("Invalid vault password.")
-    except CorruptedVault:
-        helpers.print_error("Vault file is corrupted.")
-    except UnsupportedFormat:
-        helpers.print_error("Vault file format is unsupported.")
-    except VaultIOError:
-        helpers.print_error("Failed to access vault file.")
+    except CLI_ERRORS as error:
+        exit_for_error(error)
 
 
+@command_errors
 def init_vault(force: bool, ctx: typer.Context) -> None:
     """Initialize a new encrypted vault.
 
@@ -841,44 +582,36 @@ def init_vault(force: bool, ctx: typer.Context) -> None:
     # DEF-02: Use safe vault existence check (avoids PermissionError from path.exists())
     try:
         vault_exists = _vault_exists(path)
-    except OSError:
-        # DEF-02: I/O error during existence check
-        helpers.print_error("Failed to access vault file.")
-        return
+    except CLI_ERRORS as error:
+        exit_for_error(error)
 
     # DEF-02: Handle permission denied during existence check
     if vault_exists is None:
-        helpers.print_error("Error: Cannot access vault directory (permission denied).")
-        return
+        exit_for_error(PermissionDenied())
 
     if vault_exists and not force:
         helpers.print_info("Vault already exists.")
         helpers.print_info("Use --force to overwrite.")
-        return
+        raise typer.Exit(ExitCode.VALIDATION_ERROR)
     if vault_exists and force:
         helpers.print_error("Existing vault will be overwritten.")
 
     # DEF-02: Check for permission issues before trying to create vault
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-    except PermissionError:
-        helpers.print_error("Error: Cannot access vault directory (permission denied).")
-        return
+    except CLI_ERRORS as error:
+        exit_for_error(error)
 
     password = helpers.get_password_for_vault(ctx, new_vault=True)
     vault = Vault()
     try:
         vault.save(path, password)
         print(f"Vault created at {path}")
-    except VaultValidationError as e:
-        helpers.print_error(str(e))
-        raise typer.Exit(ExitCode.VALIDATION_ERROR) from None
-    except PermissionDenied:
-        helpers.print_error("Error: Cannot access vault directory (permission denied).")
-    except VaultIOError:
-        helpers.print_error("Failed to create vault file.")
+    except CLI_ERRORS as error:
+        exit_for_error(error)
 
 
+@command_errors
 def unlock_vault(ctx: typer.Context) -> None:
     """Unlock an existing vault and check for weak password.
 
@@ -893,7 +626,7 @@ def unlock_vault(ctx: typer.Context) -> None:
 
     # Ensure vault exists
     if not helpers.ensure_existing_vault(path):
-        return
+        raise typer.Exit(ExitCode.VAULT_MISSING)
 
     # Get password
     password = helpers.get_password_for_vault(ctx, new_vault=False)
@@ -901,25 +634,29 @@ def unlock_vault(ctx: typer.Context) -> None:
     # Load vault and handle errors
     vault = helpers.load_vault_or_print_error(path, password)
     if vault is None:
-        return
-
-    helpers.print_success("Vault unlocked successfully.")
+        raise typer.Exit(ExitCode.GENERAL_ERROR)
 
     # Check for weak password and warn if configured
     config = helpers.load_config()
     security = config.get("security", {})
     warn_on_weak = security.get("warn_on_weak_existing_passwords", False)
 
+    warning = None
     if warn_on_weak:
         result = evaluate_password_strength(password)
         score = result["score"]
         if score < 3:
-            helpers.print_warning(
+            warning = (
                 f"Warning: Your vault password is weak (score {score}). "
                 "Consider changing it."
             )
 
+    helpers.print_success("Vault unlocked successfully.")
+    if warning:
+        helpers.print_warning(warning)
 
+
+@command_errors
 def change_password(ctx: typer.Context) -> None:
     """Change the vault password.
 
@@ -934,18 +671,18 @@ def change_password(ctx: typer.Context) -> None:
 
     # Ensure vault exists
     if not helpers.ensure_existing_vault(path):
-        return
+        raise typer.Exit(ExitCode.VAULT_MISSING)
 
     # Get current password and open vault
     current_password = helpers.get_password_for_vault(ctx, new_vault=False)
     vault = helpers.load_vault_or_print_error(path, current_password)
     if vault is None:
-        return
+        raise typer.Exit(ExitCode.GENERAL_ERROR)
 
     # Prompt for new password (with confirmation)
     new_password = helpers.prompt_new_password(ctx)
     if new_password is None:
-        return
+        raise typer.Exit(ExitCode.VALIDATION_ERROR)
 
     # Enforce password strength
     if not helpers._should_skip_password_checks(ctx):
@@ -955,10 +692,5 @@ def change_password(ctx: typer.Context) -> None:
     try:
         vault.save(path, new_password)
         helpers.print_success("Vault password changed successfully.")
-    except VaultValidationError as e:
-        helpers.print_error(str(e))
-        raise typer.Exit(ExitCode.VALIDATION_ERROR) from None
-    except PermissionDenied:
-        helpers.print_error("Error: Cannot access vault directory (permission denied).")
-    except VaultIOError:
-        helpers.print_error("Failed to save vault file.")
+    except CLI_ERRORS as error:
+        exit_for_error(error)

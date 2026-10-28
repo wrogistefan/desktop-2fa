@@ -162,7 +162,7 @@ class TestPasswordEnforcement:
             mock_config.return_value = {"security": {"reject_weak_passwords": True}}
             with pytest.raises(typer.Exit) as exc:
                 _enforce_password_strength("password")
-            assert exc.value.exit_code == 1
+            assert exc.value.exit_code == 6
 
     def test_enforce_password_confirmation_declined(self) -> None:
         """Test that user can decline weak password confirmation."""
@@ -174,7 +174,7 @@ class TestPasswordEnforcement:
                 mock_confirm.return_value = False  # User declines
                 with pytest.raises(typer.Exit) as exc:
                     _enforce_password_strength("password")
-                assert exc.value.exit_code == 1
+                assert exc.value.exit_code == 6
                 mock_confirm.assert_called_once()
 
 
@@ -208,7 +208,7 @@ class TestVaultPasswordStrength:
             # Weak password should be rejected in strict mode
             with pytest.raises(typer.Exit) as exc:
                 _enforce_password_strength("password")
-            assert exc.value.exit_code == 1
+            assert exc.value.exit_code == 6
 
     def test_enforce_password_accepts_strong_always(self) -> None:
         """Test that strong passwords are always accepted."""
@@ -271,7 +271,7 @@ class TestPasswordStrengthEdgeCases:
             # Empty password should be rejected
             with pytest.raises(typer.Exit) as exc:
                 _enforce_password_strength("")
-            assert exc.value.exit_code == 1
+            assert exc.value.exit_code == 6
 
     def test_very_long_password(self) -> None:
         """Test that very long passwords can score as strong."""
