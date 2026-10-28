@@ -1,0 +1,150 @@
+[
+  {
+    "file": "v0.5.0.bin",
+    "release": "v0.5.0",
+    "commit": "9cc8f643137df12b87484c9bb00caa4e40d16fd4",
+    "password": "synthetic-żółw-compatibility-only",
+    "supported": false,
+    "sha256": "3f52b63b0710e79311ed78daf723bc492b8e4a31638c457f6d48962a6761aaaf",
+    "expected": {
+      "version": 1,
+      "entries": [
+        {
+          "issuer": "Synthetic SHA1",
+          "account_name": "alice@example.invalid",
+          "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ",
+          "algorithm": "SHA1",
+          "digits": 6,
+          "period": 30
+        },
+        {
+          "issuer": "Synthetic SHA256",
+          "account_name": "konto-żółw",
+          "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZA====",
+          "algorithm": "SHA256",
+          "digits": 8,
+          "period": 45
+        },
+        {
+          "issuer": "Synthetic SHA512",
+          "account_name": null,
+          "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNA=",
+          "algorithm": "SHA512",
+          "digits": 7,
+          "period": 60
+        }
+      ]
+    }
+  },
+  {
+    "file": "v0.7.3.bin",
+    "release": "v0.7.3",
+    "commit": "55708399428820f2f01182d561ff0cf570e53d48",
+    "password": "synthetic-żółw-compatibility-only",
+    "supported": true,
+    "sha256": "903c6f4953296fb0349567fd564b184b065713e75bc3ea176979368495c2e85a",
+    "expected": {
+      "version": 1,
+      "entries": [
+        {
+          "issuer": "Synthetic SHA1",
+          "account_name": "alice@example.invalid",
+          "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ",
+          "algorithm": "SHA1",
+          "digits": 6,
+          "period": 30
+        },
+        {
+          "issuer": "Synthetic SHA256",
+          "account_name": "konto-żółw",
+          "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZA====",
+          "algorithm": "SHA256",
+          "digits": 8,
+          "period": 45
+        },
+        {
+          "issuer": "Synthetic SHA512",
+          "account_name": null,
+          "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNA=",
+          "algorithm": "SHA512",
+          "digits": 7,
+          "period": 60
+        }
+      ]
+    }
+  },
+  {
+    "file": "v0.8.3.bin",
+    "release": "v0.8.3",
+    "commit": "cd8c3aeff9f192edf650a8b0f007a62da75224a2",
+    "password": "synthetic-żółw-compatibility-only",
+    "supported": true,
+    "sha256": "6153e89f0de647a22425d3a805fa8da662fcc8bc937b18340117a3178f40492f",
+    "expected": {
+      "version": 1,
+      "entries": [
+        {
+          "issuer": "Synthetic SHA1",
+          "account_name": "alice@example.invalid",
+          "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ",
+          "algorithm": "SHA1",
+          "digits": 6,
+          "period": 30
+        },
+        {
+          "issuer": "Synthetic SHA256",
+          "account_name": "konto-żółw",
+          "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZA====",
+          "algorithm": "SHA256",
+          "digits": 8,
+          "period": 45
+        },
+        {
+          "issuer": "Synthetic SHA512",
+          "account_name": null,
+          "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNA=",
+          "algorithm": "SHA512",
+          "digits": 7,
+          "period": 60
+        }
+      ]
+    }
+  },
+  {
+    "file": "v0.8.3-empty-password.bin",
+    "release": "v0.8.3",
+    "commit": "cd8c3aeff9f192edf650a8b0f007a62da75224a2",
+    "password": "",
+    "supported": false,
+    "sha256": "f6e5530720251c592375fa77dd9b022efd32d0f30a65d557cd20c704838182bb",
+    "expected": {
+      "version": 1,
+      "entries": [
+        {
+          "issuer": "Synthetic SHA1",
+          "account_name": "alice@example.invalid",
+          "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ",
+          "algorithm": "SHA1",
+          "digits": 6,
+          "period": 30
+        },
+        {
+          "issuer": "Synthetic SHA256",
+          "account_name": "konto-żółw",
+          "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZA====",
+          "algorithm": "SHA256",
+          "digits": 8,
+          "period": 45
+        },
+        {
+          "issuer": "Synthetic SHA512",
+          "account_name": null,
+          "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNA=",
+          "algorithm": "SHA512",
+          "digits": 7,
+          "period": 60
+        }
+      ]
+    }
+  }
+]

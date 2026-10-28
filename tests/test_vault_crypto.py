@@ -31,7 +31,7 @@ def test_vault_is_binary(tmp_path: Path) -> None:
     assert b"JBSWY3DPEHPK3PXP" not in raw
 
 
-def test_vault_backup_created(tmp_path: Path) -> None:
+def test_normal_save_replaces_vault_without_implicit_backup(tmp_path: Path) -> None:
     path = tmp_path / "vault.bin"
 
     vault = Vault()
@@ -41,9 +41,9 @@ def test_vault_backup_created(tmp_path: Path) -> None:
     vault.add_entry("B", "B", "JBSWY3DPEHPK3PXS")
     vault.save(str(path), TEST_PASSWORD)
 
-    # Note: New vault implementation does not create backups
-    # assert backup.exists()
-    # assert backup.read_bytes() != b""
+    loaded = Vault.load(path, TEST_PASSWORD)
+    assert [entry.account_name for entry in loaded.entries] == ["A", "B"]
+    assert list(tmp_path.iterdir()) == [path]
 
 
 def test_vault_tampering_detection(tmp_path: Path) -> None:
@@ -107,7 +107,7 @@ def test_vault_wrong_password(tmp_path: Path) -> None:
     vault.save(str(path), password=correct_password)
 
     # Should fail with wrong password
-    with pytest.raises(Exception):
+    with pytest.raises(InvalidPassword):
         Vault.load(str(path), password=wrong_password)
 
 
