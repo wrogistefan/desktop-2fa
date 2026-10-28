@@ -1,9 +1,10 @@
 """Pydantic models for vault data structures."""
 
-import base64
 from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
+
+from ..utils.base32 import InvalidSecret, decode_base32
 
 
 class TotpEntry(BaseModel):
@@ -39,10 +40,18 @@ class TotpEntry(BaseModel):
         Raises:
             ValueError: If the secret is not valid Base32.
         """
+        # Keep stored text unchanged, including legacy empty entries, so loading
+        # or re-saving never rewrites a user's key. Creation rejects empty keys.
         try:
-            base64.b32decode(v.upper())
-        except Exception:
-            raise ValueError("Invalid Base32 TOTP secret")
+            decode_base32(v, allow_empty=True)
+        except InvalidSecret:
+            if v.isascii():
+                raise
+            # Historical models validated str.upper(), admitting some Unicode
+            # strings the generator could never decode. Preserve those records
+            # for listing/repair, without changing their text or generating a
+            # code from the folded key. New-entry and generation paths reject it.
+            decode_base32(v.upper(), allow_empty=True)
         return v
 
     @field_validator("period")

@@ -10,6 +10,7 @@ from pydantic import ValidationError
 
 from ..crypto.aesgcm import decrypt, encrypt
 from ..crypto.argon2 import derive_key
+from ..utils.base32 import normalize_base32
 from .models import TotpEntry, VaultData
 
 # Vault file format constants
@@ -110,10 +111,14 @@ class Vault:
         Args:
             name: The unique account name.
             issuer: The issuer name.
-            secret: The base32-encoded secret.
+            secret: Non-empty Base32 key (ASCII case/spaces and optional padding).
             algorithm: TOTP hash algorithm (default SHA1).
             digits: TOTP code length (default 6).
             period: TOTP period in seconds (default 30).
+
+        Raises:
+            InvalidSecret: If the key is invalid or empty. Validation happens
+                before mutation; successful creation stores canonical Base32.
         """
         # Check for duplicate names
         for entry in self.entries:
@@ -122,6 +127,7 @@ class Vault:
                     f'An entry with name "{name}" already exists. Names must be unique.'
                 )
 
+        secret = normalize_base32(secret)
         entry = TotpEntry(
             account_name=name,
             issuer=issuer,

@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Base32 decoding is shared by add, URI parsing, stored-model validation and
+  TOTP generation. ASCII case, spaces, correct padding and omitted padding
+  now work consistently; new entries store canonical uppercase padded text.
+  Empty decoded keys are rejected before new-entry mutation or vault access.
+  Invalid add input exits with status 6; generation from legacy invalid keys
+  reports `invalid_secret` with status 6 instead of a password error. The
+  Textual prototype reports this failure without generating/copying a code.
+  Legacy empty and historically admitted Unicode-folded records remain
+  listable with unchanged secret text for explicit repair; neither is used
+  to generate a code. Valid decoded keys, RFC outputs and D2FA v1 are unchanged.
 - Rename now checks destination account-name uniqueness before mutation and
   uses the same exact-name/unique-issuer resolution in the CLI, helper and
   `Vault.rename_entry()` API. `list --indices` and `rename OLD NEW --index N`

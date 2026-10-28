@@ -12,6 +12,7 @@ import typer
 
 import desktop_2fa.cli.helpers as helpers
 from desktop_2fa.constants import ExitCode
+from desktop_2fa.utils.base32 import InvalidSecret, normalize_base32
 from desktop_2fa.vault import Vault
 from desktop_2fa.vault.password_strength import evaluate_password_strength
 from desktop_2fa.vault.vault import (
@@ -142,6 +143,14 @@ def _prepare_add(name: str, issuer: str, secret: str) -> helpers.ParsedOtpauth:
         except ValueError as e:
             helpers.print_error(f"Invalid otpauth URL: {e}")
             raise typer.Exit(ExitCode.VALIDATION_ERROR) from e
+    try:
+        secret = normalize_base32(secret)
+    except InvalidSecret:
+        helpers.print_error("Invalid secret: not valid Base32.")
+        helpers.print_info(
+            "A non-empty Base32 key is required. Example: ABCDEFGHIJKL2345"
+        )
+        raise typer.Exit(ExitCode.VALIDATION_ERROR) from None
     return {
         "label": name,
         "issuer": issuer,
@@ -171,12 +180,6 @@ def add_entry_interactive(
         "digits": parsed["digits"],
         "period": parsed["period"],
     }
-
-    # Validate Base32 secret
-    if not helpers.validate_base32(secret):
-        helpers.print_error("Invalid secret: not valid Base32.")
-        helpers.print_info("Example: ABCDEFGHIJKL2345")
-        return
 
     # DEF-02: Use safe vault existence check (avoids PermissionError from path.exists())
     try:
@@ -337,12 +340,6 @@ def add_entry(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
         "digits": parsed["digits"],
         "period": parsed["period"],
     }
-
-    # Validate Base32 secret
-    if not helpers.validate_base32(secret):
-        helpers.print_error("Invalid secret: not valid Base32.")
-        helpers.print_info("Example: ABCDEFGHIJKL2345")
-        return
 
     # DEF-02: Use safe vault existence check (avoids PermissionError from path.exists())
     try:
@@ -526,6 +523,15 @@ def generate_code(
     except AmbiguousEntry as e:
         _exit_with_error(
             ExitCode.VALIDATION_ERROR, "entry_ambiguous", str(e), json_mode, quiet
+        )
+    except InvalidSecret:
+        _exit_with_error(
+            ExitCode.VALIDATION_ERROR,
+            "invalid_secret",
+            "Invalid TOTP secret. Add a valid replacement from the provider "
+            "before removing the legacy entry.",
+            json_mode,
+            quiet,
         )
     except ValueError as e:
         if "not found" in str(e):

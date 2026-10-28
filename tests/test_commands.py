@@ -466,7 +466,9 @@ def test_add_entry_invalid_otpauth_url(
 def test_add_entry_invalid_secret(
     fake_vault_env: Path, capsys: Any, fake_ctx: Any
 ) -> None:
-    commands.add_entry("Test", "Test", "invalid_secret", fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.add_entry("Test", "Test", "invalid_secret", fake_ctx)
+    assert error.value.exit_code == 6
 
     out = capsys.readouterr().out.strip()
     assert "Invalid secret: not valid Base32." in out
@@ -855,7 +857,9 @@ def test_add_entry_interactive_invalid_base32(
     vault = Vault()
     vault.save(fake_vault_env, TEST_PASSWORD)
 
-    commands.add_entry_interactive("Test", "Test", "invalid_secret!@#", fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.add_entry_interactive("Test", "Test", "invalid_secret!@#", fake_ctx)
+    assert error.value.exit_code == 6
 
     out = capsys.readouterr().out.strip()
     assert "Invalid secret: not valid Base32" in out

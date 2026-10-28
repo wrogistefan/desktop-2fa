@@ -144,6 +144,14 @@ d2fa backup
 
 ### Vault Creation
 
+New TOTP secrets use shared Base32 rules: ASCII case and spaces are accepted,
+correct trailing padding is optional, and empty decoded keys are refused before
+vault access. New records use canonical uppercase padded text with identical
+decoded bytes. Existing secret text is preserved on load/save. Legacy empty or
+historically admitted Unicode-folded secrets remain listable but cannot generate
+codes; `code` reports `invalid_secret` with status 6. See the
+[explicit repair procedure](docs/user_manual.md#legacy-invalid-totp-secrets).
+
 When a CLI command that creates or updates entries requires a vault and none exists:
 
 1. The CLI prompts for a new password (interactive mode) or requires `--password`/`--password-file` (non-interactive mode)

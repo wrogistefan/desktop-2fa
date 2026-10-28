@@ -150,7 +150,7 @@ def test_invalid_uri_is_rejected(url: str) -> None:
         "JBSWY3DP0HPK3PXP",
         "JBSWY3DP1HPK3PXP",
         "JBSWY3DP8HPK3PXP",
-        "JBSWY3DP HPK3PXP",
+        "JBSWY3DP\u00a0HPK3PXP",
         "JBSWY3DP\nHPK3PXP",
         "JBſWY3DPEHPK3PXP",
         "JBßWY3DPEHPK3PXP",

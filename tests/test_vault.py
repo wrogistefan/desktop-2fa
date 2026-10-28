@@ -159,7 +159,7 @@ def test_vault_tampering_detection(tmp_path: Path) -> None:
 
 def test_totp_entry_invalid_secret() -> None:
     with pytest.raises(ValueError, match="Invalid Base32 TOTP secret"):
-        TotpEntry(issuer="Test", account_name="Test", secret="INVALID")
+        TotpEntry(issuer="Test", account_name="Test", secret="INVALID!")
 
 
 def test_totp_entry_invalid_period() -> None:

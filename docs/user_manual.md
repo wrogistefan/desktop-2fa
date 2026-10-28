@@ -148,6 +148,20 @@ d2fa add [NAME] [ISSUER] [SECRET]
 - `ISSUER`: Name of the service/provider (optional in interactive mode)
 - `SECRET`: Base32-encoded secret key (optional in interactive mode)
 
+Manual and URI secrets use the same Base32 rules: ASCII uppercase/lowercase
+letters and digits 2–7, with ASCII spaces ignored. Correct trailing `=` padding
+is optional; incorrect or interior padding is rejected. Tabs, line breaks,
+Unicode whitespace and Unicode letter folding are not accepted. An empty
+decoded key is invalid. `MY`, `my======` and `m y` are equivalent synthetic
+examples that decode to the byte `f`; never use example keys for real accounts.
+
+New entries are stored as uppercase Base32 with correct padding, preserving
+the decoded key bytes. Existing stored secret text is retained on load/save.
+Invalid manual or URI input exits with status 6 before password prompts or
+vault access. Python `Vault.add_entry()` and the add helper apply the same
+non-empty rule; `InvalidSecret`, a `ValueError` subclass from
+`desktop_2fa.utils.base32`, identifies invalid new keys or generation failures.
+
 **Interactive Mode:**
 When run in a terminal without arguments, prompts for name, issuer and secret:
 ```bash
@@ -751,6 +765,40 @@ Create a backup with:
 ```bash
 d2fa backup
 ```
+
+### Legacy Invalid TOTP Secrets
+
+Older versions allowed empty secrets, and their model validator admitted some
+Unicode strings after converting them with `str.upper()` even though generation
+could not decode the original text. These entries remain loadable and listable
+without rewriting their secrets, so other valid entries remain usable. The
+stored `TotpEntry` model deliberately permits these compatibility cases;
+creating new records must go through `Vault.add_entry()` or the CLI/helper.
+
+Generation refuses both cases instead of computing a code from an empty or
+folded key. `code` exits with status 6 (`invalid_secret` in JSON mode); the
+Textual prototype shows an error and copies no code. This is a secret-validation
+error, not a wrong-password error. Other malformed payloads still fail explicitly;
+this is not general recovery for corrupted vaults.
+
+To repair an entry, keep an encrypted backup, obtain valid provisioning data
+from its original provider, and add a replacement under a unique name before
+removing the invalid record. For example, using **synthetic provisioning data**:
+
+```bash
+d2fa --vault ./legacy-vault.bin backup
+d2fa --vault ./legacy-vault.bin list --indices
+d2fa --vault ./legacy-vault.bin add "otpauth://totp/Example:replacement?secret=MY&algorithm=SHA256&digits=8&period=45"
+d2fa --vault ./legacy-vault.bin code replacement
+# Verify the replacement against the provider before removing the invalid entry.
+d2fa --vault ./legacy-vault.bin remove legacy-empty
+```
+
+Use the provider's actual algorithm, digits and period when replacing a real
+entry. If the old name is ambiguous, first assign that specific record a unique
+name with the indexed rename procedure below. No key is guessed, truncated,
+silently substituted or automatically migrated. A malformed/empty key alone
+cannot reconstruct the provider's original key.
 
 ### Duplicate Names in Vault
 
