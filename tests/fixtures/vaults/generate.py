@@ -4,6 +4,7 @@ Run from the repository root with the development Python environment.
 Only pinned historical source is executed; installed/current desktop_2fa is unused.
 """
 
+import argparse
 import base64
 import hashlib
 import json
@@ -14,7 +15,6 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-OUTPUT = Path(__file__).resolve().parent
 RELEASES = {
     "v0.5.0": "9cc8f643137df12b87484c9bb00caa4e40d16fd4",
     "v0.7.3": "55708399428820f2f01182d561ff0cf570e53d48",
@@ -51,7 +51,35 @@ ENTRIES = [
 ]
 
 
-def main() -> None:
+HISTORICAL_WRITER = """
+import json
+import sys
+from desktop_2fa.vault.vault import Vault
+from desktop_2fa.vault.models import VaultData
+
+request = json.load(sys.stdin)
+data = VaultData.model_validate(request["data"])
+Vault(data).save(request["path"], request["password"])
+"""
+
+
+def generate(output: Path) -> None:
+    """Publish a complete new snapshot; never overwrite an existing set."""
+    output = output.resolve()
+    if output.exists():
+        raise FileExistsError(f"Choose a new output directory: {output}")
+    # A sibling staging directory permits one same-filesystem rename only after
+    # every historical writer and manifest write has succeeded.
+    with tempfile.TemporaryDirectory(
+        prefix=".d2fa-fixtures-", dir=output.parent
+    ) as directory:
+        staged = Path(directory) / "snapshot"
+        staged.mkdir()
+        produce(staged)
+        staged.rename(output)
+
+
+def produce(output: Path) -> None:
     manifest = []
     for release, commit in RELEASES.items():
         with tempfile.TemporaryDirectory(prefix="d2fa-historical-") as directory:
@@ -80,16 +108,17 @@ def main() -> None:
             for empty in ([False, True] if release == "v0.8.3" else [False]):
                 filename = f"{release}{'-empty-password' if empty else ''}.bin"
                 password = "" if empty else PASSWORD
-                script = root / "produce.py"
-                script.write_text(
-                    "from desktop_2fa.vault.vault import Vault\n"
-                    "from desktop_2fa.vault.models import VaultData\n"
-                    f"data = VaultData.model_validate_json({json.dumps({'version': 1, 'entries': ENTRIES})!r})\n"
-                    f"Vault(data).save({str(OUTPUT / filename)!r}, {password!r})\n",
-                    encoding="utf-8",
-                )
                 subprocess.run(
-                    [sys.executable, str(script)],
+                    [sys.executable, "-c", HISTORICAL_WRITER],
+                    input=json.dumps(
+                        {
+                            "data": {"version": 1, "entries": ENTRIES},
+                            "path": str(output / filename),
+                            "password": password,
+                        }
+                    ),
+                    text=True,
+                    encoding="utf-8",
                     cwd=root,
                     env={**os.environ, "PYTHONPATH": str(root)},
                     check=True,
@@ -102,15 +131,22 @@ def main() -> None:
                         password=password,
                         supported=release != "v0.5.0" and not empty,
                         sha256=hashlib.sha256(
-                            (OUTPUT / filename).read_bytes()
+                            (output / filename).read_bytes()
                         ).hexdigest(),
                         expected={"version": 1, "entries": ENTRIES},
                     )
                 )
-    (OUTPUT / "manifest.json").write_text(
+    (output / "manifest.json").write_text(
         json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--output",
+        type=Path,
+        required=True,
+        help="New snapshot directory (must not exist; parent must exist)",
+    )
+    generate(parser.parse_args().output)

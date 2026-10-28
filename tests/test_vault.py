@@ -102,18 +102,22 @@ def test_vault_file_is_binary(tmp_path: Path) -> None:
 
 
 def test_vault_load_rejects_non_regular_files(tmp_path: Path, monkeypatch: Any) -> None:
+    import os
     import stat
-    from types import SimpleNamespace
 
     path = tmp_path / "vault.bin"
     path.touch()
-    monkeypatch.setattr(
-        "desktop_2fa.vault.vault.os.fstat",
-        lambda fd: SimpleNamespace(st_mode=stat.S_IFIFO),
-    )
+    original_fstat = os.fstat
 
-    with pytest.raises(UnsupportedFormat, match="not a regular file"):
-        Vault.load(path, TEST_PASSWORD)
+    # os is shared with pytest's capture machinery. Preserve the full stat
+    # result and restore fstat before capture teardown on POSIX.
+    with monkeypatch.context() as scoped:
+        scoped.setattr(
+            "desktop_2fa.vault.vault.os.fstat",
+            lambda fd: os.stat_result((stat.S_IFIFO, *original_fstat(fd)[1:])),
+        )
+        with pytest.raises(UnsupportedFormat, match="not a regular file"):
+            Vault.load(path, TEST_PASSWORD)
 
 
 def test_vault_load_rejects_files_over_size_limit(tmp_path: Path) -> None:

@@ -28,11 +28,21 @@ imports. No production modules are modified. To intentionally regenerate from
 the repository root (requires historical Git objects and dev dependencies):
 
 ```powershell
-.venv/Scripts/python.exe tests/fixtures/vaults/generate.py
+.venv/Scripts/python.exe tests/fixtures/vaults/generate.py --output ./vault-fixtures-new
 ```
 
-Fresh salts/nonces mean regeneration changes hashes. Review the resulting
-binary and manifest changes together. The generator is a maintenance tool;
+The output directory must not exist and its parent must exist. The generator
+stages all binaries and the manifest in a temporary sibling directory, then
+publishes the complete snapshot with a single directory rename. Failure or
+interruption before publication leaves existing fixtures untouched. It refuses
+to overwrite any existing directory, including the committed fixture directory.
+Historical writers receive public synthetic credentials over stdin; no generated
+Python script stores passwords. Passwords in the manifest are intentionally
+public test data, not application or user credentials.
+
+Fresh salts/nonces mean regeneration changes hashes. Review a new snapshot's
+binaries and manifest together before replacing the committed test data in Git.
+The generator is a maintenance tool;
 tests read committed fixtures without invoking Git or historical code.
 
 Unsupported files must fail explicitly; they are not evidence of migration
