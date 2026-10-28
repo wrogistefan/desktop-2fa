@@ -103,6 +103,19 @@ Invalid vault password.
 - Wrong passwords never trigger writes.
 - Output is deterministic and testable.
 
+### Entry resolution for code generation and removal
+
+`code NAME` and `remove NAME` first match the exact account name. Only when
+there is no such match do they fall back to a unique issuer. Matching remains
+case-sensitive and independent of entry order. An issuer cannot shadow an
+exact account name, including when several accounts share that issuer.
+
+Multiple matches at the selected tier abort the operation with an
+`Ambiguous entry` error and exit status 6, without saving or deleting entries,
+generating a code, or touching the clipboard. In JSON code mode the error id is
+`entry_ambiguous`; quiet mode suppresses its message while retaining the failure
+status. Legacy duplicate account names are not automatically repaired.
+
 ---
 
 ## Notes

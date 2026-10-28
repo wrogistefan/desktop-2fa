@@ -234,6 +234,13 @@ d2fa --password oldpassword vault change-password
 
 Generates and displays the current TOTP code for an entry.
 
+`NAME` is matched case-sensitively: an exact account name takes precedence over
+issuer matches. If there is no exact account name, a unique issuer is accepted.
+Multiple exact account names or multiple fallback issuers produce an
+`Ambiguous entry` error (exit status 6). No code is generated or copied in that
+case. For example, a different account whose issuer is `GitHub` cannot shadow
+an account named `GitHub`.
+
 ```bash
 d2fa code [OPTIONS] NAME
 ```
@@ -322,7 +329,7 @@ Desktop-2FA uses the following exit codes:
 - `3`: Entry not found
 - `4`: Vault missing
 - `5`: Clipboard unavailable
-- `6`: Invalid flag combination
+- `6`: Invalid flag combination or ambiguous entry selection
 
 ### JSON Error Format
 
@@ -338,6 +345,7 @@ When using `--json` mode, errors are returned as JSON objects:
 **Error codes:**
 - `invalid_password`: Invalid vault password
 - `entry_not_found`: Entry not found
+- `entry_ambiguous`: Multiple entries match at the selected lookup tier
 - `vault_missing`: No vault found
 - `vault_io_error`: Failed to access vault file
 - `permission_denied`: Cannot access vault directory
@@ -348,6 +356,10 @@ When using `--json` mode, errors are returned as JSON objects:
 ### `remove` - Remove Entry
 
 Deletes a TOTP entry from the vault.
+
+Selection uses the same exact-account-name priority and unique-issuer fallback
+as `code`. Ambiguous selection exits with status 6 and leaves the vault file
+unchanged. Existing duplicate names are not automatically repaired.
 
 ```bash
 d2fa remove NAME

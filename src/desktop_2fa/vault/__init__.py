@@ -1,6 +1,6 @@
 """Desktop 2FA vault management package."""
 
 from .models import TotpEntry, VaultData
-from .vault import Vault
+from .vault import AmbiguousEntry, Vault
 
-__all__ = ["TotpEntry", "VaultData", "Vault"]
+__all__ = ["AmbiguousEntry", "TotpEntry", "VaultData", "Vault"]

@@ -61,6 +61,10 @@ class VaultNotFound(VaultIOError):
     pass
 
 
+class AmbiguousEntry(ValueError):
+    """Raised when a name cannot identify a single vault entry."""
+
+
 class Vault:
     """Vault using Pydantic models for validation and structure."""
 
@@ -113,7 +117,10 @@ class Vault:
         raise NotImplementedError("rename will be implemented in a future version")
 
     def get_entry(self, issuer: str) -> TotpEntry:
-        """Get a TOTP entry by issuer or account name.
+        """Resolve an exact account name, then a unique issuer fallback.
+
+        Matching is case-sensitive. Exact account names take precedence over
+        issuers regardless of entry order. Neither tier selects among duplicates.
 
         Args:
             issuer: The issuer or account name to search for.
@@ -122,11 +129,18 @@ class Vault:
             The matching TOTP entry.
 
         Raises:
+            AmbiguousEntry: If multiple entries match at the selected tier.
             ValueError: If no entry is found.
         """
-        for entry in self.entries:
-            if entry.issuer == issuer or entry.account_name == issuer:
-                return entry
+        matches = [entry for entry in self.entries if entry.account_name == issuer]
+        if not matches:
+            matches = [entry for entry in self.entries if entry.issuer == issuer]
+        if len(matches) > 1:
+            raise AmbiguousEntry(
+                f"Ambiguous entry '{issuer}': multiple entries match. Operation aborted."
+            )
+        if matches:
+            return matches[0]
         raise ValueError(f"Entry '{issuer}' not found")
 
     def find_entries(self, name: str) -> list[TotpEntry]:

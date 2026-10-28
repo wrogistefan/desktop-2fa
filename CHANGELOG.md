@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Code generation and removal now prefer an exact account name over issuer
+  matches and reject ambiguous names or fallback issuers instead of selecting
+  the first entry. Ambiguous CLI selections exit with status 6; Python callers
+  receive `AmbiguousEntry`, a `ValueError` subclass. Matching remains
+  case-sensitive and unambiguous issuer lookups remain supported.
+
 ## [0.9.0] — Vault API Password Hardening (2026-10-26)
 
 ### 🛡️ Security
