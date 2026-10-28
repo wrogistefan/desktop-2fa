@@ -1,10 +1,11 @@
 """TOTP code generation utilities."""
 
-import base64
 import hashlib
 import hmac
 import struct
 import time
+
+from ..utils.base32 import decode_base32
 
 
 def generate(
@@ -25,12 +26,15 @@ def generate(
 
     Returns:
         The TOTP code as a string.
+
+    Raises:
+        InvalidSecret: If the Base32 secret is invalid or decodes to an empty key.
     """
     if timestamp is None:
         timestamp = int(time.time())
 
     counter = timestamp // period
-    key = base64.b32decode(secret, casefold=True)
+    key = decode_base32(secret)
 
     algo = algorithm.casefold()
     if algo == "sha1":

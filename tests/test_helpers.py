@@ -347,7 +347,7 @@ def test_validate_base32_valid() -> None:
     assert helpers.validate_base32("JBSWY3DPEHPK3PXP") is True
     assert helpers.validate_base32("JBSWY3DP EHPK3PXP") is True  # with spaces
     assert helpers.validate_base32("jbswy3dpehpk3pxp") is True  # lowercase
-    assert helpers.validate_base32("JBSWY3DPEHPK3PXP=") is True  # with padding
+    assert helpers.validate_base32("MY======") is True  # correct padding
 
 
 def test_validate_base32_invalid() -> None:
@@ -442,7 +442,8 @@ def test_validate_base32_edge_cases() -> None:
     assert helpers.validate_base32(long_secret) is True
 
     # Test Base32 with padding
-    assert helpers.validate_base32("JBSWY3DPEHPK3PXP======") is True
+    assert helpers.validate_base32("MY======") is True
+    assert helpers.validate_base32("JBSWY3DPEHPK3PXP======") is False
 
     # Test Base32 with mixed case
     assert helpers.validate_base32("jbswy3dpehpk3pxp") is True
@@ -731,15 +732,8 @@ def test_get_password_for_vault_empty_password_prompt(
     # This tests lines 168-169
 
 
-def test_validate_base32_invalid_decode(monkeypatch: Any) -> None:
-
-    # Mock base64.b32decode to raise exception
-    def mock_b32decode(data: Any) -> None:
-        raise Exception("Invalid base32")
-
-    monkeypatch.setattr("base64.b32decode", mock_b32decode)
-
-    assert not helpers.validate_base32("INVALID")
+def test_validate_base32_rejects_interior_padding() -> None:
+    assert not helpers.validate_base32("MY===A==")
 
 
 def test_get_password_for_vault_enforce_strength(monkeypatch: Any) -> None:

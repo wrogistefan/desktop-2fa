@@ -253,11 +253,16 @@ def test_cli_add_missing_issuer(fake_vault_env_cli: Path) -> None:
 
 
 def test_cli_add_missing_secret(fake_vault_env_cli: Path) -> None:
+    original = fake_vault_env_cli.read_bytes() if fake_vault_env_cli.exists() else None
     result = runner.invoke(
         app, ["--password", TEST_PASSWORD, "add", "GitHub", "GitHub", ""]
     )
-    assert result.exit_code == 0  # Empty secret is accepted
-    assert "Entry added:" in result.output
+    assert result.exit_code == 6
+    assert "Invalid secret: not valid Base32." in result.output
+    assert "Entry added:" not in result.output
+    assert (
+        fake_vault_env_cli.read_bytes() if fake_vault_env_cli.exists() else None
+    ) == original
 
 
 def test_cli_init_vault_new(fake_vault_env_cli: Path) -> None:

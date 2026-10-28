@@ -1,7 +1,5 @@
 """CLI helper functions for Desktop 2FA."""
 
-import base64
-import binascii
 import getpass
 import math
 import os
@@ -15,6 +13,7 @@ import typer
 from rich import print as rprint
 from rich.text import Text
 
+from desktop_2fa.utils.base32 import InvalidSecret, decode_base32, normalize_base32
 from desktop_2fa.vault import Vault
 from desktop_2fa.vault.password_strength import evaluate_password_strength
 
@@ -63,6 +62,7 @@ def add_entry(
         secret: The Base32-encoded TOTP secret.
         password: Password to encrypt the vault.
     """
+    secret = normalize_base32(secret)
     vault = Vault.load(path, password)
     vault.add_entry(name=account, issuer=issuer, secret=secret)
     vault.save(path, password)
@@ -517,15 +517,9 @@ def print_entries_table(
 def validate_base32(secret: str) -> bool:
     """Validate if a string is valid Base32."""
     try:
-        # Remove padding and spaces, convert to uppercase
-        cleaned = secret.replace(" ", "").replace("=", "").upper()
-        # Check if all characters are valid Base32
-        if not all(c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567" for c in cleaned):
-            return False
-        # Try to decode to verify it's valid
-        base64.b32decode(cleaned + "=" * ((8 - len(cleaned) % 8) % 8))
+        decode_base32(secret)
         return True
-    except Exception:
+    except InvalidSecret:
         return False
 
 
@@ -581,21 +575,10 @@ def parse_otpauth_url(url: str) -> ParsedOtpauth:
     if not period.isascii() or not period.isdecimal() or int(period) <= 0:
         raise ValueError("Period must be a positive integer")
 
-    # Provisioning secrets may omit Base32 padding. Canonicalize this URI input
-    # for the existing model/generator; shared manual-secret decoding is S06.
-    # b32decode rejects non-alphabet characters (unlike permissive b64decode).
-    # Its casefold accepts ASCII lowercase without Unicode str.upper folding.
-    try:
-        decoded = base64.b32decode(secret + "=" * (-len(secret) % 8), casefold=True)
-        if not decoded:
-            raise ValueError
-    except (ValueError, binascii.Error):
-        raise ValueError("Invalid Base32 TOTP secret") from None
-
     return {
         "issuer": issuer,
         "label": label,
-        "secret": base64.b32encode(decoded).decode("ascii"),
+        "secret": normalize_base32(secret),
         "algorithm": cast(Literal["SHA1", "SHA256", "SHA512"], algorithm),
         "digits": cast(Literal[6, 7, 8], int(digits)),
         "period": int(period),

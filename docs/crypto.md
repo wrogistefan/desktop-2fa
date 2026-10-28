@@ -62,6 +62,23 @@ Loading currently accepts only the `D2FA` magic and format version `0x01`.
 There is no migration path in the current loader for older files that lack this
 header, nor support for other format versions.
 
+### TOTP secret text
+
+TOTP secret decoding is shared across input validation and code generation.
+It accepts ASCII Base32 letters in either case, ignores ASCII spaces, and
+accepts omitted padding or correct trailing padding. Other whitespace,
+non-ASCII characters and incorrect/interior padding are rejected for new
+entries and generation. New entries use canonical uppercase padded Base32;
+this re-encodes the same decoded bytes without truncating or replacing keys.
+
+Stored-model validation preserves existing secret text, including historical
+empty strings and Unicode strings admitted by the old `str.upper()` validator.
+That Unicode fallback validates only historical model compatibility; it never
+supplies folded bytes to the generator. Empty and non-ASCII keys cannot
+generate codes. Such entries can be listed and explicitly replaced through
+the CLI without making other valid entries inaccessible. See the
+[repair procedure](./user_manual.md#legacy-invalid-totp-secrets).
+
 ### Save and load
 
 On save, the application serializes the vault to UTF-8 JSON and validates that

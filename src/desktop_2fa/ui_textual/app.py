@@ -3,6 +3,7 @@ from textual.containers import Container
 from textual.widgets import Button, Footer, Header, Label, ListItem, ListView
 
 from desktop_2fa.totp.generator import generate
+from desktop_2fa.utils.base32 import InvalidSecret
 from desktop_2fa.vault import Vault
 from desktop_2fa.vault.models import TotpEntry
 from desktop_2fa.vault.vault import VaultError
@@ -97,13 +98,18 @@ class D2FAApp(App[object]):
 
         entry = self.vault.entries[selected]
 
-        if button_id == "generate":
-            code = self._generate_code(entry)
-            self.query_one("#output", Label).update(f"Code: {code}")
-
-        if button_id == "copy":
-            code = self._generate_code(entry)
-            self._copy_to_clipboard(code)
+        if button_id in {"generate", "copy"}:
+            try:
+                code = self._generate_code(entry)
+            except InvalidSecret:
+                self.query_one("#output", Label).update(
+                    "Invalid TOTP secret. Repair this entry using the CLI."
+                )
+                return
+            if button_id == "generate":
+                self.query_one("#output", Label).update(f"Code: {code}")
+            else:
+                self._copy_to_clipboard(code)
 
 
 def run_textual(vault_path: str, password: str) -> None:

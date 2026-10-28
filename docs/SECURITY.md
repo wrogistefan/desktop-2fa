@@ -80,7 +80,17 @@ for that command; later commands still need a password or interactive prompt.
 Avoid `--password` where command-line arguments may be visible to other users
 or recorded by tooling.
 
-## Entry selection and duplicate repair
+## TOTP input and entry selection
+
+TOTP creation and generation reject invalid Base32 and empty decoded keys.
+New-input normalization changes only case, ASCII spaces and Base32 padding,
+preserving the decoded key bytes; it never folds Unicode into key material.
+Stored models retain legacy empty strings and historically admitted
+Unicode-folded strings unchanged so the vault can still be listed and valid
+entries used. Generation refuses these invalid entries with an explicit error;
+no code is computed or copied from an empty or Unicode-folded key. Repair
+requires valid provisioning data from the original provider, not a guessed or
+automatically substituted key. See the [user manual](./user_manual.md#legacy-invalid-totp-secrets).
 
 Rename resolves an exact account name before an issuer fallback and refuses
 ambiguous names without an explicit selector. It checks destination uniqueness
