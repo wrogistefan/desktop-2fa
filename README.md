@@ -69,6 +69,9 @@ d2fa vault init
 # Add a new TOTP token
 d2fa add GitHub GitHub JBSWY3DPEHPK3PXP
 
+# Or add a provisioning URI (quote it so the shell preserves '&')
+d2fa add "otpauth://totp/Example:alice?secret=JBSWY3DPEHPK3PXP&issuer=Example&algorithm=SHA256&digits=8&period=60"
+
 # List all entries
 d2fa list
 
@@ -92,6 +95,13 @@ d2fa --vault ./development-vault vault path
 # Launch the early Textual UI prototype with that vault
 d2fa --vault ./development-vault ui
 ```
+
+URI-based add preserves algorithm, digits and period; omitted parameters default
+to SHA1, 6 digits and 30 seconds. Labels are percent-decoded, and an issuer query
+parameter must agree with any issuer prefix. Unsupported or contradictory
+provisioning data exits with status 6 before vault access. Interactive add also
+accepts a URI at the issuer prompt and skips the separate secret prompt. The URI
+label supplies the account name.
 
 The Textual UI is at an **early prototype stage**. It prompts for the vault
 password unless one is supplied with `--password` or `--password-file`, and

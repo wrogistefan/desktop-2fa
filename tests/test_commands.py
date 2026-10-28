@@ -455,7 +455,9 @@ def test_add_entry_invalid_otpauth_url(
     fake_vault_env: Path, capsys: Any, fake_ctx: Any
 ) -> None:
     invalid_url = "otpauth://invalid"
-    commands.add_entry("Test", invalid_url, "", fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.add_entry("Test", invalid_url, "", fake_ctx)
+    assert error.value.exit_code == 6
 
     out = capsys.readouterr().out.strip()
     assert "Invalid otpauth URL:" in out
