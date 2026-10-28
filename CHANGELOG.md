@@ -11,8 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Vault saves now reject invalid mutated data and output larger than 10 MiB
   before filesystem changes, preserving the existing file. The exact limit
   includes UTF-8 JSON and 49 bytes of D2FA v1 overhead. Python callers receive
-  `VaultValidationError` (a `ValueError` and `VaultError` subclass); both CLI add
-  modes report the validation error with status 6. Supported legacy entries,
+  `VaultValidationError` (a `ValueError` and `VaultError` subclass); CLI commands
+  report save-validation errors with status 6. Supported legacy entries,
   the binary format and cryptographic parameters remain unchanged.
 - URI-based add now preserves algorithm, digits and period in both interactive
   and non-interactive flows. Single-URI add syntax is supported; decoded labels,

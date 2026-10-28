@@ -1,6 +1,5 @@
 """Save-boundary regressions using synthetic data and selected temporary paths."""
 
-import json
 from pathlib import Path
 from typing import Any
 
@@ -18,10 +17,9 @@ SECRET = "JBSWY3DPEHPK3PXP"
 def _sized_vault(size: int, label: str) -> Vault:
     vault = Vault()
     vault.add_entry("synthetic", label, SECRET)
-    # Independently count compact JSON's UTF-8 bytes and the literal v1 layout.
-    payload = json.dumps(
-        vault.data.model_dump(), ensure_ascii=False, separators=(",", ":")
-    ).encode("utf-8")
+    # Size the padding using the actual serializer; the tests independently
+    # check the resulting file size and retain the literal v1 overhead.
+    payload = vault.data.model_dump_json().encode("utf-8")
     vault.entries[0].issuer = label + "x" * (size - 49 - len(payload))
     return vault
 
@@ -65,6 +63,114 @@ def test_cli_add_to_near_limit_preserves_existing_vault(
     assert path.read_bytes() == original
     assert Vault.load(path, PASSWORD).data == vault.data
     assert list(tmp_path.iterdir()) == [path]
+
+
+def test_cli_rename_to_exceed_limit_preserves_existing_vault(tmp_path: Path) -> None:
+    path = tmp_path / "vault.bin"
+    vault = _sized_vault(MAX_VAULT_SIZE - 1024, "synthetic")
+    vault.add_entry("target", "test", SECRET)
+    remaining = (
+        MAX_VAULT_SIZE - 1 - 49 - len(vault.data.model_dump_json().encode("utf-8"))
+    )
+    assert vault.entries[0].issuer is not None
+    vault.entries[0].issuer += "x" * remaining
+    vault.save(path, PASSWORD)
+    original = path.read_bytes()
+    assert len(original) == MAX_VAULT_SIZE - 1
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "--vault",
+            str(path),
+            "--password",
+            PASSWORD,
+            "rename",
+            "target",
+            "longer-name",
+        ],
+    )
+    assert result.exit_code == 6, result.output
+    assert "maximum supported size" in result.output
+    assert "Invalid vault password" not in result.output
+    assert "Renamed" not in result.output
+    assert path.read_bytes() == original
+    assert Vault.load(path, PASSWORD).data == vault.data
+    assert list(tmp_path.iterdir()) == [path]
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        ["remove", "synthetic"],
+        ["rename", "synthetic", "new"],
+        ["export", "{export}"],
+        ["import", "{source}", "--force"],
+        ["backup"],
+        ["init-vault", "--force"],
+        ["vault", "init", "--force"],
+        ["vault", "change-password"],
+        ["list"],
+    ],
+    ids=[
+        "remove",
+        "rename",
+        "export",
+        "import",
+        "backup",
+        "init",
+        "vault-init",
+        "password",
+        "list-create",
+    ],
+)
+def test_cli_save_validation_failure_is_reported(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, command: list[str]
+) -> None:
+    path = tmp_path / "vault.bin"
+    vault = Vault()
+    vault.add_entry("synthetic", "test", SECRET)
+    vault.save(path, PASSWORD)
+    original = path.read_bytes()
+    source = tmp_path / "source.bin"
+    source.write_bytes(original)
+    exported = tmp_path / "export.bin"
+    exported.write_bytes(b"synthetic existing export")
+    selected = tmp_path / "new.bin" if command == ["list"] else path
+
+    def fail_save(self: Vault, path: str | Path, password: str) -> None:
+        raise VaultValidationError(
+            "Vault contains invalid data; correct entries before saving."
+        )
+
+    monkeypatch.setattr(Vault, "save", fail_save)
+    monkeypatch.setattr(
+        "desktop_2fa.cli.helpers.prompt_new_password",
+        lambda ctx: "synthetic-new-password",
+    )
+    result = CliRunner().invoke(
+        app,
+        ["--vault", str(selected), "--password", PASSWORD, "--allow-weak-passwords"]
+        + [arg.format(source=source, export=exported) for arg in command],
+    )
+    assert result.exit_code == 6, result.output
+    assert "correct entries before saving" in result.output
+    assert "Invalid vault password" not in result.output
+    assert "Traceback" not in result.output
+    for success in [
+        "Removed entry:",
+        "Renamed '",
+        "Exported vault to:",
+        "Vault imported from",
+        "Backup created:",
+        "Vault created at",
+        "Vault password changed successfully.",
+    ]:
+        assert success not in result.output
+    assert path.read_bytes() == original
+    assert source.read_bytes() == original
+    assert exported.read_bytes() == b"synthetic existing export"
+    assert set(tmp_path.iterdir()) == {path, source, exported}
 
 
 @pytest.mark.parametrize(

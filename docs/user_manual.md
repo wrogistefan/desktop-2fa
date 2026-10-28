@@ -78,8 +78,8 @@ set, the existing default path is used.
 Vault files must be regular files no larger than 10 MiB.
 The save limit includes the UTF-8 JSON payload and 49 bytes of encryption and
 format overhead. Invalid data or an oversized save leaves the previous vault
-unchanged. If adding an entry exceeds the limit, both CLI add modes report a
-size error and exit with status 6; reduce the stored data before trying again.
+unchanged. CLI commands report save-validation errors with status 6. If adding
+or renaming an entry exceeds the limit, reduce the stored data before trying again.
 Python `Vault.save()` raises `VaultValidationError` (a `ValueError` subclass)
 for invalid data or oversized output. Supported legacy entries and D2FA v1
 remain compatible; no migration is required.
