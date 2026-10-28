@@ -218,8 +218,8 @@ def test_missing_removal_preserves_saved_vault(
             ],
         )
         assert result.exit_code != 0
-        assert isinstance(result.exception, ValueError)
-        assert "not found" in str(result.exception)
+        assert result.exit_code == 3
+        assert "not found" in result.output
     else:
         with pytest.raises(ValueError, match="not found"):
             helpers.remove_entry(collision_path, "missing", PASSWORD)

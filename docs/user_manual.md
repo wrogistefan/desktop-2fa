@@ -363,15 +363,46 @@ d2fa code --quiet GitHub
 
 ### Exit Codes
 
-Desktop-2FA uses the following exit codes:
+All commands use the following application exit codes (`ExitCode`):
 
-- `0`: Success
-- `1`: Generic error
-- `2`: Invalid password
-- `3`: Entry not found
-- `4`: Vault missing
-- `5`: Clipboard unavailable
-- `6`: Invalid flag combination, ambiguous entry selection or invalid provisioning URI
+| Status | Meaning |
+| --- | --- |
+| `0` | Requested operation completed successfully |
+| `1` | I/O or permission failure, corrupted vault, unsupported format, unexpected operation failure, or cancellation |
+| `2` | Vault authentication failed (wrong password or failed authentication tag) |
+| `3` | Requested account/issuer was not found |
+| `4` | Required vault or import source does not exist |
+| `5` | Required clipboard operation failed |
+| `6` | Validation/refusal: invalid input/options/password input, ambiguity, occupied name, invalid selector, rejected save or overwrite without `--force` |
+
+Typer's argument parser also uses status 2 for usage errors (such as a
+non-integer `--index` or an unknown option). Successful `--help`, version,
+`vault path`, empty listings and completed operations remain status 0.
+Plain `code --copy` retains its best-effort fallback: if copying fails but
+the code is printed successfully, it warns and returns 0. `--copy-only`
+requires clipboard success and returns 5 on failure.
+
+`add`, `list` and `init` may create an initially missing vault. Other commands
+requiring an existing vault return 4 if it is absent. If a vault was detected
+but then cannot be loaded, the operation fails; no empty vault is created as
+recovery. UI startup failures now report the same statuses before starting the
+Textual event loop. Runtime UI interaction errors remain visible in the UI.
+
+**Compatibility note:** Earlier versions sometimes printed errors and returned
+0 (including export/backup/mutation, non-interactive list, unlock and password
+change). Automation must now handle these non-zero statuses. The documented
+`code` status numbers are preserved, but generic validation errors are no longer
+misreported as a wrong password based on message text. Invalid/missing password
+input, conflicting password options, mismatched confirmation, rejected weak
+passwords and refused init/import overwrites now use 6. Password-file I/O
+failures use 1. These are intentional error-status corrections; passwords,
+vault format and successful command output are unchanged.
+
+Python `EntryNotFound` and `EntryAlreadyExists` are `ValueError` subclasses;
+existing `except ValueError` callers remain compatible. CLI-oriented helpers
+`ensure_existing_vault`, `load_vault_or_print_error` and `prompt_new_password`
+now raise `typer.Exit` on failure instead of returning failure sentinels. Low-level
+Vault and persistence helpers continue to raise domain exceptions to callers.
 
 ### JSON Error Format
 
@@ -394,6 +425,8 @@ When using `--json` mode, errors are returned as JSON objects:
 - `corrupted_vault`: Vault file is corrupted
 - `unsupported_format`: Vault file format is unsupported
 - `clipboard_unavailable`: Clipboard not available on this system
+- `invalid_secret`: A legacy secret cannot safely generate a code
+- `validation_error`: Other validation failures
 
 ### `remove` - Remove Entry
 

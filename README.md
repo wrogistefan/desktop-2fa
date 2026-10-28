@@ -167,7 +167,8 @@ When a command requires a vault and it exists:
 
 1. The CLI prompts for the existing password (interactive mode) or requires credentials (non-interactive mode)
 2. The vault is decrypted and loaded
-3. If the password is invalid, the CLI exits with `typer.Exit(1)`
+3. Authentication failure exits with status 2; other failures use the shared
+   [exit-status contract](docs/user_manual.md#exit-codes) and never report success.
 
 ### Duplicate Entry Handling
 

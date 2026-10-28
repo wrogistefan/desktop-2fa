@@ -111,6 +111,10 @@ SHA1/6/30 defaults, and the manual `add NAME ISSUER SECRET` syntax is unchanged.
 - Vault creation is always announced.
 - Password confirmation occurs only during creation.
 - Wrong passwords never trigger writes.
+- Failed operations return non-zero status even in non-interactive mode.
+  Authentication is 2, missing entry 3, missing vault 4 and validation 6;
+  I/O/permission, corrupted data and unsupported formats are 1. Required
+  clipboard failure remains 5. See the [full contract](user_manual.md#exit-codes).
 - Output is deterministic and testable.
 
 ### Entry resolution for code generation and removal

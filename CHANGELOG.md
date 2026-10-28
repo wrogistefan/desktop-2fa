@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- CLI failures now return consistent non-zero `ExitCode` values across add,
+  list, code, remove, rename, import/export, backup, initialization, unlock,
+  password change and UI startup. Authentication remains 2, missing entries 3,
+  missing vaults 4, clipboard failures 5 and validation failures 6; filesystem,
+  corrupted-data and unsupported-format failures use 1. Typed entry exceptions
+  replace message-substring classification while remaining `ValueError`
+  subclasses. CLI helpers raise failures instead of returning `False`/`None`.
+  Previously silent or success-status failures now produce an error status;
+  refused overwrites and invalid password input use 6. An initial missing vault
+  may still be created by add/list/init; a failed load never triggers creation.
 - Base32 decoding is shared by add, URI parsing, stored-model validation and
   TOTP generation. ASCII case, spaces, correct padding and omitted padding
   now work consistently; new entries store canonical uppercase padded text.

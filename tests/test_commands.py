@@ -7,7 +7,6 @@ import pytest
 import typer
 
 from desktop_2fa.cli import commands, helpers
-from desktop_2fa.vault.vault import VaultIOError
 
 TEST_PASSWORD = "jawislajawisla"
 
@@ -183,8 +182,9 @@ def test_remove_entry_missing_raises(fake_vault_env: Path, fake_ctx: Any) -> Non
 
     vault = Vault()
     vault.save(fake_vault_env, TEST_PASSWORD)
-    with pytest.raises(ValueError):
+    with pytest.raises(typer.Exit) as error:
         commands.remove_entry("Nope", fake_ctx)
+    assert error.value.exit_code == 3
 
 
 def test_rename_entry(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -> None:
@@ -206,8 +206,9 @@ def test_rename_entry_missing_raises(fake_vault_env: Path, fake_ctx: Any) -> Non
 
     vault = Vault()
     vault.save(fake_vault_env, TEST_PASSWORD)
-    with pytest.raises(ValueError):
+    with pytest.raises(typer.Exit) as error:
         commands.rename_entry("Old", "New", fake_ctx)
+    assert error.value.exit_code == 3
 
 
 def test_export_vault(
@@ -235,7 +236,9 @@ def test_export_vault_missing_file(
         lambda: str(fake_vault),
     )
 
-    commands.export_vault(str(tmp_path / "any.bin"), fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.export_vault(str(tmp_path / "any.bin"), fake_ctx)
+    assert error.value.exit_code == 4
     out = capsys.readouterr().out
     # zgodnie z aktualnym helpers.export_vault, brak explicit checka,
     # więc tutaj nie wymuszamy konkretnego komunikatu – tylko, że coś wypisuje.
@@ -272,8 +275,9 @@ def test_import_vault_missing_source(
     fake_vault_env: Path, tmp_path: Path, capsys: Any, fake_ctx: Any
 ) -> None:
     missing = tmp_path / "nope.bin"
-    with pytest.raises(VaultIOError):
+    with pytest.raises(typer.Exit) as error:
         commands.import_vault(str(missing), False, fake_ctx)
+    assert error.value.exit_code == 4
 
 
 def test_import_vault_refuses_overwrite_without_force(
@@ -332,7 +336,9 @@ def test_backup_vault_missing(
         lambda: str(fake_missing),
     )
 
-    commands.backup_vault(fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.backup_vault(fake_ctx)
+    assert error.value.exit_code == 4
     out = capsys.readouterr().out
     # Now prints "No vault found."
     assert "No vault found." in out
@@ -364,7 +370,9 @@ def test_add_entry_invalid_password(
     vault = Vault()
     vault.save(fake_vault_env, TEST_PASSWORD)
 
-    commands.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP", fake_ctx_wrong_password)
+    with pytest.raises(typer.Exit) as error:
+        commands.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP", fake_ctx_wrong_password)
+    assert error.value.exit_code == 2
     out = capsys.readouterr().out.strip()
     assert out == "Invalid vault password."
 
@@ -378,7 +386,9 @@ def test_list_entries_invalid_password(
     vault = Vault()
     vault.save(fake_vault_env, TEST_PASSWORD)
 
-    commands.list_entries(fake_ctx_wrong_password)
+    with pytest.raises(typer.Exit) as error:
+        commands.list_entries(fake_ctx_wrong_password)
+    assert error.value.exit_code == 2
     out = capsys.readouterr().out.strip()
     assert out == "Invalid vault password."
 
@@ -392,7 +402,9 @@ def test_remove_entry_invalid_password(
     vault = Vault()
     vault.save(fake_vault_env, TEST_PASSWORD)
 
-    commands.remove_entry("Test", fake_ctx_wrong_password)
+    with pytest.raises(typer.Exit) as error:
+        commands.remove_entry("Test", fake_ctx_wrong_password)
+    assert error.value.exit_code == 2
     out = capsys.readouterr().out.strip()
     assert out == "Invalid vault password."
 
@@ -407,7 +419,9 @@ def test_export_vault_invalid_password(
     vault.save(fake_vault_env, TEST_PASSWORD)
 
     export_path = tmp_path / "export.bin"
-    commands.export_vault(str(export_path), fake_ctx_wrong_password)
+    with pytest.raises(typer.Exit) as error:
+        commands.export_vault(str(export_path), fake_ctx_wrong_password)
+    assert error.value.exit_code == 2
     out = capsys.readouterr().out.strip()
     assert out == "Invalid vault password."
 
@@ -422,7 +436,9 @@ def test_import_vault_invalid_password(
     src = tmp_path / "src.bin"
     vault.save(src, TEST_PASSWORD)
 
-    commands.import_vault(str(src), False, fake_ctx_wrong_password)
+    with pytest.raises(typer.Exit) as error:
+        commands.import_vault(str(src), False, fake_ctx_wrong_password)
+    assert error.value.exit_code == 2
     out = capsys.readouterr().out.strip()
     assert out == "Invalid vault password."
 
@@ -436,7 +452,9 @@ def test_backup_vault_invalid_password(
     vault = Vault()
     vault.save(fake_vault_env, TEST_PASSWORD)
 
-    commands.backup_vault(fake_ctx_wrong_password)
+    with pytest.raises(typer.Exit) as error:
+        commands.backup_vault(fake_ctx_wrong_password)
+    assert error.value.exit_code == 2
     out = capsys.readouterr().out.strip()
     assert out == "Invalid vault password."
 
@@ -509,8 +527,9 @@ def test_remove_entry_existing_vault_no_entries(
     vault = Vault()
     vault.save(fake_vault_env, TEST_PASSWORD)
 
-    with pytest.raises(ValueError, match="not found"):
+    with pytest.raises(typer.Exit) as error:
         commands.remove_entry("nonexistent", fake_ctx)
+    assert error.value.exit_code == 3
 
 
 def test_rename_entry_existing_vault_no_entries(
@@ -521,8 +540,9 @@ def test_rename_entry_existing_vault_no_entries(
     vault = Vault()
     vault.save(fake_vault_env, TEST_PASSWORD)
 
-    with pytest.raises(ValueError, match="not found"):
+    with pytest.raises(typer.Exit) as error:
         commands.rename_entry("old", "new", fake_ctx)
+    assert error.value.exit_code == 3
 
 
 def test_export_vault_existing_vault_no_entries(
@@ -547,9 +567,11 @@ def test_import_vault_corrupted_source(
     corrupted = tmp_path / "corrupted.bin"
     corrupted.write_text("corrupted data")
 
-    commands.import_vault(str(corrupted), True, fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.import_vault(str(corrupted), True, fake_ctx)
+    assert error.value.exit_code == 1
     out = capsys.readouterr().out.strip()
-    assert "Source vault file format is unsupported." in out
+    assert "Vault file format is unsupported." in out
 
 
 def test_import_vault_unsupported_format(
@@ -559,10 +581,12 @@ def test_import_vault_unsupported_format(
     # Create a file that looks like a vault but has unsupported format
     unsupported.write_bytes(b"unsupported_format_data")
 
-    commands.import_vault(str(unsupported), True, fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.import_vault(str(unsupported), True, fake_ctx)
+    assert error.value.exit_code == 1
 
     out = capsys.readouterr().out.strip()
-    assert "Source vault file format is unsupported." in out
+    assert "Vault file format is unsupported." in out
 
 
 def test_backup_vault_existing_vault_no_entries(
@@ -589,7 +613,9 @@ def test_init_vault_existing_no_force(
     vault = Vault()
     vault.save(fake_vault_env, TEST_PASSWORD)
 
-    commands.init_vault(False, fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.init_vault(False, fake_ctx)
+    assert error.value.exit_code == 6
 
     out = capsys.readouterr().out.strip()
     assert "Vault already exists." in out
@@ -628,7 +654,9 @@ def test_remove_entry_unsupported_format(
         b"WRNG" + b"\x01" + b"16byte_salt_here" + b"encrypted_data"
     )
 
-    commands.remove_entry("GitHub", fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.remove_entry("GitHub", fake_ctx)
+    assert error.value.exit_code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Vault file format is unsupported." in out
@@ -642,7 +670,9 @@ def test_rename_entry_unsupported_format(
         b"WRNG" + b"\x01" + b"16byte_salt_here" + b"encrypted_data"
     )
 
-    commands.rename_entry("GitHub", "NewGitHub", fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.rename_entry("GitHub", "NewGitHub", fake_ctx)
+    assert error.value.exit_code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Vault file format is unsupported." in out
@@ -657,7 +687,9 @@ def test_export_vault_unsupported_format(
     )
 
     export_path = tmp_path / "export.bin"
-    commands.export_vault(str(export_path), fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.export_vault(str(export_path), fake_ctx)
+    assert error.value.exit_code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Vault file format is unsupported." in out
@@ -671,7 +703,9 @@ def test_backup_vault_unsupported_format(
         b"WRNG" + b"\x01" + b"16byte_salt_here" + b"encrypted_data"
     )
 
-    commands.backup_vault(fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.backup_vault(fake_ctx)
+    assert error.value.exit_code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Vault file format is unsupported." in out
@@ -685,7 +719,9 @@ def test_add_entry_unsupported_format(
         b"WRNG" + b"\x01" + b"16byte_salt_here" + b"encrypted_data"
     )
 
-    commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+    assert error.value.exit_code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Vault file format is unsupported." in out
@@ -699,7 +735,9 @@ def test_list_entries_unsupported_format(
         b"WRNG" + b"\x01" + b"16byte_salt_here" + b"encrypted_data"
     )
 
-    commands.list_entries(fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.list_entries(fake_ctx)
+    assert error.value.exit_code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Vault file format is unsupported." in out
@@ -826,7 +864,9 @@ def test_rename_entry_no_vault(
     if fake_vault_env.exists():
         fake_vault_env.unlink()
 
-    commands.rename_entry("Old", "New", fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.rename_entry("Old", "New", fake_ctx)
+    assert error.value.exit_code == 4
 
     out = capsys.readouterr().out.strip()
     assert "No vault found." in out
@@ -839,8 +879,9 @@ def test_rename_entry_missing_entry_raises(fake_vault_env: Path, fake_ctx: Any) 
     vault = Vault()
     vault.save(fake_vault_env, TEST_PASSWORD)
 
-    with pytest.raises(ValueError, match="not found"):
+    with pytest.raises(typer.Exit) as error:
         commands.rename_entry("Nonexistent", "NewName", fake_ctx)
+    assert error.value.exit_code == 3
 
 
 # =============================================================================
@@ -882,7 +923,9 @@ def test_list_entries_permission_error_directory(
 
     monkeypatch.setattr("desktop_2fa.vault.Vault.load", mock_load)
 
-    commands.list_entries(fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.list_entries(fake_ctx)
+    assert error.value.exit_code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Cannot access vault directory (permission denied)" in out
@@ -902,7 +945,9 @@ def test_list_entries_corrupted_vault(
     # Create a dummy file so the path exists
     fake_vault_env.write_bytes(b"dummy")
 
-    commands.list_entries(fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.list_entries(fake_ctx)
+    assert error.value.exit_code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Vault file is corrupted" in out
@@ -922,7 +967,9 @@ def test_list_entries_io_error(
         raise OSError("Disk error")
 
     monkeypatch.setattr("os.open", mock_open)
-    commands.list_entries(fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.list_entries(fake_ctx)
+    assert error.value.exit_code == 1
     out = capsys.readouterr().out.strip()
     assert "Failed to access vault file" in out
 
@@ -1221,13 +1268,15 @@ def test_add_entry_permission_error_directory(
 
     monkeypatch.setattr("pathlib.Path.mkdir", mock_mkdir)
 
-    commands.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP", fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP", fake_ctx)
+    assert error.value.exit_code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Cannot access vault directory (permission denied)" in out
 
 
-def test_add_entry_vault_not_found_creates_new(
+def test_add_entry_load_failure_does_not_create_vault(
     fake_vault_env: Path, capsys: Any, monkeypatch: Any, fake_ctx: Any
 ) -> None:
     # Create a vault first
@@ -1244,14 +1293,18 @@ def test_add_entry_vault_not_found_creates_new(
 
     monkeypatch.setattr("desktop_2fa.vault.Vault.load", mock_load)
 
-    commands.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP", fake_ctx)
+    original = fake_vault_env.read_bytes()
+    with pytest.raises(typer.Exit) as error:
+        commands.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP", fake_ctx)
+    assert error.value.exit_code == 4
+    assert fake_vault_env.read_bytes() == original
 
     out_lines = capsys.readouterr().out.strip().splitlines()
     out_text = " ".join(out_lines)  # Join for substring checking
     assert "No vault found" in out_text
-    assert "new encrypted vault will be created" in out_text
-    assert "Vault created at" in out_text
-    assert "Entry added: Test" in out_text
+    assert "new encrypted vault will be created" not in out_text
+    assert "Vault created at" not in out_text
+    assert "Entry added: Test" not in out_text
 
 
 def test_generate_code_no_vault_warns(
@@ -1288,7 +1341,9 @@ def test_rename_entry_permission_denied(
 
     monkeypatch.setattr("desktop_2fa.vault.Vault.load", mock_load)
 
-    commands.rename_entry("GitHub", "NewGitHub", fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.rename_entry("GitHub", "NewGitHub", fake_ctx)
+    assert error.value.exit_code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Cannot access vault directory (permission denied)" in out
@@ -1312,7 +1367,9 @@ def test_rename_entry_io_error(
 
     monkeypatch.setattr("desktop_2fa.vault.Vault.save", mock_save)
 
-    commands.rename_entry("GitHub", "NewGitHub", fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.rename_entry("GitHub", "NewGitHub", fake_ctx)
+    assert error.value.exit_code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Failed to access vault file" in out
@@ -1336,7 +1393,9 @@ def test_backup_vault_permission_denied(
 
     monkeypatch.setattr("desktop_2fa.vault.Vault.load", mock_load)
 
-    commands.backup_vault(fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.backup_vault(fake_ctx)
+    assert error.value.exit_code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Cannot access vault directory (permission denied)" in out
@@ -1348,7 +1407,9 @@ def test_backup_vault_permission_error_io(
     # Create a corrupted vault file
     fake_vault_env.write_bytes(b"WRNG\x01" + b"16byte_salt_here" + b"encrypted_data")
 
-    commands.backup_vault(fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.backup_vault(fake_ctx)
+    assert error.value.exit_code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Vault file format is unsupported" in out
@@ -1372,7 +1433,9 @@ def test_backup_vault_io_error(
 
     monkeypatch.setattr("desktop_2fa.vault.Vault.save", mock_save)
 
-    commands.backup_vault(fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.backup_vault(fake_ctx)
+    assert error.value.exit_code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Failed to access vault file" in out
@@ -1391,7 +1454,9 @@ def test_init_vault_permission_error(
 
     monkeypatch.setattr("pathlib.Path.mkdir", mock_mkdir)
 
-    commands.init_vault(False, fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.init_vault(False, fake_ctx)
+    assert error.value.exit_code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Cannot access vault directory (permission denied)" in out
@@ -1414,7 +1479,9 @@ def test_init_vault_permission_denied_on_save(
 
     monkeypatch.setattr("desktop_2fa.vault.Vault.save", mock_save)
 
-    commands.init_vault(False, fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.init_vault(False, fake_ctx)
+    assert error.value.exit_code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Cannot access vault directory (permission denied)" in out
@@ -1437,10 +1504,12 @@ def test_init_vault_io_error_on_save(
 
     monkeypatch.setattr("desktop_2fa.vault.Vault.save", mock_save)
 
-    commands.init_vault(False, fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.init_vault(False, fake_ctx)
+    assert error.value.exit_code == 1
 
     out = capsys.readouterr().out.strip()
-    assert "Failed to create vault file" in out
+    assert "Failed to access vault file" in out
 
 
 # =============================================================================
@@ -1464,13 +1533,15 @@ def test_list_entries_permission_denied(
 
     monkeypatch.setattr("desktop_2fa.vault.Vault.load", mock_load)
 
-    commands.list_entries(fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.list_entries(fake_ctx)
+    assert error.value.exit_code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Cannot access vault directory (permission denied)" in out
 
 
-def test_list_entries_vault_not_found_creates_new(
+def test_list_entries_load_failure_does_not_create_vault(
     fake_vault_env: Path, capsys: Any, fake_ctx: Any
 ) -> None:
     # Create a vault first
@@ -1489,10 +1560,14 @@ def test_list_entries_vault_not_found_creates_new(
 
     Vault.load = staticmethod(mock_load)  # type: ignore[assignment]
     try:
-        commands.list_entries(fake_ctx)
+        original = fake_vault_env.read_bytes()
+        with pytest.raises(typer.Exit) as error:
+            commands.list_entries(fake_ctx)
+        assert error.value.exit_code == 4
+        assert fake_vault_env.read_bytes() == original
         out = capsys.readouterr().out.strip()
         assert "No vault found" in out
-        assert "new encrypted vault will be created" in out
+        assert "new encrypted vault will be created" not in out
     finally:
         Vault.load = original_load  # type: ignore[method-assign]
 
@@ -1508,7 +1583,9 @@ def test_add_entry_interactive_value_error(
     vault.save(fake_vault_env, TEST_PASSWORD)
 
     # Try to add a duplicate entry using add_entry_interactive
-    commands.add_entry_interactive("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.add_entry_interactive("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
+    assert error.value.exit_code == 6
 
     out = capsys.readouterr().out.strip()
     assert "already exists" in out
@@ -1520,7 +1597,9 @@ def test_add_entry_corrupted_vault(
     # Create a corrupted vault file
     fake_vault_env.write_bytes(b"WRNG\x01" + b"16byte_salt_here" + b"encrypted_data")
 
-    commands.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP", fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP", fake_ctx)
+    assert error.value.exit_code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Vault file format is unsupported" in out
@@ -1543,7 +1622,9 @@ def test_add_entry_vault_io_error(
 
     monkeypatch.setattr("desktop_2fa.vault.Vault.save", mock_save)
 
-    commands.add_entry("Test", "Test2", "JBSWY3DPEHPK3PXP", fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.add_entry("Test", "Test2", "JBSWY3DPEHPK3PXP", fake_ctx)
+    assert error.value.exit_code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Failed to access vault file" in out
@@ -1728,7 +1809,9 @@ def test_remove_entry_no_vault(
     if fake_vault_env.exists():
         fake_vault_env.unlink()
 
-    commands.remove_entry("GitHub", fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.remove_entry("GitHub", fake_ctx)
+    assert error.value.exit_code == 4
 
     out = capsys.readouterr().out.strip()
     assert "No vault found" in out
@@ -1750,7 +1833,9 @@ def test_remove_entry_value_error_invalid(
 
     monkeypatch.setattr("desktop_2fa.vault.Vault.load", mock_load)
 
-    commands.remove_entry("GitHub", fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.remove_entry("GitHub", fake_ctx)
+    assert error.value.exit_code == 2
 
     out = capsys.readouterr().out.strip()
     assert "Invalid vault password" in out
@@ -1762,7 +1847,9 @@ def test_remove_entry_corrupted_vault(
     # Create a corrupted vault file
     fake_vault_env.write_bytes(b"WRNG\x01" + b"16byte_salt_here" + b"encrypted_data")
 
-    commands.remove_entry("GitHub", fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.remove_entry("GitHub", fake_ctx)
+    assert error.value.exit_code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Vault file format is unsupported" in out
@@ -1786,7 +1873,9 @@ def test_remove_entry_vault_io_error(
 
     monkeypatch.setattr("desktop_2fa.vault.Vault.save", mock_save)
 
-    commands.remove_entry("GitHub", fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.remove_entry("GitHub", fake_ctx)
+    assert error.value.exit_code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Failed to access vault file" in out
@@ -1809,7 +1898,9 @@ def test_rename_entry_value_error_invalid(
 
     monkeypatch.setattr("desktop_2fa.vault.Vault.load", mock_load)
 
-    commands.rename_entry("GitHub", "NewGitHub", fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.rename_entry("GitHub", "NewGitHub", fake_ctx)
+    assert error.value.exit_code == 2
 
     out = capsys.readouterr().out.strip()
     assert "Invalid vault password" in out
@@ -1821,7 +1912,9 @@ def test_rename_entry_corrupted_vault(
     # Create a corrupted vault file
     fake_vault_env.write_bytes(b"WRNG\x01" + b"16byte_salt_here" + b"encrypted_data")
 
-    commands.rename_entry("GitHub", "NewGitHub", fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.rename_entry("GitHub", "NewGitHub", fake_ctx)
+    assert error.value.exit_code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Vault file format is unsupported" in out
@@ -1845,7 +1938,9 @@ def test_rename_entry_vault_io_error(
 
     monkeypatch.setattr("desktop_2fa.vault.Vault.save", mock_save)
 
-    commands.rename_entry("GitHub", "NewGitHub", fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.rename_entry("GitHub", "NewGitHub", fake_ctx)
+    assert error.value.exit_code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Failed to access vault file" in out
@@ -1869,7 +1964,9 @@ def test_export_vault_permission_denied(
     monkeypatch.setattr("desktop_2fa.vault.Vault.load", mock_load)
 
     export_path = tmp_path / "export.bin"
-    commands.export_vault(str(export_path), fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.export_vault(str(export_path), fake_ctx)
+    assert error.value.exit_code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Cannot access vault directory (permission denied)" in out
@@ -1882,7 +1979,9 @@ def test_export_vault_corrupted_vault(
     fake_vault_env.write_bytes(b"WRNG\x01" + b"16byte_salt_here" + b"encrypted_data")
 
     export_path = tmp_path / "export.bin"
-    commands.export_vault(str(export_path), fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.export_vault(str(export_path), fake_ctx)
+    assert error.value.exit_code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Vault file format is unsupported" in out
@@ -1907,7 +2006,9 @@ def test_export_vault_vault_io_error(
     monkeypatch.setattr("desktop_2fa.vault.Vault.save", mock_save)
 
     export_path = tmp_path / "export.bin"
-    commands.export_vault(str(export_path), fake_ctx)
+    with pytest.raises(typer.Exit) as error:
+        commands.export_vault(str(export_path), fake_ctx)
+    assert error.value.exit_code == 1
 
     out = capsys.readouterr().out.strip()
     assert "Failed to access vault file" in out
