@@ -15,6 +15,7 @@ from desktop_2fa.constants import ExitCode
 from desktop_2fa.vault import Vault
 from desktop_2fa.vault.password_strength import evaluate_password_strength
 from desktop_2fa.vault.vault import (
+    AmbiguousEntry,
     CorruptedVault,
     InvalidPassword,
     PermissionDenied,
@@ -476,6 +477,10 @@ def generate_code(
         _exit_with_error(
             2, "invalid_password", "Invalid vault password.", json_mode, quiet
         )
+    except AmbiguousEntry as e:
+        _exit_with_error(
+            ExitCode.VALIDATION_ERROR, "entry_ambiguous", str(e), json_mode, quiet
+        )
     except ValueError as e:
         if "not found" in str(e):
             _exit_with_error(
@@ -540,6 +545,9 @@ def remove_entry(name: str, ctx: typer.Context) -> None:
         vault.remove_entry(name)
         vault.save(path, password)
         helpers.print_success(f"Removed entry: {name}")
+    except AmbiguousEntry as e:
+        helpers.print_error(str(e))
+        raise typer.Exit(ExitCode.VALIDATION_ERROR) from e
     except PermissionDenied:
         helpers.print_error("Error: Cannot access vault directory (permission denied).")
     except ValueError as e:

@@ -153,6 +153,15 @@ When a command requires a vault and it exists:
 
 ### Duplicate Entry Handling
 
+The `code` and `remove` commands resolve names case-sensitively. An exact
+`account_name` match takes precedence over another entry's issuer. Without an
+exact account match, a unique issuer match is accepted for compatibility.
+Multiple exact account matches or multiple fallback issuer matches are rejected
+with an `Ambiguous entry` error (exit status 6); the vault is left unchanged.
+`code --json` reports `entry_ambiguous`. Python `Vault.get_entry()` and
+`Vault.remove_entry()`, and the public code/removal helpers, use the same rule;
+ambiguous lookups raise `desktop_2fa.vault.AmbiguousEntry`, a `ValueError` subclass.
+
 The `rename` command enforces deterministic behavior when multiple entries match the target name:
 
 - If **multiple entries** match the provided name (issuer or account_name), the rename is **aborted**
