@@ -165,6 +165,27 @@ d2fa add "otpauth://totp/GitHub:user?secret=JBSWY3DPEHPK3PXP&issuer=GitHub"
 d2fa --password mypassword add GitHub GitHub JBSWY3DPEHPK3PXP
 ```
 
+Provisioning URIs retain `algorithm`, `digits` and `period` after saving and
+loading. Defaults are SHA1, 6 digits and 30 seconds. Algorithms SHA1/SHA256/SHA512
+are accepted case-insensitively; periods must be positive integers. Desktop-2FA
+supports 6, 7 or 8 digits (7 is an extension to the linked Key URI format).
+Percent-encoded labels are decoded, including an encoded issuer/account colon.
+The issuer query parameter takes precedence when no prefix exists; if both are
+present they must agree. A label without a prefix or issuer query retains its
+legacy behavior of using the label for both issuer and account name.
+
+Both the single-URI syntax above and `d2fa add NAME "otpauth://..."` are
+supported. The URI label supplies the account name in either case. Do not
+combine a URI with a separate secret. At the interactive issuer prompt, paste
+the URI and no separate secret is requested. Base32 URI secrets are normalized
+to uppercase with padding as needed, preserving decoded secret bytes.
+
+Invalid algorithms, digit counts, periods, missing/invalid secrets, conflicting
+issuers, duplicate recognized parameters, HOTP/counter data, fragments and
+malformed label encodings are rejected before vault creation or modification.
+These provisioning errors exit with status 6. Unknown extension query parameters
+are ignored. See [Key URI Format](https://github.com/google/google-authenticator/wiki/Key-Uri-Format).
+
 **Notes:**
 - `name` is the unique identifier used in CLI commands (e.g., `d2fa code GitHub`)
 - `issuer` is a display label and may repeat across entries
@@ -329,7 +350,7 @@ Desktop-2FA uses the following exit codes:
 - `3`: Entry not found
 - `4`: Vault missing
 - `5`: Clipboard unavailable
-- `6`: Invalid flag combination or ambiguous entry selection
+- `6`: Invalid flag combination, ambiguous entry selection or invalid provisioning URI
 
 ### JSON Error Format
 

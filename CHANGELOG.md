@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- URI-based add now preserves algorithm, digits and period in both interactive
+  and non-interactive flows. Single-URI add syntax is supported; decoded labels,
+  issuer consistency and provisioning parameters are validated before vault
+  access. Invalid provisioning data exits with status 6. `Vault.add_entry()`
+  accepts optional keyword-only TOTP parameters with backward-compatible defaults.
 - Code generation and removal now prefer an exact account name over issuer
   matches and reject ambiguous names or fallback issuers instead of selecting
   the first entry. Ambiguous CLI selections exit with status 6; Python callers

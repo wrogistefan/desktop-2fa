@@ -1,13 +1,15 @@
 """CLI helper functions for Desktop 2FA."""
 
 import base64
+import binascii
 import getpass
 import math
 import os
+import re
 import tomllib
 import urllib.parse
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal, TypedDict, cast
 
 import typer
 from rich import print as rprint
@@ -23,6 +25,18 @@ class ValidationError(Exception):
 
 if TYPE_CHECKING:
     from desktop_2fa.vault.models import TotpEntry
+
+
+class TotpParameters(TypedDict):
+    algorithm: Literal["SHA1", "SHA256", "SHA512"]
+    digits: Literal[6, 7, 8]
+    period: int
+
+
+class ParsedOtpauth(TotpParameters):
+    issuer: str
+    label: str
+    secret: str
 
 
 def list_entries(path: Path, password: str) -> None:
@@ -509,8 +523,8 @@ def validate_base32(secret: str) -> bool:
         return False
 
 
-def parse_otpauth_url(url: str) -> dict[str, str]:
-    """Parse an otpauth:// URL and extract issuer, label, and secret."""
+def parse_otpauth_url(url: str) -> ParsedOtpauth:
+    """Validate TOTP provisioning data without dropping code parameters."""
     if not url.startswith("otpauth://"):
         raise ValueError("Invalid otpauth URL")
 
@@ -518,28 +532,65 @@ def parse_otpauth_url(url: str) -> dict[str, str]:
     if parsed.scheme != "otpauth" or parsed.netloc != "totp":
         raise ValueError("Only TOTP otpauth URLs are supported")
 
-    # Parse the path: /Issuer:Label or /Issuer or /:Label
-    path = parsed.path.lstrip("/")
+    if parsed.fragment or re.search(r"%(?![0-9a-fA-F]{2})", url):
+        raise ValueError("Invalid otpauth URL encoding or fragment")
+    path = urllib.parse.unquote(parsed.path.removeprefix("/"), errors="strict")
     if ":" in path:
-        issuer, label = path.split(":", 1)
+        prefix, label = path.split(":", 1)
+        label = label.lstrip(" ")
+        if ":" in label:
+            raise ValueError("Issuer and account label cannot contain colons")
     else:
-        issuer = path
+        prefix = ""
         label = path
+    if not label:
+        raise ValueError("Account label is required")
 
-    # Parse query parameters
-    query = urllib.parse.parse_qs(parsed.query)
-    secret = query.get("secret", [None])[0]
+    query = urllib.parse.parse_qs(parsed.query, keep_blank_values=True, errors="strict")
+    for parameter in ("secret", "issuer", "algorithm", "digits", "period", "counter"):
+        if len(query.get(parameter, [])) > 1:
+            raise ValueError(f"Duplicate {parameter} parameter")
+    if "counter" in query:
+        raise ValueError("Counter is not supported for TOTP provisioning")
+    secret = query.get("secret", [""])[0]
     if not secret:
         raise ValueError("Secret parameter is required")
 
-    url_issuer = query.get("issuer", [None])[0]
-    if url_issuer and not issuer:
-        issuer = url_issuer
+    url_issuer = query.get("issuer", [""])[0]
+    if "issuer" in query and not url_issuer:
+        raise ValueError("Issuer parameter cannot be empty")
+    if ":" in url_issuer:
+        raise ValueError("Issuer cannot contain colons")
+    if prefix and url_issuer and prefix != url_issuer:
+        raise ValueError("Issuer parameter conflicts with the label prefix")
+    issuer = url_issuer or prefix or (label if ":" not in path else "Unknown")
+
+    algorithm = query.get("algorithm", ["SHA1"])[0].upper()
+    if algorithm not in ("SHA1", "SHA256", "SHA512"):
+        raise ValueError("Unsupported algorithm (expected SHA1, SHA256 or SHA512)")
+    digits = query.get("digits", ["6"])[0]
+    if digits not in ("6", "7", "8"):
+        raise ValueError("Invalid digits (expected 6, 7 or 8)")
+    period = query.get("period", ["30"])[0]
+    if not period.isascii() or not period.isdecimal() or int(period) <= 0:
+        raise ValueError("Period must be a positive integer")
+
+    # Provisioning secrets may omit Base32 padding. Canonicalize this URI input
+    # for the existing model/generator; shared manual-secret decoding is S06.
+    try:
+        decoded = base64.b32decode(secret.upper() + "=" * (-len(secret) % 8))
+        if not decoded:
+            raise ValueError
+    except (ValueError, binascii.Error):
+        raise ValueError("Invalid Base32 TOTP secret") from None
 
     return {
-        "issuer": issuer or "Unknown",
-        "label": label or issuer or "Unknown",
-        "secret": secret,
+        "issuer": issuer,
+        "label": label,
+        "secret": base64.b32encode(decoded).decode("ascii"),
+        "algorithm": cast(Literal["SHA1", "SHA256", "SHA512"], algorithm),
+        "digits": cast(Literal[6, 7, 8], int(digits)),
+        "period": int(period),
     }
 
 

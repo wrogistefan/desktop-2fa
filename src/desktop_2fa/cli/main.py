@@ -96,7 +96,7 @@ def add_cmd(
     issuer: str = typer.Argument(None, help="Issuer name or otpauth:// URL"),
     secret: str = typer.Argument(None, help="TOTP secret (Base32)"),
 ) -> None:
-    """Add a new TOTP entry to the vault.
+    """Add NAME ISSUER SECRET, or a single quoted otpauth:// TOTP URI.
 
     Args:
         ctx: Typer context object containing configuration.
@@ -104,6 +104,15 @@ def add_cmd(
         issuer: Issuer name or otpauth:// URL.
         secret: TOTP secret in Base32 format.
     """
+    if name is not None and name.startswith("otpauth://"):
+        if issuer is not None or secret is not None:
+            helpers.print_error(
+                "A single otpauth URL cannot be combined with other add arguments"
+            )
+            raise typer.Exit(ExitCode.VALIDATION_ERROR)
+        commands.add_entry("", name, "", ctx)
+        return
+
     # Interactive mode: prompt for missing arguments
     interactive = ctx.obj.get("interactive", False)
     if interactive and (name is None or issuer is None or secret is None):
@@ -115,12 +124,15 @@ def add_cmd(
             rprint(Text("Issuer:", style="cyan"))
             issuer = typer.prompt("")
 
-        if secret is None:
+        if secret is None and not issuer.startswith("otpauth://"):
             rprint(Text("Secret:", style="cyan"))
             secret = typer.prompt("")
 
-        commands.add_entry_interactive(name, issuer, secret, ctx)
+        commands.add_entry_interactive(name, issuer, secret or "", ctx)
         return
+
+    if issuer is not None and issuer.startswith("otpauth://") and secret is None:
+        secret = ""
 
     if name is None or issuer is None or secret is None:
         helpers.print_error("Missing arguments: NAME, ISSUER and SECRET are required")

@@ -131,6 +131,25 @@ def _vault_exists(path: Path) -> bool | None:
                 pass
 
 
+def _prepare_add(name: str, issuer: str, secret: str) -> helpers.ParsedOtpauth:
+    if issuer.startswith("otpauth://"):
+        try:
+            if secret:
+                raise ValueError("Do not combine an otpauth URL with a separate secret")
+            return helpers.parse_otpauth_url(issuer)
+        except ValueError as e:
+            helpers.print_error(f"Invalid otpauth URL: {e}")
+            raise typer.Exit(ExitCode.VALIDATION_ERROR) from e
+    return {
+        "label": name,
+        "issuer": issuer,
+        "secret": secret,
+        "algorithm": "SHA1",
+        "digits": 6,
+        "period": 30,
+    }
+
+
 def add_entry_interactive(
     name: str, issuer: str, secret: str, ctx: typer.Context
 ) -> None:
@@ -143,6 +162,13 @@ def add_entry_interactive(
         ctx: Typer context with password options.
     """
     path = _path(ctx)
+    parsed = _prepare_add(name, issuer, secret)
+    name, issuer, secret = parsed["label"], parsed["issuer"], parsed["secret"]
+    parameters: helpers.TotpParameters = {
+        "algorithm": parsed["algorithm"],
+        "digits": parsed["digits"],
+        "period": parsed["period"],
+    }
 
     # Validate Base32 secret
     if not helpers.validate_base32(secret):
@@ -168,7 +194,7 @@ def add_entry_interactive(
         helpers.print_info("A new encrypted vault will be created.")
         password = helpers.get_password_for_vault(ctx, new_vault=True)
         vault = Vault()
-        vault.add_entry(name=name, issuer=issuer, secret=secret)
+        vault.add_entry(name=name, issuer=issuer, secret=secret, **parameters)
         try:
             vault.save(path, password)
         except PermissionDenied:
@@ -180,7 +206,7 @@ def add_entry_interactive(
         password = helpers.get_password_for_vault(ctx, new_vault=False)
         try:
             vault = Vault.load(path, password)
-            vault.add_entry(name=name, issuer=issuer, secret=secret)
+            vault.add_entry(name=name, issuer=issuer, secret=secret, **parameters)
             vault.save(path, password)
             helpers.print_success(f"Entry added: {name}")
         except ValueError as e:
@@ -290,16 +316,13 @@ def add_entry(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
     """
     path = _path(ctx)
 
-    # Parse otpauth URL if provided
-    if issuer.startswith("otpauth://"):
-        try:
-            parsed = helpers.parse_otpauth_url(issuer)
-            issuer = parsed["issuer"]
-            name = parsed["label"]
-            secret = parsed["secret"]
-        except ValueError as e:
-            helpers.print_error(f"Invalid otpauth URL: {e}")
-            return
+    parsed = _prepare_add(name, issuer, secret)
+    name, issuer, secret = parsed["label"], parsed["issuer"], parsed["secret"]
+    parameters: helpers.TotpParameters = {
+        "algorithm": parsed["algorithm"],
+        "digits": parsed["digits"],
+        "period": parsed["period"],
+    }
 
     # Validate Base32 secret
     if not helpers.validate_base32(secret):
@@ -325,7 +348,7 @@ def add_entry(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
         helpers.print_info("A new encrypted vault will be created.")
         password = helpers.get_password_for_vault(ctx, new_vault=True)
         vault = Vault()
-        vault.add_entry(name=name, issuer=issuer, secret=secret)
+        vault.add_entry(name=name, issuer=issuer, secret=secret, **parameters)
         try:
             vault.save(path, password)
         except PermissionDenied:
@@ -337,7 +360,7 @@ def add_entry(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
         password = helpers.get_password_for_vault(ctx, new_vault=False)
         try:
             vault = Vault.load(path, password)
-            vault.add_entry(name=name, issuer=issuer, secret=secret)
+            vault.add_entry(name=name, issuer=issuer, secret=secret, **parameters)
             vault.save(path, password)
             helpers.print_success(f"Entry added: {name}")
         except PermissionDenied:
@@ -349,7 +372,7 @@ def add_entry(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
             helpers.print_info("A new encrypted vault will be created.")
             password = helpers.get_password_for_vault(ctx, new_vault=True)
             vault = Vault()
-            vault.add_entry(name=name, issuer=issuer, secret=secret)
+            vault.add_entry(name=name, issuer=issuer, secret=secret, **parameters)
             try:
                 vault.save(path, password)
             except PermissionDenied:

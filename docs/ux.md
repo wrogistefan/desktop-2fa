@@ -96,6 +96,16 @@ Invalid vault password.
 
 ---
 
+## URI-based Add
+
+`d2fa add "otpauth://totp/..."` and a URI entered at the interactive issuer
+prompt use the same parser and preserve algorithm, digits and period. No
+separate secret prompt is shown for a URI. The decoded URI label supplies the
+account name; a conflicting issuer query/prefix or separate secret is rejected.
+Invalid provisioning data exits with status 6 before vault access and cannot
+create a vault or replace an existing one. Omitted optional parameters retain
+SHA1/6/30 defaults, and the manual `add NAME ISSUER SECRET` syntax is unchanged.
+
 ## UX Invariants
 
 - Vault creation is always announced.

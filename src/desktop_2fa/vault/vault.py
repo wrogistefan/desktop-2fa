@@ -4,7 +4,7 @@ import os
 import stat
 import tempfile
 from pathlib import Path
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import ValidationError
 
@@ -90,6 +90,10 @@ class Vault:
         name: str,
         issuer: str,
         secret: str,
+        *,
+        algorithm: Literal["SHA1", "SHA256", "SHA512"] = "SHA1",
+        digits: Literal[6, 7, 8] = 6,
+        period: int = 30,
     ) -> None:
         """Add a new TOTP entry to the vault.
 
@@ -97,6 +101,9 @@ class Vault:
             name: The unique account name.
             issuer: The issuer name.
             secret: The base32-encoded secret.
+            algorithm: TOTP hash algorithm (default SHA1).
+            digits: TOTP code length (default 6).
+            period: TOTP period in seconds (default 30).
         """
         # Check for duplicate names
         for entry in self.entries:
@@ -109,6 +116,9 @@ class Vault:
             account_name=name,
             issuer=issuer,
             secret=secret,
+            algorithm=algorithm,
+            digits=digits,
+            period=period,
         )
         self.data.entries.append(entry)
 
