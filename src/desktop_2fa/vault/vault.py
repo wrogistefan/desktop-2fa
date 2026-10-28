@@ -17,6 +17,8 @@ VAULT_MAGIC = b"D2FA"
 VAULT_VERSION = b"\x01"
 HEADER_LEN = len(VAULT_MAGIC) + len(VAULT_VERSION)
 MAX_VAULT_SIZE = 10 * 1024 * 1024
+# D2FA v1: header + salt + AES-GCM nonce + authentication tag.
+VAULT_OVERHEAD = HEADER_LEN + 16 + 12 + 16
 
 
 class VaultError(Exception):
@@ -29,6 +31,10 @@ class InvalidPassword(VaultError):
     """Raised when the provided password is incorrect."""
 
     pass
+
+
+class VaultValidationError(VaultError, ValueError):
+    """Raised when save output would exceed loader limits or fail validation."""
 
 
 class CorruptedVault(VaultError):
@@ -278,9 +284,33 @@ class Vault:
         Raises:
             TypeError: If password is not a string.
             ValueError: If password is empty.
+            VaultValidationError: If data is invalid or output exceeds the
+                loader's size limit.
             VaultIOError: If saving fails due to IO errors.
         """
         _validate_password(password)
+        try:
+            # Validate the exact snapshot to be encrypted, not mutable model
+            # instances (Pydantic normally trusts already-created instances).
+            # Suppress serialization warnings that could expose field values.
+            raw_json = self.data.model_dump_json(warnings=False).encode("utf-8")
+        except (ValueError, TypeError):
+            raise VaultValidationError(
+                "Vault data cannot be serialized; correct entries before saving."
+            ) from None
+        output_size = len(raw_json) + VAULT_OVERHEAD
+        if output_size > MAX_VAULT_SIZE:
+            raise VaultValidationError(
+                f"Vault output exceeds maximum supported size of {MAX_VAULT_SIZE} "
+                f"bytes (10 MiB): {output_size} bytes; reduce vault data before saving."
+            )
+        try:
+            VaultData.model_validate_json(raw_json)
+        except ValidationError:
+            raise VaultValidationError(
+                "Vault contains invalid data; correct entries before saving."
+            ) from None
+
         path = Path(path)
         temp_path: Path | None = None
         fd: int | None = None
@@ -294,7 +324,6 @@ class Vault:
 
             key = derive_key(password, salt)
 
-            raw_json = self.data.model_dump_json().encode("utf-8")
             encrypted = encrypt(key, raw_json)
 
             fd, temp_name = tempfile.mkstemp(

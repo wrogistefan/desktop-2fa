@@ -83,6 +83,11 @@ or recorded by tooling.
 ## Files and backups
 
 The application rejects non-regular vault paths and files larger than 10 MiB.
+Before saving, it validates the serialized data using the loader's model and
+checks the exact output size, including the 49-byte D2FA v1 overhead. Invalid
+mutations (such as a zero TOTP period) and oversized output are rejected before
+filesystem changes, preserving the previous file. This protects against saving
+data the loader would reject; it adds no concurrency or crash-durability guarantee.
 When saving, it writes a unique temporary file in the destination directory,
 flushes the file, and replaces the destination. This reduces the chance of a
 partially written vault but does not protect against filesystem failure,

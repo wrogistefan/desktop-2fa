@@ -22,6 +22,7 @@ from desktop_2fa.vault.vault import (
     UnsupportedFormat,
     VaultIOError,
     VaultNotFound,
+    VaultValidationError,
 )
 
 
@@ -197,6 +198,9 @@ def add_entry_interactive(
         vault.add_entry(name=name, issuer=issuer, secret=secret, **parameters)
         try:
             vault.save(path, password)
+        except VaultValidationError as e:
+            helpers.print_error(str(e))
+            raise typer.Exit(ExitCode.VALIDATION_ERROR) from None
         except PermissionDenied:
             helpers.print_error("Cannot access vault directory (permission denied).")
             return
@@ -209,6 +213,9 @@ def add_entry_interactive(
             vault.add_entry(name=name, issuer=issuer, secret=secret, **parameters)
             vault.save(path, password)
             helpers.print_success(f"Entry added: {name}")
+        except VaultValidationError as e:
+            helpers.print_error(str(e))
+            raise typer.Exit(ExitCode.VALIDATION_ERROR) from None
         except ValueError as e:
             if "already exists" in str(e):
                 helpers.print_error(str(e))
@@ -351,6 +358,9 @@ def add_entry(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
         vault.add_entry(name=name, issuer=issuer, secret=secret, **parameters)
         try:
             vault.save(path, password)
+        except VaultValidationError as e:
+            helpers.print_error(str(e))
+            raise typer.Exit(ExitCode.VALIDATION_ERROR) from None
         except PermissionDenied:
             helpers.print_error("Cannot access vault directory (permission denied).")
             return
@@ -363,6 +373,9 @@ def add_entry(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
             vault.add_entry(name=name, issuer=issuer, secret=secret, **parameters)
             vault.save(path, password)
             helpers.print_success(f"Entry added: {name}")
+        except VaultValidationError as e:
+            helpers.print_error(str(e))
+            raise typer.Exit(ExitCode.VALIDATION_ERROR) from None
         except PermissionDenied:
             helpers.print_error(
                 "Error: Cannot access vault directory (permission denied)."
@@ -375,6 +388,9 @@ def add_entry(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
             vault.add_entry(name=name, issuer=issuer, secret=secret, **parameters)
             try:
                 vault.save(path, password)
+            except VaultValidationError as e:
+                helpers.print_error(str(e))
+                raise typer.Exit(ExitCode.VALIDATION_ERROR) from None
             except PermissionDenied:
                 helpers.print_error(
                     "Cannot access vault directory (permission denied)."
