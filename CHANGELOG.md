@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Password files now use a single strict UTF-8 reader without BOM. Exactly one
+  optional final LF or CRLF is removed; spaces, tabs and Unicode remain part of
+  the password. Empty, multiline, bare-CR, BOM and invalid-encoding files fail
+  with validation status 6; read failures use status 1, without file contents in
+  diagnostics. The old locale-dependent `.strip()` behavior is no longer used:
+  existing files may need explicit conversion to the actual password previously
+  used. There is no automatic trim/normalization fallback, password reset or
+  vault migration. API/prompt password handling, strength-check scope, UTF-8 KDF
+  input, D2FA v1 and cryptographic parameters are unchanged.
+
 - `code --json` now writes exactly one success/error object to stdout, including
   option, parser, password acquisition and unexpected failures. Existing success
   fields and error statuses are preserved; new early errors use `invalid_options`,

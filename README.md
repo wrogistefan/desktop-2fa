@@ -227,10 +227,15 @@ See [duplicate recovery](docs/user_manual.md#duplicate-names-in-vault).
 |--------|-------------|
 | `--version` | Show the installed version |
 | `--password <pwd>` | Provide vault password directly |
-| `--password-file <path>` | Read vault password from file |
+| `--password-file <path>` | Read one UTF-8 password line without BOM; preserve spaces |
 | `--vault <path>` | Select the vault file; place before the command |
 | `--allow-weak-passwords` | Allow weak passwords |
 | `--help` | Show command help |
+
+Password files remove only one optional final LF or CRLF. Spaces, tabs and
+Unicode remain significant. Older files read with `.strip()` may require an
+explicit update to contain the actual previously used password; no alternate
+password is tried automatically. See [password-file compatibility](docs/user_manual.md#password-file-format-and-compatibility).
 
 The `--vault` option takes precedence over `DESKTOP_2FA_VAULT`. When neither
 is provided, Desktop-2FA uses `~/.desktop-2fa/vault`. The `code` command also

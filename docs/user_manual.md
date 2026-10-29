@@ -597,6 +597,45 @@ Desktop-2FA supports multiple ways to provide passwords:
    ```
 
 
+### Password-file format and compatibility
+
+`--password-file` reads **strict UTF-8 without a byte-order mark (BOM)**,
+independently of the operating system's locale. It accepts one non-empty line
+with either no terminator, one final LF (`\n`) or one final CRLF (`\r\n`).
+Only that one terminator is removed. Leading/trailing spaces, tabs and Unicode
+characters are preserved exactly, without case folding or Unicode normalization.
+For example, the file bytes `b"  synthetic passphrase  \r\n"` supply the
+password `"  synthetic passphrase  "`, including both leading and trailing spaces.
+Save the file with an editor configured for UTF-8 without BOM; UTF-16 and files
+saved in another legacy encoding are not supported.
+
+An empty file or a file containing only LF/CRLF is rejected. Additional lines
+(including a second trailing newline), embedded CR/LF, a standalone CR, a BOM
+and malformed UTF-8 are rejected with status 6 and `password_error` in JSON.
+Unreadable or missing files use status 1. Diagnostics never include the password
+or file contents, and invalid input is rejected before vault decryption or writes.
+A non-empty whitespace-only password remains non-empty; supplied passwords still
+bypass interactive creation/change strength checks. This does not make such a
+password strong or suitable for use.
+
+**Transition from older releases:** both password-file readers previously used
+`.strip()` with the platform's default encoding. For example, an old file
+containing `b"  synthetic passphrase  \n"` could have encrypted the vault using
+`"synthetic passphrase"`, without the surrounding spaces. The new reader supplies
+those spaces and will fail authentication against that vault. Keep a backup and
+explicitly prepare a UTF-8 file containing the **actual old password** (without
+those spaces in this example), or enter that password through the prompt. For an
+old file in a locale-specific encoding, explicitly re-encode the intended
+password as UTF-8; merely changing an editor's encoding label is not sufficient.
+Do not change the vault or reset the password to address an input-format error.
+
+There is no automatic second attempt with a stripped, differently decoded or
+normalized password. A failed unlock does not create, replace or re-encrypt the
+vault. No compatibility flag or vault-format migration is needed. API and prompt
+input still use their exact strings, and Argon2id receives the same UTF-8 bytes
+for the same intended password. Password files are plaintext credentials: protect
+their access permissions and do not include them in logs, exports or reports.
+
 ### Password Strength Enforcement
 
 Desktop-2FA uses **zxcvbn** to evaluate password strength when creating or changing vault passwords. Configure via `~/.config/d2fa/config.toml`:
