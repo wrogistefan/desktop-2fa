@@ -6,6 +6,7 @@ from .vault import (
     EntryAlreadyExists,
     EntryNotFound,
     EntryRenameError,
+    ExportRefused,
     Vault,
     VaultValidationError,
 )
@@ -15,6 +16,7 @@ __all__ = [
     "EntryAlreadyExists",
     "EntryNotFound",
     "EntryRenameError",
+    "ExportRefused",
     "TotpEntry",
     "VaultData",
     "Vault",

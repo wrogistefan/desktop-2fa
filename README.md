@@ -223,7 +223,7 @@ See [duplicate recovery](docs/user_manual.md#duplicate-names-in-vault).
 | `d2fa vault change-password` | Change the vault password |
 | `d2fa vault path` | Show the currently selected vault path |
 | `d2fa backup` | Create an encrypted backup of the vault |
-| `d2fa export <path>` | Export vault to file |
+| `d2fa export <path> [--force]` | Export encrypted D2FA v1; existing files require `--force` |
 | `d2fa import <path> [--force]` | Import vault from file |
 | `d2fa ui` | Launch the early Textual UI prototype |
 

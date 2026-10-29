@@ -17,6 +17,7 @@ from desktop_2fa.constants import ExitCode
 from desktop_2fa.utils.base32 import InvalidSecret, decode_base32, normalize_base32
 from desktop_2fa.vault import Vault
 from desktop_2fa.vault.password_strength import evaluate_password_strength
+from desktop_2fa.vault.vault import ExportRefused
 
 from .errors import CLI_ERRORS, exit_for_error
 from .output import diagnostic, fail, output_mode
@@ -129,16 +130,34 @@ def rename_entry(
     print(f"Renamed '{old}' → '{new}'")
 
 
-def export_vault(path: Path, export_path: Path, password: str) -> None:
+def validate_export_destination(path: Path, export_path: Path, *, force: bool) -> None:
+    """Refuse source aliases and symlinks, even with explicit overwrite."""
+    if export_path.is_symlink():
+        raise ExportRefused("Refusing to export to a symbolic link.")
+    try:
+        destination_stat = export_path.stat()
+    except FileNotFoundError:
+        return
+    if os.path.samestat(path.stat(), destination_stat):
+        raise ExportRefused("Export destination identifies the source vault.")
+    if not force:
+        raise ExportRefused("Export destination exists. Use --force to overwrite.")
+
+
+def export_vault(
+    path: Path, export_path: Path, password: str, *, force: bool = False
+) -> None:
     """Export the vault to a new file.
 
     Args:
         path: Path to the source vault file.
         export_path: Path where the vault will be exported.
         password: Password to decrypt the vault.
+        force: Allow replacement of a distinct existing destination.
     """
     vault = Vault.load(path, password)
-    vault.save(export_path, password)
+    validate_export_destination(path, export_path, force=force)
+    vault.save(export_path, password, overwrite=force)
     print(f"Exported vault to: {export_path}")
 
 

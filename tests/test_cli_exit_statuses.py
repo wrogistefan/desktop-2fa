@@ -36,7 +36,7 @@ LOAD_COMMANDS = [
     ["ui"],
 ]
 SAVE_COMMANDS = [
-    command
+    command + ["--force"] if command[0] == "export" else command
     for command in LOAD_COMMANDS
     if command[0] not in {"list", "code", "ui"} and command != ["vault", "unlock"]
 ] + [["init-vault", "--force"], ["vault", "init", "--force"]]

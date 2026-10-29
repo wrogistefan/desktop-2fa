@@ -39,6 +39,10 @@ class VaultValidationError(VaultError, ValueError):
     """Raised when save output would exceed loader limits or fail validation."""
 
 
+class ExportRefused(VaultError, ValueError):
+    """Raised when an export destination cannot safely be used."""
+
+
 class CorruptedVault(VaultError):
     """Raised when the vault file is corrupted or contains invalid data."""
 
@@ -326,12 +330,15 @@ class Vault:
 
         return vault
 
-    def save(self, path: str | Path, password: str) -> None:
+    def save(self, path: str | Path, password: str, *, overwrite: bool = True) -> None:
         """Save the vault to a file.
 
         Args:
             path: The file path to save to.
             password: The non-empty password to encrypt the vault.
+            overwrite: Replace the destination (default). False publishes only
+                to an absent destination using a hard link, without a replace
+                fallback on filesystems that do not support hard links.
 
         Raises:
             TypeError: If password is not a string.
@@ -339,6 +346,7 @@ class Vault:
             VaultValidationError: If data is invalid or output exceeds the
                 loader's size limit.
             VaultIOError: If saving fails due to IO errors.
+            ExportRefused: If overwrite is False and the destination exists.
         """
         _validate_password(password)
         try:
@@ -388,35 +396,36 @@ class Vault:
                 f.flush()
                 os.fsync(f.fileno())
 
-            os.replace(temp_path, path)
-            temp_path = None
+            if overwrite:
+                os.replace(temp_path, path)
+                temp_path = None
+            else:
+                # Atomic create-only publication: a competing creator wins
+                # without having its file overwritten (including symlinks).
+                try:
+                    os.link(temp_path, path)
+                except FileExistsError:
+                    raise ExportRefused(
+                        "Export destination exists. Use --force to overwrite."
+                    ) from None
         except PermissionError:
-            if fd is not None:
-                try:
-                    os.close(fd)
-                except OSError:
-                    pass
-            if temp_path is not None and temp_path.exists():
-                try:
-                    temp_path.unlink()
-                except OSError:
-                    pass
             raise PermissionDenied(
                 "Cannot access vault directory (permission denied)"
             ) from None
         except OSError as e:
+            error_msg = e.strerror if e.strerror else str(e)
+            raise VaultIOError(f"Failed to save vault: {error_msg}") from None
+        finally:
             if fd is not None:
                 try:
                     os.close(fd)
                 except OSError:
                     pass
-            if temp_path is not None and temp_path.exists():
+            if temp_path is not None:
                 try:
                     temp_path.unlink()
                 except OSError:
                     pass
-            error_msg = e.strerror if e.strerror else str(e)
-            raise VaultIOError(f"Failed to save vault: {error_msg}") from None
 
 
 def _validate_password(password: str) -> None:

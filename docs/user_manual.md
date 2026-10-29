@@ -532,14 +532,26 @@ The previously unimplemented `Vault.rename_entry()` now performs the rename.
 
 ### `export` - Export Vault
 
-Exports the vault to a file (for backup or transfer).
+Exports an encrypted D2FA v1 binary vault for backup or transfer, using the
+same password and retaining all entries and TOTP parameters. This is not a
+plaintext JSON export, regardless of the filename extension.
 
 ```bash
-d2fa export FILENAME
+d2fa export FILENAME [--force]
 ```
 
 **Parameters:**
 - `FILENAME`: Path where to save the exported vault
+- `--force`: Explicitly allow replacing a distinct existing destination.
+
+By default, an existing destination is preserved and the command exits with
+status 6. This also applies if another process creates the destination just
+before publication. Source-equals-destination, aliases identifying the source
+(including hard links), and destination symbolic links (including dangling
+links) are refused even with `--force`. A symbolic link in a parent directory
+is allowed; source identity is still checked. I/O failures return status 1.
+On filesystems without hard-link support, create-only export fails without
+falling back to overwriting. Use a supported filesystem for a new export.
 
 **Examples:**
 ```bash
@@ -547,6 +559,9 @@ d2fa export backup.bin
 # Output: Exported vault to: backup.bin
 
 d2fa export ~/vault_backup.bin
+
+# Replace a distinct existing export deliberately:
+d2fa export backup.bin --force
 ```
 
 ### `import` - Import Vault
