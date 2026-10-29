@@ -672,7 +672,7 @@ def test_read_password_file_success(tmp_path: Path) -> None:
     password_file.write_text("  test_password  \n")
 
     result = helpers._read_password_file(str(password_file))
-    assert result == "test_password"
+    assert result == "  test_password  "
 
 
 def test_load_config_existing_file(tmp_path: Path, monkeypatch: Any) -> None:

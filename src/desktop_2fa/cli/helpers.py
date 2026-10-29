@@ -249,25 +249,9 @@ def get_password_for_vault(ctx: typer.Context, new_vault: bool = False) -> str:
     if password:
         return password  # type: ignore[no-any-return]
 
-    # Password from file
+    # Password from file: one shared decoder for every CLI entry point.
     if password_file:
-        try:
-            with open(password_file, "r") as f:
-                pwd = f.read().strip()
-                # DEF-01: Immediately reject empty passwords
-                if not pwd:
-                    fail(
-                        ExitCode.VALIDATION_ERROR,
-                        "password_error",
-                        "Password cannot be empty.",
-                    )
-                return pwd
-        except FileNotFoundError:
-            fail(ExitCode.GENERAL_ERROR, "password_error", "Password file not found.")
-        except OSError:
-            fail(
-                ExitCode.GENERAL_ERROR, "password_error", "Error reading password file."
-            )
+        return _read_password_file(password_file)
 
     # Quiet must not invoke getpass: its fallback can print its own warnings.
     if output_mode.get().quiet:
@@ -336,26 +320,46 @@ def create_vault(path: Path, password: str) -> None:
 
 
 def _read_password_file(password_file: str) -> str:
-    """Read password from a file.
+    """Read one non-empty UTF-8 password without BOM, removing one LF/CRLF.
 
-    Args:
-        password_file: Path to the file containing the password.
-
-    Returns:
-        The password read from the file.
-
-    Raises:
-        typer.Exit: If the file cannot be read.
+    Spaces, tabs and Unicode are significant. Embedded CR/LF, extra lines,
+    bare CR and malformed encoding fail without echoing file contents.
+    CLI failures retain the output mode selected by the caller.
     """
     try:
-        with open(password_file, "r") as f:
-            return f.read().strip()
+        # Disable universal-newline conversion so bare CR cannot become LF.
+        with open(password_file, "r", encoding="utf-8", newline="") as f:
+            password = f.read()
+    except UnicodeError:
+        fail(
+            ExitCode.VALIDATION_ERROR,
+            "password_error",
+            "Password file must contain valid UTF-8 text.",
+        )
     except FileNotFoundError:
-        print("Error: Password file not found.")
-        raise typer.Exit(ExitCode.GENERAL_ERROR)
+        fail(ExitCode.GENERAL_ERROR, "password_error", "Password file not found.")
     except OSError:
-        print("Error reading password file.")
-        raise typer.Exit(ExitCode.GENERAL_ERROR)
+        fail(ExitCode.GENERAL_ERROR, "password_error", "Error reading password file.")
+
+    if password.startswith("\ufeff"):
+        fail(
+            ExitCode.VALIDATION_ERROR,
+            "password_error",
+            "Password file must use UTF-8 without a byte-order mark (BOM).",
+        )
+    if password.endswith("\r\n"):
+        password = password[:-2]
+    elif password.endswith("\n"):
+        password = password[:-1]
+    if "\r" in password or "\n" in password:
+        fail(
+            ExitCode.VALIDATION_ERROR,
+            "password_error",
+            "Password file must contain one line with at most one final LF or CRLF.",
+        )
+    if not password:
+        fail(ExitCode.VALIDATION_ERROR, "password_error", "Password cannot be empty.")
+    return password
 
 
 def load_config() -> dict[str, Any]:

@@ -75,6 +75,16 @@ empty password. Such vaults must be opened and re-saved with a non-empty
 password using the previous release before upgrading; the current API will not
 open them.
 
+Password files use strict UTF-8 without BOM and remove exactly one optional
+final LF or CRLF. Other spaces, tabs and Unicode are significant. Empty or
+malformed files fail before decryption; diagnostic messages omit file contents.
+The file reader never retries a stripped, differently decoded or normalized
+password after failed authentication, and the selected vault is not rewritten.
+Old files read through locale-dependent `.strip()` may need explicit correction
+to represent the actual previous password; see the
+[compatibility procedure](./user_manual.md#password-file-format-and-compatibility).
+The KDF, encrypted format and existing strength-check scope are unchanged.
+
 The password is not stored in the vault. `d2fa vault unlock` only verifies it
 for that command; later commands still need a password or interactive prompt.
 Avoid `--password` where command-line arguments may be visible to other users

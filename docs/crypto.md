@@ -31,6 +31,15 @@ password guessing more expensive, but do not make a weak or reused password
 safe. Derivation time varies by hardware and system load; this project does not
 claim a fixed time per attempt or a specific attack cost.
 
+CLI password-file decoding is an input rule, not a KDF or vault-format change:
+files must be strict UTF-8 without BOM and may have one final LF or CRLF, which
+is removed. Spaces, tabs and Unicode are otherwise preserved without
+normalization; API/prompt strings are unchanged. Invalid files fail explicitly,
+and failed authentication never triggers a second, trimmed password attempt.
+The same intended password therefore reaches Argon2id as the same UTF-8 bytes.
+Older locale-dependent `.strip()` input is described in the
+[compatibility notes](./user_manual.md#password-file-format-and-compatibility).
+
 ### Encryption
 
 Vault data is encrypted with AES-256-GCM using the 32-byte derived key and a
