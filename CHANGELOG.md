@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Interactive `add` now hides input at the dedicated `Secret` prompt. Name and
+  issuer prompts remain visible, and add success/validation messages do not
+  echo the secret or complete provisioning URI. URI parse failures use a fixed
+  validation message because parser exceptions can embed input. Positional secret/URI arguments
+  remain supported and can appear in shell history or process inspection; a URI
+  pasted into the visible issuer prompt is also echoed by the terminal. The
+  manual documents these limits. Vault format, cryptography and TOTP parameters
+  are unchanged.
+
 - Password files now use a single strict UTF-8 reader without BOM. Exactly one
   optional final LF or CRLF is removed; spaces, tabs and Unicode remain part of
   the password. Empty, multiline, bare-CR, BOM and invalid-encoding files fail

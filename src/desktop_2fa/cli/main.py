@@ -126,7 +126,7 @@ def add_cmd(
 
         if secret is None and not issuer.startswith("otpauth://"):
             rprint(Text("Secret:", style="cyan"))
-            secret = typer.prompt("")
+            secret = typer.prompt("", hide_input=True)
 
         commands.add_entry_interactive(name, issuer, secret or "", ctx)
         return
