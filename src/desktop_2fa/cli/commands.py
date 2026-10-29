@@ -439,12 +439,13 @@ def rename_entry(
 
 
 @command_errors
-def export_vault(export_path: str, ctx: typer.Context) -> None:
+def export_vault(export_path: str, ctx: typer.Context, *, force: bool = False) -> None:
     """Export the vault to a new file.
 
     Args:
         export_path: Path where the vault will be exported.
         ctx: Typer context with password options.
+        force: Allow replacement of a distinct existing destination.
     """
     path = _path(ctx)
     try:
@@ -464,7 +465,9 @@ def export_vault(export_path: str, ctx: typer.Context) -> None:
         vault = Vault.load(path, password)
         if vault.duplicate_account_names:
             helpers.print_warning(DUPLICATE_WARNING)
-        vault.save(Path(export_path), password)
+        destination = Path(export_path)
+        helpers.validate_export_destination(path, destination, force=force)
+        vault.save(destination, password, overwrite=force)
         helpers.print_success(f"Exported vault to: {export_path}")
     except CLI_ERRORS as error:
         exit_for_error(error)

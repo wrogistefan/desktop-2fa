@@ -212,14 +212,21 @@ def rename_cmd(
 
 
 @app.command("export")
-def export_cmd(ctx: typer.Context, path: str) -> None:
-    """Export the vault to a JSON file.
+def export_cmd(
+    ctx: typer.Context,
+    path: str,
+    force: bool = typer.Option(
+        False, "--force", help="Overwrite a distinct existing file"
+    ),
+) -> None:
+    """Export an encrypted D2FA v1 binary vault; existing files require --force.
 
     Args:
         ctx: Typer context object containing configuration.
         path: File path to export the vault to.
+        force: Allow replacement of a distinct existing destination.
     """
-    commands.export_vault(path, ctx)
+    commands.export_vault(path, ctx, force=force)
 
 
 @app.command("import")

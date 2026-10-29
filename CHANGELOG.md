@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Encrypted `export` now preserves existing destinations unless `--force` is
+  supplied. Create-only publication also refuses a target created concurrently.
+  Source aliases and destination symbolic links are refused even with force
+  (status 6); write failures return status 1. Filesystems without hard-link
+  support fail safely without an overwrite fallback. CLI help now correctly
+  describes binary D2FA v1 rather than JSON. `Vault.save` gains keyword-only
+  `overwrite=True`, preserving normal mutation saves; the export helper gains
+  keyword-only `force=False`. Format, cryptography and TOTP parameters remain
+  unchanged; no migration is needed.
+
 - Interactive `add` now hides input at the dedicated `Secret` prompt. Name and
   issuer prompts remain visible, and add success/validation messages do not
   echo the secret or complete provisioning URI. URI parse failures use a fixed

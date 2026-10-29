@@ -104,6 +104,16 @@ encrypts the validated JSON with AES-GCM using a random 12-byte nonce, and
 writes the header and encrypted blob to a temporary file before replacing the
 destination.
 
+`Vault.save(path, password, *, overwrite=True)` retains the existing replacement
+behavior for normal saves. Export uses `overwrite=False` by default: after the
+same validation, encryption and temporary-file flush, `os.link` publishes the
+complete file only if the destination is absent, then the temporary name is
+removed. An existing destination raises `ExportRefused` (a `ValueError` and
+`VaultError` subclass). Unsupported hard links raise `VaultIOError`; there is
+no unconditional replacement fallback. Explicit `export --force` selects
+replacement after refusing source aliases and destination symbolic links.
+No binary layout, KDF, password encoding or migration changes are involved.
+
 On load, it checks that the path is a regular file and reads at most 10 MiB. It
 then checks the magic and format version, derives the key from the supplied
 password and stored salt, decrypts the blob, and validates the JSON as vault

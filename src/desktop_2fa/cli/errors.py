@@ -15,6 +15,7 @@ from desktop_2fa.vault.vault import (
     EntryAlreadyExists,
     EntryNotFound,
     EntryRenameError,
+    ExportRefused,
     InvalidPassword,
     PermissionDenied,
     UnsupportedFormat,
@@ -39,6 +40,8 @@ def describe_error(error: Exception) -> tuple[ExitCode, str, str]:
         return ExitCode.VAULT_MISSING, "vault_missing", "No vault found."
     if isinstance(error, EntryNotFound):
         return ExitCode.ENTRY_NOT_FOUND, "entry_not_found", str(error)
+    if isinstance(error, ExportRefused):
+        return ExitCode.VALIDATION_ERROR, "export_refused", str(error)
     if isinstance(error, (PermissionDenied, PermissionError)):
         return (
             ExitCode.GENERAL_ERROR,

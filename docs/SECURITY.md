@@ -149,6 +149,24 @@ flushes the file, and replaces the destination. This reduces the chance of a
 partially written vault but does not protect against filesystem failure,
 malicious replacement, or rollback to an older copy.
 
+Encrypted export is create-only by default. Publication uses a hard link to
+the fully written temporary file in the destination directory, so a competing
+process that creates the destination first keeps its file. Existing targets
+cause refusal (CLI status 6); hard-link support is required and failures do
+not trigger a replacement fallback. `export --force` explicitly authorizes
+replacement of a distinct destination. Source identity is checked using file
+identity (covering hard links and path aliases), and destination symbolic links,
+including dangling links, are refused even with `--force`. Ordinary vault saves
+continue replacing their selected file.
+
+These checks protect against accidental overwrites and competing destination
+creation. They do not lock the source or protect against an attacker replacing
+path components or file identities during export. Use directories controlled
+by the user. This change adds no general concurrent-update or power-loss
+guarantee. Temporary-name cleanup is best effort; an unlink failure can leave
+an additional encrypted copy. Export uses fresh salt and nonce, so its bytes
+need not match the source even though the contents and password are retained.
+
 The `d2fa backup` command loads and decrypts the source vault, then saves a
 separately encrypted backup using the same password. A backup therefore
 contains the same secrets and should be protected like the original. Keep

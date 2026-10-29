@@ -104,7 +104,7 @@ def test_cli_rename_to_exceed_limit_preserves_existing_vault(tmp_path: Path) -> 
     [
         ["remove", "synthetic"],
         ["rename", "synthetic", "new"],
-        ["export", "{export}"],
+        ["export", "{export}", "--force"],
         ["import", "{source}", "--force"],
         ["backup"],
         ["init-vault", "--force"],
@@ -138,7 +138,9 @@ def test_cli_save_validation_failure_is_reported(
     exported.write_bytes(b"synthetic existing export")
     selected = tmp_path / "new.bin" if command == ["list"] else path
 
-    def fail_save(self: Vault, path: str | Path, password: str) -> None:
+    def fail_save(
+        self: Vault, path: str | Path, password: str, **kwargs: object
+    ) -> None:
         raise VaultValidationError(
             "Vault contains invalid data; correct entries before saving."
         )
