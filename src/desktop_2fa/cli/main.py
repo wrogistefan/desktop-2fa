@@ -12,16 +12,7 @@ from desktop_2fa.constants import ExitCode
 
 from . import commands, helpers
 from .errors import command_errors
-
-
-def _validate_code_options(
-    copy: bool, copy_only: bool, json_mode: bool, raw: bool, quiet: bool
-) -> None:
-    try:
-        helpers.validate_code_options(copy, copy_only, json_mode, raw, quiet)
-    except helpers.ValidationError as e:
-        helpers.print_error(str(e))
-        raise typer.Exit(ExitCode.VALIDATION_ERROR)
+from .parser import OutputGroup
 
 
 def is_interactive() -> bool:
@@ -35,7 +26,9 @@ def is_interactive() -> bool:
     return sys.stdin.isatty() and sys.stdout.isatty()
 
 
-app = typer.Typer(help="Desktop‑2FA — secure offline TOTP authenticator")
+app = typer.Typer(
+    cls=OutputGroup, help="Desktop‑2FA — secure offline TOTP authenticator"
+)
 
 
 @app.callback(invoke_without_command=True)
@@ -162,7 +155,9 @@ def code_cmd(
     ),
     json_mode: bool = typer.Option(False, "--json", help="Output in JSON format"),
     raw: bool = typer.Option(False, "--raw", help="Output only the TOTP code"),
-    quiet: bool = typer.Option(False, "--quiet", help="Suppress normal output"),
+    quiet: bool = typer.Option(
+        False, "--quiet", help="Suppress stdout and stderr; retain exit status"
+    ),
 ) -> None:
     """Generate and display the TOTP code for an entry.
 
@@ -175,9 +170,6 @@ def code_cmd(
         raw: Output only the TOTP code.
         quiet: Suppress normal output.
     """
-    # Flag conflict checks
-    _validate_code_options(copy, copy_only, json_mode, raw, quiet)
-
     commands.generate_code(
         name,
         ctx,

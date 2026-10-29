@@ -128,7 +128,7 @@ def test_cli_code_flag_conflicts(fake_vault_env_cli: Path) -> None:
         app, ["--password", TEST_PASSWORD, "code", "GitHub", "--raw", "--quiet"]
     )
     assert result.exit_code == 6
-    assert "conflicts with" in result.output
+    assert result.stdout == result.stderr == ""
 
     # Test --copy conflicts with --copy-only
     result = runner.invoke(
@@ -149,7 +149,7 @@ def test_cli_code_flag_conflicts(fake_vault_env_cli: Path) -> None:
         app, ["--password", TEST_PASSWORD, "code", "GitHub", "--quiet", "--raw"]
     )
     assert result.exit_code == 6
-    assert "conflicts with" in result.output
+    assert result.stdout == result.stderr == ""
 
 
 def test_cli_remove(fake_vault_env_cli: Path) -> None:

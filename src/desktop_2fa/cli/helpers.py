@@ -19,6 +19,7 @@ from desktop_2fa.vault import Vault
 from desktop_2fa.vault.password_strength import evaluate_password_strength
 
 from .errors import CLI_ERRORS, exit_for_error
+from .output import diagnostic, fail, output_mode
 
 
 class ValidationError(Exception):
@@ -234,13 +235,15 @@ def get_password_for_vault(ctx: typer.Context, new_vault: bool = False) -> str:
 
     # Both flags provided
     if password and password_file:
-        print("Error: Cannot specify both --password and --password-file")
-        raise typer.Exit(ExitCode.VALIDATION_ERROR)
+        fail(
+            ExitCode.VALIDATION_ERROR,
+            "password_error",
+            "Cannot specify both --password and --password-file",
+        )
 
     # DEF-01: Immediately reject empty passwords (direct --password "")
     if password == "":
-        print_error("Password cannot be empty.")
-        raise typer.Exit(ExitCode.VALIDATION_ERROR)
+        fail(ExitCode.VALIDATION_ERROR, "password_error", "Password cannot be empty.")
 
     # Direct password
     if password:
@@ -253,48 +256,68 @@ def get_password_for_vault(ctx: typer.Context, new_vault: bool = False) -> str:
                 pwd = f.read().strip()
                 # DEF-01: Immediately reject empty passwords
                 if not pwd:
-                    print_error("Password cannot be empty.")
-                    raise typer.Exit(ExitCode.VALIDATION_ERROR)
+                    fail(
+                        ExitCode.VALIDATION_ERROR,
+                        "password_error",
+                        "Password cannot be empty.",
+                    )
                 return pwd
         except FileNotFoundError:
-            print("Error: Password file not found.")
-            raise typer.Exit(ExitCode.GENERAL_ERROR)
+            fail(ExitCode.GENERAL_ERROR, "password_error", "Password file not found.")
         except OSError:
-            print("Error reading password file.")
-            raise typer.Exit(ExitCode.GENERAL_ERROR)
+            fail(
+                ExitCode.GENERAL_ERROR, "password_error", "Error reading password file."
+            )
+
+    # Quiet must not invoke getpass: its fallback can print its own warnings.
+    if output_mode.get().quiet:
+        fail(
+            ExitCode.VALIDATION_ERROR,
+            "password_error",
+            "Password not provided; quiet mode requires --password or --password-file.",
+        )
 
     # No password provided
     if not interactive:
-        print("Error: Password not provided and not running in interactive mode")
-        raise typer.Exit(ExitCode.VALIDATION_ERROR)
+        fail(
+            ExitCode.VALIDATION_ERROR,
+            "password_error",
+            "Password not provided and not running in interactive mode",
+        )
 
     # Interactive mode → prompt
     if new_vault:
-        rprint(Text("Enter new vault password:", style="cyan"))
+        print_prompt("Enter new vault password:")
         pwd = getpass.getpass("")
         # DEF-01: Immediately reject empty passwords
         if not pwd:
-            print_error("Password cannot be empty.")
-            raise typer.Exit(ExitCode.VALIDATION_ERROR)
-        rprint(Text("Confirm vault password:", style="cyan"))
+            fail(
+                ExitCode.VALIDATION_ERROR, "password_error", "Password cannot be empty."
+            )
+        print_prompt("Confirm vault password:")
         confirm = getpass.getpass("")
         # DEF-01: Immediately reject empty passwords
         if not confirm:
-            print_error("Password cannot be empty.")
-            raise typer.Exit(ExitCode.VALIDATION_ERROR)
+            fail(
+                ExitCode.VALIDATION_ERROR, "password_error", "Password cannot be empty."
+            )
         if pwd != confirm:
-            print_error("Passwords do not match. Please try again.")
-            raise typer.Exit(ExitCode.VALIDATION_ERROR)
+            fail(
+                ExitCode.VALIDATION_ERROR,
+                "password_error",
+                "Passwords do not match. Please try again.",
+            )
         # Check password strength
         if not _should_skip_password_checks(ctx):
             _enforce_password_strength(pwd)
     else:
-        rprint(Text("Enter vault password:", style="cyan"))
+        print_prompt("Enter vault password:")
         pwd = getpass.getpass("")
         # DEF-01: Immediately reject empty passwords
         if not pwd:
-            print_error("Password cannot be empty.")
-            raise typer.Exit(ExitCode.VALIDATION_ERROR)
+            fail(
+                ExitCode.VALIDATION_ERROR, "password_error", "Password cannot be empty."
+            )
     return pwd
 
 
@@ -477,13 +500,13 @@ def print_success(message: str) -> None:
 
 
 def print_warning(message: str) -> None:
-    """Print a warning message in yellow."""
-    rprint(Text(message, style="yellow"))
+    """Print a literal warning on stderr unless quiet."""
+    diagnostic(message)
 
 
 def print_error(message: str) -> None:
-    """Print an error message in red."""
-    rprint(Text(message, style="red"))
+    """Print a literal error on stderr unless quiet."""
+    diagnostic(message)
 
 
 def print_info(message: str) -> None:
@@ -492,8 +515,9 @@ def print_info(message: str) -> None:
 
 
 def print_prompt(message: str) -> None:
-    """Print a prompt message in cyan."""
-    rprint(Text(message, style="cyan"))
+    """Print a prompt on stderr unless quiet."""
+    if not output_mode.get().quiet:
+        typer.echo(message, err=True)
 
 
 def print_header(message: str) -> None:
