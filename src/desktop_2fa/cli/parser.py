@@ -2,10 +2,22 @@
 
 import sys
 from collections.abc import Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import click
+from typer import Exit
 from typer.core import TyperGroup
+
+# Recent Typer releases vendor Click; earlier releases use the external package.
+# Catch exceptions and accept contexts from the same parser as TyperGroup.
+if TYPE_CHECKING:
+    from typer._click.core import Context
+    from typer._click.exceptions import UsageError
+else:
+    try:
+        from typer._click.core import Context
+        from typer._click.exceptions import UsageError
+    except ImportError:
+        from click import Context, UsageError
 
 from desktop_2fa.constants import ExitCode
 
@@ -55,17 +67,17 @@ class OutputGroup(TyperGroup):
         finally:
             output_mode.reset(token)
 
-    def parse_args(self, ctx: click.Context, args: list[str]) -> list[str]:
+    def parse_args(self, ctx: Context, args: list[str]) -> list[str]:
         try:
             return super().parse_args(ctx, args)
-        except click.UsageError:
+        except UsageError:
             self._usage_failure()
             raise
 
-    def invoke(self, ctx: click.Context) -> Any:
+    def invoke(self, ctx: Context) -> Any:
         try:
             return super().invoke(ctx)
-        except click.UsageError:
+        except UsageError:
             self._usage_failure()
             raise
 
@@ -75,4 +87,4 @@ class OutputGroup(TyperGroup):
         if mode.json or mode.quiet:
             # Parser text may include a rejected value (including key material).
             failure(ExitCode.INVALID_PASSWORD, "usage_error", "Invalid command syntax.")
-            raise click.exceptions.Exit(2)
+            raise Exit(2)

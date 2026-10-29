@@ -18,7 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `Vault.load()` no longer prints legacy duplicate warnings; the additive
   `duplicate_account_names` property exposes sorted names without changing its
   signature or return type. CLI warnings omit record names. No format migration
-  or cryptographic changes are involved.
+  or cryptographic changes are involved. Parser handling follows Typer's bundled
+  or external Click types, preserving this contract across Typer versions.
 
 - CLI failures now return consistent non-zero `ExitCode` values across add,
   list, code, remove, rename, import/export, backup, initialization, unlock,
