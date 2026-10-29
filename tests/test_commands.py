@@ -50,7 +50,8 @@ def fake_ctx_wrong_password() -> Any:
 
 def test_list_entries_empty(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -> None:
     commands.list_entries(fake_ctx)
-    out = capsys.readouterr().out.strip().splitlines()
+    captured = capsys.readouterr()
+    out = (captured.err + captured.out).strip().splitlines()
     vault_path = str(fake_vault_env)
     assert out == [
         "No vault found.",
@@ -73,7 +74,8 @@ def test_list_entries_noninteractive_creates_vault_with_messages(
         fake_vault_env.unlink()
 
     commands.list_entries(NonInteractiveCtx())  # type: ignore[arg-type]
-    out = capsys.readouterr().out.strip().splitlines()
+    captured = capsys.readouterr()
+    out = (captured.err + captured.out).strip().splitlines()
 
     vault_path = str(fake_vault_env)
     # Must print all required messages regardless of interactive mode
@@ -90,7 +92,8 @@ def test_add_entry_and_list(fake_vault_env: Path, capsys: Any, fake_ctx: Any) ->
     commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
 
     # po add_entry:
-    out = capsys.readouterr().out.strip().splitlines()
+    captured = capsys.readouterr()
+    out = (captured.err + captured.out).strip().splitlines()
     vault_path = str(fake_vault_env)
     assert out == [
         "No vault found.",
@@ -123,7 +126,8 @@ def test_add_entry_noninteractive_creates_vault_with_messages(
         fake_vault_env.unlink()
 
     commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", NonInteractiveCtx())  # type: ignore[arg-type]
-    out = capsys.readouterr().out.strip().splitlines()
+    captured = capsys.readouterr()
+    out = (captured.err + captured.out).strip().splitlines()
 
     vault_path = str(fake_vault_env)
     # Must print all required messages regardless of interactive mode
@@ -239,7 +243,7 @@ def test_export_vault_missing_file(
     with pytest.raises(typer.Exit) as error:
         commands.export_vault(str(tmp_path / "any.bin"), fake_ctx)
     assert error.value.exit_code == 4
-    out = capsys.readouterr().out
+    out = capsys.readouterr().err
     # zgodnie z aktualnym helpers.export_vault, brak explicit checka,
     # więc tutaj nie wymuszamy konkretnego komunikatu – tylko, że coś wypisuje.
     assert "No vault found." in out
@@ -298,7 +302,7 @@ def test_import_vault_refuses_overwrite_without_force(
     with pytest.raises(typer.Exit):
         commands.import_vault(str(src), False, fake_ctx)
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert out == "Refusing to overwrite existing vault. Use --force to proceed."
 
 
@@ -339,7 +343,7 @@ def test_backup_vault_missing(
     with pytest.raises(typer.Exit) as error:
         commands.backup_vault(fake_ctx)
     assert error.value.exit_code == 4
-    out = capsys.readouterr().out
+    out = capsys.readouterr().err
     # Now prints "No vault found."
     assert "No vault found." in out
 
@@ -357,7 +361,7 @@ def test_generate_code_invalid_password(
         commands.generate_code("nonexistent", fake_ctx_wrong_password)
     assert exc_info.value.code == 2
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert out == "Invalid vault password."
 
 
@@ -373,7 +377,7 @@ def test_add_entry_invalid_password(
     with pytest.raises(typer.Exit) as error:
         commands.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP", fake_ctx_wrong_password)
     assert error.value.exit_code == 2
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert out == "Invalid vault password."
 
 
@@ -389,7 +393,7 @@ def test_list_entries_invalid_password(
     with pytest.raises(typer.Exit) as error:
         commands.list_entries(fake_ctx_wrong_password)
     assert error.value.exit_code == 2
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert out == "Invalid vault password."
 
 
@@ -405,7 +409,7 @@ def test_remove_entry_invalid_password(
     with pytest.raises(typer.Exit) as error:
         commands.remove_entry("Test", fake_ctx_wrong_password)
     assert error.value.exit_code == 2
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert out == "Invalid vault password."
 
 
@@ -422,7 +426,7 @@ def test_export_vault_invalid_password(
     with pytest.raises(typer.Exit) as error:
         commands.export_vault(str(export_path), fake_ctx_wrong_password)
     assert error.value.exit_code == 2
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert out == "Invalid vault password."
 
 
@@ -439,7 +443,7 @@ def test_import_vault_invalid_password(
     with pytest.raises(typer.Exit) as error:
         commands.import_vault(str(src), False, fake_ctx_wrong_password)
     assert error.value.exit_code == 2
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert out == "Invalid vault password."
 
 
@@ -455,7 +459,7 @@ def test_backup_vault_invalid_password(
     with pytest.raises(typer.Exit) as error:
         commands.backup_vault(fake_ctx_wrong_password)
     assert error.value.exit_code == 2
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert out == "Invalid vault password."
 
 
@@ -477,7 +481,7 @@ def test_add_entry_invalid_otpauth_url(
         commands.add_entry("Test", invalid_url, "", fake_ctx)
     assert error.value.exit_code == 6
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Invalid otpauth URL:" in out
 
 
@@ -488,7 +492,7 @@ def test_add_entry_invalid_secret(
         commands.add_entry("Test", "Test", "invalid_secret", fake_ctx)
     assert error.value.exit_code == 6
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Invalid secret: not valid Base32." in out
 
 
@@ -570,7 +574,7 @@ def test_import_vault_corrupted_source(
     with pytest.raises(typer.Exit) as error:
         commands.import_vault(str(corrupted), True, fake_ctx)
     assert error.value.exit_code == 1
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Vault file format is unsupported." in out
 
 
@@ -585,7 +589,7 @@ def test_import_vault_unsupported_format(
         commands.import_vault(str(unsupported), True, fake_ctx)
     assert error.value.exit_code == 1
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Vault file format is unsupported." in out
 
 
@@ -658,7 +662,7 @@ def test_remove_entry_unsupported_format(
         commands.remove_entry("GitHub", fake_ctx)
     assert error.value.exit_code == 1
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Vault file format is unsupported." in out
 
 
@@ -674,7 +678,7 @@ def test_rename_entry_unsupported_format(
         commands.rename_entry("GitHub", "NewGitHub", fake_ctx)
     assert error.value.exit_code == 1
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Vault file format is unsupported." in out
 
 
@@ -691,7 +695,7 @@ def test_export_vault_unsupported_format(
         commands.export_vault(str(export_path), fake_ctx)
     assert error.value.exit_code == 1
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Vault file format is unsupported." in out
 
 
@@ -707,7 +711,7 @@ def test_backup_vault_unsupported_format(
         commands.backup_vault(fake_ctx)
     assert error.value.exit_code == 1
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Vault file format is unsupported." in out
 
 
@@ -723,7 +727,7 @@ def test_add_entry_unsupported_format(
         commands.add_entry("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
     assert error.value.exit_code == 1
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Vault file format is unsupported." in out
 
 
@@ -739,7 +743,7 @@ def test_list_entries_unsupported_format(
         commands.list_entries(fake_ctx)
     assert error.value.exit_code == 1
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Vault file format is unsupported." in out
 
 
@@ -755,7 +759,7 @@ def test_generate_code_unsupported_format(
         commands.generate_code("GitHub", fake_ctx)
     assert exc_info.value.code == 1
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Vault file format is unsupported." in out
 
 
@@ -790,7 +794,7 @@ def test_rename_entry_with_duplicates_aborts(
         commands.rename_entry("GitHub", "NewName", fake_ctx)
     assert err.value.exit_code == 6
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Ambiguous entry 'GitHub'" in out
     assert "--index N" in out
 
@@ -868,7 +872,7 @@ def test_rename_entry_no_vault(
         commands.rename_entry("Old", "New", fake_ctx)
     assert error.value.exit_code == 4
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "No vault found." in out
 
 
@@ -902,7 +906,7 @@ def test_add_entry_interactive_invalid_base32(
         commands.add_entry_interactive("Test", "Test", "invalid_secret!@#", fake_ctx)
     assert error.value.exit_code == 6
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Invalid secret: not valid Base32" in out
     assert "Example: ABCDEFGHIJKL2345" in out
 
@@ -927,7 +931,7 @@ def test_list_entries_permission_error_directory(
         commands.list_entries(fake_ctx)
     assert error.value.exit_code == 1
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Cannot access vault directory (permission denied)" in out
 
 
@@ -949,7 +953,7 @@ def test_list_entries_corrupted_vault(
         commands.list_entries(fake_ctx)
     assert error.value.exit_code == 1
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Vault file is corrupted" in out
 
 
@@ -970,7 +974,7 @@ def test_list_entries_io_error(
     with pytest.raises(typer.Exit) as error:
         commands.list_entries(fake_ctx)
     assert error.value.exit_code == 1
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Failed to access vault file" in out
 
 
@@ -1177,10 +1181,9 @@ def test_generate_code_clipboard_unavailable_copy(
 
     commands.generate_code("GitHub", fake_ctx, copy=True)
 
-    out = capsys.readouterr().out.strip()
-    # Should print warning and then the code
-    assert "Clipboard not available on this system" in out
-    assert "valid" in out
+    captured = capsys.readouterr()
+    assert "Clipboard not available on this system" in captured.err
+    assert "valid" in captured.out
 
 
 def test_generate_code_clipboard_unavailable_copy_only(
@@ -1204,7 +1207,7 @@ def test_generate_code_clipboard_unavailable_copy_only(
         commands.generate_code("GitHub", fake_ctx, copy_only=True)
     assert exc_info.value.code == 5
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Clipboard not available on this system" in out
 
 
@@ -1272,7 +1275,7 @@ def test_add_entry_permission_error_directory(
         commands.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP", fake_ctx)
     assert error.value.exit_code == 1
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Cannot access vault directory (permission denied)" in out
 
 
@@ -1299,7 +1302,7 @@ def test_add_entry_load_failure_does_not_create_vault(
     assert error.value.exit_code == 4
     assert fake_vault_env.read_bytes() == original
 
-    out_lines = capsys.readouterr().out.strip().splitlines()
+    out_lines = capsys.readouterr().err.strip().splitlines()
     out_text = " ".join(out_lines)  # Join for substring checking
     assert "No vault found" in out_text
     assert "new encrypted vault will be created" not in out_text
@@ -1318,9 +1321,8 @@ def test_generate_code_no_vault_warns(
         commands.generate_code("Test", fake_ctx)
     assert exc_info.value.code == 4
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "No vault found" in out
-    assert "Nothing to generate" in out
 
 
 def test_rename_entry_permission_denied(
@@ -1345,7 +1347,7 @@ def test_rename_entry_permission_denied(
         commands.rename_entry("GitHub", "NewGitHub", fake_ctx)
     assert error.value.exit_code == 1
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Cannot access vault directory (permission denied)" in out
 
 
@@ -1371,7 +1373,7 @@ def test_rename_entry_io_error(
         commands.rename_entry("GitHub", "NewGitHub", fake_ctx)
     assert error.value.exit_code == 1
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Failed to access vault file" in out
 
 
@@ -1397,7 +1399,7 @@ def test_backup_vault_permission_denied(
         commands.backup_vault(fake_ctx)
     assert error.value.exit_code == 1
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Cannot access vault directory (permission denied)" in out
 
 
@@ -1411,7 +1413,7 @@ def test_backup_vault_permission_error_io(
         commands.backup_vault(fake_ctx)
     assert error.value.exit_code == 1
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Vault file format is unsupported" in out
 
 
@@ -1437,7 +1439,7 @@ def test_backup_vault_io_error(
         commands.backup_vault(fake_ctx)
     assert error.value.exit_code == 1
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Failed to access vault file" in out
 
 
@@ -1458,7 +1460,7 @@ def test_init_vault_permission_error(
         commands.init_vault(False, fake_ctx)
     assert error.value.exit_code == 1
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Cannot access vault directory (permission denied)" in out
 
 
@@ -1483,7 +1485,7 @@ def test_init_vault_permission_denied_on_save(
         commands.init_vault(False, fake_ctx)
     assert error.value.exit_code == 1
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Cannot access vault directory (permission denied)" in out
 
 
@@ -1508,7 +1510,7 @@ def test_init_vault_io_error_on_save(
         commands.init_vault(False, fake_ctx)
     assert error.value.exit_code == 1
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Failed to access vault file" in out
 
 
@@ -1537,7 +1539,7 @@ def test_list_entries_permission_denied(
         commands.list_entries(fake_ctx)
     assert error.value.exit_code == 1
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Cannot access vault directory (permission denied)" in out
 
 
@@ -1565,7 +1567,7 @@ def test_list_entries_load_failure_does_not_create_vault(
             commands.list_entries(fake_ctx)
         assert error.value.exit_code == 4
         assert fake_vault_env.read_bytes() == original
-        out = capsys.readouterr().out.strip()
+        out = capsys.readouterr().err.strip()
         assert "No vault found" in out
         assert "new encrypted vault will be created" not in out
     finally:
@@ -1587,7 +1589,7 @@ def test_add_entry_interactive_value_error(
         commands.add_entry_interactive("GitHub", "GitHub", "JBSWY3DPEHPK3PXP", fake_ctx)
     assert error.value.exit_code == 6
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "already exists" in out
 
 
@@ -1601,7 +1603,7 @@ def test_add_entry_corrupted_vault(
         commands.add_entry("Test", "Test", "JBSWY3DPEHPK3PXP", fake_ctx)
     assert error.value.exit_code == 1
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Vault file format is unsupported" in out
 
 
@@ -1626,7 +1628,7 @@ def test_add_entry_vault_io_error(
         commands.add_entry("Test", "Test2", "JBSWY3DPEHPK3PXP", fake_ctx)
     assert error.value.exit_code == 1
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Failed to access vault file" in out
 
 
@@ -1651,7 +1653,7 @@ def test_generate_code_permission_denied(
         commands.generate_code("GitHub", fake_ctx)
     assert exc_info.value.code == 1
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Cannot access vault directory (permission denied)" in out
 
 
@@ -1676,7 +1678,7 @@ def test_generate_code_value_error_invalid(
         commands.generate_code("GitHub", fake_ctx)
     assert exc_info.value.code == 2
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Invalid vault password" in out
 
 
@@ -1690,7 +1692,7 @@ def test_generate_code_corrupted_vault(
         commands.generate_code("GitHub", fake_ctx)
     assert exc_info.value.code == 1
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Vault file format is unsupported" in out
 
 
@@ -1716,7 +1718,7 @@ def test_generate_code_vault_io_error(
         commands.generate_code("GitHub", fake_ctx)
     assert exc_info.value.code == 1
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Failed to access vault file" in out
 
 
@@ -1813,7 +1815,7 @@ def test_remove_entry_no_vault(
         commands.remove_entry("GitHub", fake_ctx)
     assert error.value.exit_code == 4
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "No vault found" in out
 
 
@@ -1837,7 +1839,7 @@ def test_remove_entry_value_error_invalid(
         commands.remove_entry("GitHub", fake_ctx)
     assert error.value.exit_code == 2
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Invalid vault password" in out
 
 
@@ -1851,7 +1853,7 @@ def test_remove_entry_corrupted_vault(
         commands.remove_entry("GitHub", fake_ctx)
     assert error.value.exit_code == 1
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Vault file format is unsupported" in out
 
 
@@ -1877,7 +1879,7 @@ def test_remove_entry_vault_io_error(
         commands.remove_entry("GitHub", fake_ctx)
     assert error.value.exit_code == 1
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Failed to access vault file" in out
 
 
@@ -1902,7 +1904,7 @@ def test_rename_entry_value_error_invalid(
         commands.rename_entry("GitHub", "NewGitHub", fake_ctx)
     assert error.value.exit_code == 2
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Invalid vault password" in out
 
 
@@ -1916,7 +1918,7 @@ def test_rename_entry_corrupted_vault(
         commands.rename_entry("GitHub", "NewGitHub", fake_ctx)
     assert error.value.exit_code == 1
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Vault file format is unsupported" in out
 
 
@@ -1942,7 +1944,7 @@ def test_rename_entry_vault_io_error(
         commands.rename_entry("GitHub", "NewGitHub", fake_ctx)
     assert error.value.exit_code == 1
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Failed to access vault file" in out
 
 
@@ -1968,7 +1970,7 @@ def test_export_vault_permission_denied(
         commands.export_vault(str(export_path), fake_ctx)
     assert error.value.exit_code == 1
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Cannot access vault directory (permission denied)" in out
 
 
@@ -1983,7 +1985,7 @@ def test_export_vault_corrupted_vault(
         commands.export_vault(str(export_path), fake_ctx)
     assert error.value.exit_code == 1
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Vault file format is unsupported" in out
 
 
@@ -2010,5 +2012,5 @@ def test_export_vault_vault_io_error(
         commands.export_vault(str(export_path), fake_ctx)
     assert error.value.exit_code == 1
 
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().err.strip()
     assert "Failed to access vault file" in out

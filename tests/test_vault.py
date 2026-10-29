@@ -417,15 +417,12 @@ def test_vault_load_duplicate_names_warning(tmp_path: Path, capsys: Any) -> None
     vault = Vault(data)
     vault.save(str(path), TEST_PASSWORD)
 
-    # Load the vault - should show warning but succeed
     loaded = Vault.load(str(path), TEST_PASSWORD)
-
-    # Check that warning was printed
     captured = capsys.readouterr()
-    assert (
-        'Warning: Your vault contains multiple entries with the same name: "GitHub"'
-        in captured.out
-    )
+    assert captured.out == captured.err == ""
+    assert loaded.duplicate_account_names == ("GitHub",)
+    loaded.rename_entry("GitHub", "repaired", index=1)
+    assert loaded.duplicate_account_names == ()
 
     # Vault should still load successfully
     assert len(loaded.entries) == 2

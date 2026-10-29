@@ -237,6 +237,11 @@ is provided, Desktop-2FA uses `~/.desktop-2fa/vault`. The `code` command also
 supports `--json`, `--raw`, `--quiet`, `--copy`, and `--copy-only`; `--force`
 is available on vault initialization and import commands.
 
+`code --json` writes one JSON success/error object to stdout, including early
+option and password errors. `code --raw` prints only the code on success.
+Diagnostics and password prompts use stderr; `code --quiet` suppresses both
+streams but retains the exit status. See the [output contract](docs/user_manual.md#json-error-format).
+
 ---
 
 ## 🔒 Security

@@ -157,3 +157,13 @@ This ensures predictable behavior when working with vaults that contain duplicat
 ## Contact
 
 For questions or support, contact us at contact@desktop-2fa.org
+
+### CLI output streams
+
+`code --json` always renders a single success/error object on stdout (except
+explicit help/version actions); option conflicts retain JSON rendering even with
+`--quiet`. Raw success contains only the code and a newline. Errors, warnings and
+password prompts use stderr. Quiet suppresses both streams while preserving the
+exit status; it requires a supplied password/password file instead of prompting.
+Duplicate warnings omit record names. `Vault.load()` itself is
+silent; callers may inspect `duplicate_account_names` for legacy repair.

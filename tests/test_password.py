@@ -132,7 +132,7 @@ def test_cli_both_password_flags_error(
         app, ["--password", "test", "--password-file", str(password_file), "list"]
     )
     assert result.exit_code == 6
-    assert "Error: Cannot specify both --password and --password-file" in result.output
+    assert "Cannot specify both --password and --password-file" in result.stderr
 
 
 def test_cli_non_interactive_no_password_error(fake_vault_env: pathlib.Path) -> None:
@@ -143,8 +143,7 @@ def test_cli_non_interactive_no_password_error(fake_vault_env: pathlib.Path) -> 
         result = runner.invoke(app, ["list"])
         assert result.exit_code == 6
         assert (
-            "Error: Password not provided and not running in interactive mode"
-            in result.output
+            "Password not provided and not running in interactive mode" in result.stderr
         )
 
 

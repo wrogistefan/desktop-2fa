@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import json
 import os
-import sys
 import time
 from pathlib import Path
 
@@ -17,22 +15,20 @@ from desktop_2fa.vault import Vault
 from desktop_2fa.vault.password_strength import evaluate_password_strength
 from desktop_2fa.vault.vault import (
     PermissionDenied,
+    VaultNotFound,
 )
 
 from .errors import CLI_ERRORS, command_errors, exit_for_error, report_error
+from .output import DUPLICATE_WARNING, code_result, fail, failure
 
 
-def _handle_clipboard(
-    code: str, copy: bool, copy_only: bool, json_mode: bool, quiet: bool
-) -> bool:
+def _handle_clipboard(code: str, copy: bool, copy_only: bool) -> bool:
     """Handle clipboard operations and return success status.
 
     Args:
         code: The TOTP code to copy.
         copy: Whether to copy and print.
         copy_only: Whether to copy without printing.
-        json_mode: Whether output is in JSON mode.
-        quiet: Whether to suppress output.
 
     Returns:
         True if clipboard operation succeeded, False otherwise.
@@ -45,20 +41,14 @@ def _handle_clipboard(
             copy_to_clipboard(code)
             return True
         except ClipboardError:
-            if json_mode:
-                print(
-                    json.dumps(
-                        {
-                            "error": "clipboard_unavailable",
-                            "message": "Clipboard not available on this system.",
-                        }
-                    )
-                )
-                sys.exit(ExitCode.CLIPBOARD_UNAVAILABLE)
-            elif not quiet:
-                helpers.print_warning("Clipboard not available on this system.")
+            message = "Clipboard not available on this system."
             if copy_only:
-                sys.exit(ExitCode.CLIPBOARD_UNAVAILABLE)
+                raise SystemExit(
+                    failure(
+                        ExitCode.CLIPBOARD_UNAVAILABLE, "clipboard_unavailable", message
+                    )
+                ) from None
+            helpers.print_warning(message)
             return False
     return True
 
@@ -122,7 +112,7 @@ def _prepare_add(name: str, issuer: str, secret: str) -> helpers.ParsedOtpauth:
         secret = normalize_base32(secret)
     except InvalidSecret:
         helpers.print_error("Invalid secret: not valid Base32.")
-        helpers.print_info(
+        helpers.print_error(
             "A non-empty Base32 key is required. Example: ABCDEFGHIJKL2345"
         )
         raise typer.Exit(ExitCode.VALIDATION_ERROR) from None
@@ -183,6 +173,8 @@ def add_entry_interactive(
         password = helpers.get_password_for_vault(ctx, new_vault=False)
         try:
             vault = Vault.load(path, password)
+            if vault.duplicate_account_names:
+                helpers.print_warning(DUPLICATE_WARNING)
             vault.add_entry(name=name, issuer=issuer, secret=secret, **parameters)
             vault.save(path, password)
             helpers.print_success(f"Entry added: {name}")
@@ -225,6 +217,8 @@ def list_entries(ctx: typer.Context, *, show_indices: bool = False) -> None:
         password = helpers.get_password_for_vault(ctx, new_vault=False)
         try:
             vault = Vault.load(path, password)
+            if vault.duplicate_account_names:
+                helpers.print_warning(DUPLICATE_WARNING)
         except CLI_ERRORS as error:
             exit_for_error(error)
         if vault.entries:
@@ -280,6 +274,8 @@ def add_entry(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
         password = helpers.get_password_for_vault(ctx, new_vault=False)
         try:
             vault = Vault.load(path, password)
+            if vault.duplicate_account_names:
+                helpers.print_warning(DUPLICATE_WARNING)
             vault.add_entry(name=name, issuer=issuer, secret=secret, **parameters)
             vault.save(path, password)
             helpers.print_success(f"Entry added: {name}")
@@ -312,8 +308,7 @@ def generate_code(
     try:
         helpers.validate_code_options(copy, copy_only, json_mode, raw, quiet)
     except helpers.ValidationError as e:
-        helpers.print_error(str(e))
-        raise typer.Exit(ExitCode.VALIDATION_ERROR)
+        fail(ExitCode.VALIDATION_ERROR, "invalid_options", str(e))
 
     path = _path(ctx)
     # Check vault existence
@@ -331,18 +326,16 @@ def generate_code(
         )
 
     if not vault_exists:
-        if json_mode:
-            print(json.dumps({"error": "vault_missing", "message": "No vault found."}))
-        elif not quiet:
-            helpers.print_warning("No vault found.")
-            helpers.print_info("Nothing to generate.")
-        sys.exit(ExitCode.VAULT_MISSING)
+        raise SystemExit(
+            report_error(VaultNotFound(), json_mode=json_mode, quiet=quiet)
+        )
 
-    # Get password
     password = helpers.get_password_for_vault(ctx, new_vault=False)
 
     try:
         vault = Vault.load(path, password)
+        if vault.duplicate_account_names:
+            helpers.print_warning(DUPLICATE_WARNING)
         entry = vault.get_entry(name)
         from desktop_2fa.totp.generator import generate
 
@@ -357,30 +350,16 @@ def generate_code(
         remaining = entry.period - (timestamp % entry.period)
 
         # Handle clipboard operations
-        clipboard_success = _handle_clipboard(code, copy, copy_only, json_mode, quiet)
+        clipboard_success = _handle_clipboard(code, copy, copy_only)
 
-        # Output based on mode
-        if json_mode:
-            output = {
-                "account": entry.account_name,
-                "issuer": entry.issuer,
-                "code": code,
-                "valid_for": remaining,
-            }
-            print(json.dumps(output))
-        elif raw:
-            print(code)
-        elif quiet:
-            # No output for quiet mode on success
-            pass
-        else:
-            # Default behavior
-            if copy_only and clipboard_success:
-                print(f"Code copied to clipboard (valid {remaining}s)")
-            elif copy and clipboard_success:
-                print(f"Copied to clipboard: {code} (valid {remaining}s)")
-            else:
-                print(f"{code} (valid {remaining}s)")
+        code_result(
+            entry,
+            code,
+            remaining,
+            copy=copy,
+            copy_only=copy_only,
+            clipboard_success=clipboard_success,
+        )
 
     except CLI_ERRORS as error:
         raise SystemExit(
@@ -412,6 +391,8 @@ def remove_entry(name: str, ctx: typer.Context) -> None:
     password = helpers.get_password_for_vault(ctx, new_vault=False)
     try:
         vault = Vault.load(path, password)
+        if vault.duplicate_account_names:
+            helpers.print_warning(DUPLICATE_WARNING)
         vault.remove_entry(name)
         vault.save(path, password)
         helpers.print_success(f"Removed entry: {name}")
@@ -447,6 +428,8 @@ def rename_entry(
     password = helpers.get_password_for_vault(ctx, new_vault=False)
     try:
         vault = Vault.load(path, password)
+        if vault.duplicate_account_names:
+            helpers.print_warning(DUPLICATE_WARNING)
         vault.rename_entry(old, new, index=index)
         vault.save(path, password)
         helpers.print_success(f"Renamed '{old}' → '{new}'")
@@ -478,6 +461,8 @@ def export_vault(export_path: str, ctx: typer.Context) -> None:
     password = helpers.get_password_for_vault(ctx, new_vault=False)
     try:
         vault = Vault.load(path, password)
+        if vault.duplicate_account_names:
+            helpers.print_warning(DUPLICATE_WARNING)
         vault.save(Path(export_path), password)
         helpers.print_success(f"Exported vault to: {export_path}")
     except CLI_ERRORS as error:
@@ -563,6 +548,8 @@ def backup_vault(ctx: typer.Context) -> None:
     password = helpers.get_password_for_vault(ctx, new_vault=False)
     try:
         vault = Vault.load(path, password)
+        if vault.duplicate_account_names:
+            helpers.print_warning(DUPLICATE_WARNING)
         backup_path = _get_backup_path(path)
         vault.save(backup_path, password)
         helpers.print_success(f"Backup created: {backup_path}")

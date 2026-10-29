@@ -211,8 +211,8 @@ def test_get_password_for_vault_password_file_missing(
     )()
     with pytest.raises(typer.Exit):
         helpers.get_password_for_vault(fake_ctx, new_vault=False)
-    out = capsys.readouterr().out
-    assert "Error: Password file" in out
+    out = capsys.readouterr().err
+    assert "Password file" in out
 
 
 def test_load_vault_failed(tmp_path: Path) -> None:
@@ -320,8 +320,8 @@ def test_get_password_for_vault_both_password_and_file(
     with pytest.raises(typer.Exit):
         helpers.get_password_for_vault(fake_ctx, new_vault=False)
 
-    out = capsys.readouterr().out
-    assert "Error: Cannot specify both --password and --password-file" in out
+    out = capsys.readouterr().err
+    assert "Cannot specify both --password and --password-file" in out
 
 
 def test_get_password_for_vault_no_password_non_interactive(capsys: Any) -> None:
@@ -332,8 +332,8 @@ def test_get_password_for_vault_no_password_non_interactive(capsys: Any) -> None
     with pytest.raises(typer.Exit):
         helpers.get_password_for_vault(fake_ctx, new_vault=False)
 
-    out = capsys.readouterr().out
-    assert "Error: Password not provided and not running in interactive mode" in out
+    out = capsys.readouterr().err
+    assert "Password not provided and not running in interactive mode" in out
 
 
 def test_print_entries_table_empty(capsys: Any) -> None:
@@ -420,13 +420,13 @@ def test_print_success(capsys: Any) -> None:
 
 def test_print_warning(capsys: Any) -> None:
     helpers.print_warning("Test message")
-    out = capsys.readouterr().out
+    out = capsys.readouterr().err
     assert "Test message" in out
 
 
 def test_print_error(capsys: Any) -> None:
     helpers.print_error("Test message")
-    out = capsys.readouterr().out
+    out = capsys.readouterr().err
     assert "Test message" in out
 
 
@@ -579,7 +579,7 @@ def test_get_password_for_vault_empty_password_direct(capsys: Any) -> None:
     with pytest.raises(typer.Exit):
         helpers.get_password_for_vault(fake_ctx, new_vault=False)
 
-    out = capsys.readouterr().out
+    out = capsys.readouterr().err
     assert "Password cannot be empty" in out
 
 
@@ -638,7 +638,7 @@ def test_get_password_for_vault_password_from_file_empty(
     with pytest.raises(typer.Exit):
         helpers.get_password_for_vault(fake_ctx, new_vault=False)
 
-    out = capsys.readouterr().out
+    out = capsys.readouterr().err
     assert "Password cannot be empty" in out
 
 
@@ -762,7 +762,7 @@ def test_get_password_for_vault_enforce_strength(monkeypatch: Any) -> None:
 
 def test_print_prompt(capsys: Any) -> None:
     helpers.print_prompt("Test message")
-    out = capsys.readouterr().out
+    out = capsys.readouterr().err
     assert "Test message" in out
 
 

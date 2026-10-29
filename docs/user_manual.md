@@ -295,7 +295,7 @@ d2fa code [OPTIONS] NAME
 - `--copy-only`: Copy code to clipboard without printing
 - `--json`: Output in JSON format
 - `--raw`: Output only the TOTP code
-- `--quiet`: Suppress normal output
+- `--quiet`: Suppress stdout and stderr, retaining the exit status
 
 **Notes:**
 - Clipboard is always opt-in; default behavior prints to terminal only
@@ -405,6 +405,31 @@ now raise `typer.Exit` on failure instead of returning failure sentinels. Low-le
 Vault and persistence helpers continue to raise domain exceptions to callers.
 
 ### JSON Error Format
+
+The `code` output contract applies to option validation, password acquisition,
+loading and generation, including unexpected failures:
+
+| Mode | stdout | stderr |
+| --- | --- | --- |
+| Default | Human-readable success | Errors, warnings and password prompts |
+| `--json` | Exactly one success or error JSON object | Warnings and password prompts |
+| `--raw` | Only the code plus newline on success; empty on failure | Errors, warnings and password prompts |
+| `--quiet` | Empty | Empty |
+
+Failures retain their non-zero status in every mode. A conflicting `--json` flag
+still selects JSON error rendering, including `--json --quiet`. Success fields
+remain `account`, `issuer`, `code` and `valid_for`; failures contain `error` and
+`message`. Early failures use `invalid_options` (status 6), `password_error`
+(status 6 for missing/empty/conflicting password input, 1 for unreadable files),
+`input_aborted` (6) or `usage_error` (Typer syntax status 2). Parser errors use a
+generic message so rejected argument values are not echoed. Explicit `--help`
+and `--version` remain informational actions rather than code results.
+
+Errors and warnings for other CLI commands also use stderr. Scripts that
+previously read diagnostics from stdout should read stderr separately. Quiet
+applies to `code`; it requires `--password` or `--password-file` instead of
+interactive prompting (missing credentials fail silently with status 6). It does
+not change password-file whitespace or encoding rules.
 
 When using `--json` mode, errors are returned as JSON objects:
 
@@ -838,9 +863,14 @@ cannot reconstruct the provider's original key.
 If you have a vault created with an older version of desktop-2fa that allowed duplicate names, you may see a warning when loading the vault:
 
 ```
-Warning: Your vault contains multiple entries with the same name: "GitHub", "AWS".
-This was allowed in older versions. Run 'd2fa list --indices', then 'd2fa rename OLD NEW --index N' to select one entry.
+Warning: Your vault contains multiple entries with the same name. Run 'd2fa list --indices', then 'd2fa rename OLD NEW --index N' to select one entry.
 ```
+
+The CLI warning goes to stderr and omits record names; `code --quiet` suppresses
+it. Python `Vault.load(path, password)` is silent and still returns a `Vault`.
+Callers can inspect `vault.duplicate_account_names`, a sorted tuple computed from
+current entries (empty after repair). The API remains compatible; only the
+unsolicited printing is removed. No stored data or TOTP parameters change.
 
 **Resolution:**
 Back up the selected vault and display its current entry numbers. For example,

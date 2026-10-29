@@ -3,6 +3,7 @@
 import os
 import stat
 import tempfile
+from collections import Counter
 from pathlib import Path
 from typing import Literal, Optional
 
@@ -237,6 +238,14 @@ class Vault:
         entry = self.get_entry(issuer)
         self.data.entries.remove(entry)
 
+    @property
+    def duplicate_account_names(self) -> tuple[str, ...]:
+        """Return sorted legacy duplicate names without printing or mutation."""
+        counts = Counter(
+            entry.account_name for entry in self.entries if entry.account_name
+        )
+        return tuple(sorted(name for name, count in counts.items() if count > 1))
+
     @classmethod
     def load(cls, path: str | Path, password: str) -> "Vault":
         """Load a vault from a file.
@@ -314,18 +323,6 @@ class Vault:
             raise CorruptedVault("Vault contains invalid data") from e
 
         vault = cls(data)
-
-        # Check for duplicate account names and warn
-        names = [entry.account_name for entry in vault.entries if entry.account_name]
-        duplicates = [name for name in set(names) if names.count(name) > 1]
-        if duplicates:
-            print(
-                f"Warning: Your vault contains multiple entries with the same name: {', '.join(chr(34) + name + chr(34) for name in duplicates)}."
-            )
-            print(
-                "This was allowed in older versions. Run 'd2fa list --indices', "
-                "then 'd2fa rename OLD NEW --index N' to select one entry."
-            )
 
         return vault
 

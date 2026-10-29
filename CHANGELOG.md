@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- `code --json` now writes exactly one success/error object to stdout, including
+  option, parser, password acquisition and unexpected failures. Existing success
+  fields and error statuses are preserved; new early errors use `invalid_options`,
+  `usage_error`, `password_error` or `input_aborted`. Raw success prints only the
+  code. Errors, warnings and password prompts go to stderr; quiet suppresses both
+  streams while retaining status and requires a supplied password/password file
+  instead of interactive prompting. JSON takes precedence for conflicting modes.
+  `Vault.load()` no longer prints legacy duplicate warnings; the additive
+  `duplicate_account_names` property exposes sorted names without changing its
+  signature or return type. CLI warnings omit record names. No format migration
+  or cryptographic changes are involved.
+
 - CLI failures now return consistent non-zero `ExitCode` values across add,
   list, code, remove, rename, import/export, backup, initialization, unlock,
   password change and UI startup. Authentication remains 2, missing entries 3,

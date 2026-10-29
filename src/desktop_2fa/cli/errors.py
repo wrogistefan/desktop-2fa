@@ -1,8 +1,8 @@
 """Exit-status mapping for expected CLI failures; messages exclude key material."""
 
-import json
 from collections.abc import Callable
 from functools import wraps
+from inspect import signature
 from typing import NoReturn, ParamSpec, TypeVar
 
 import typer
@@ -23,6 +23,8 @@ from desktop_2fa.vault.vault import (
     VaultNotFound,
     VaultValidationError,
 )
+
+from .output import OutputMode, failure, output_mode
 
 CLI_ERRORS = (VaultError, ValueError, OSError)
 P = ParamSpec("P")
@@ -74,14 +76,19 @@ def report_error(
     error: Exception, *, json_mode: bool = False, quiet: bool = False
 ) -> ExitCode:
     """Report an expected failure and return its non-zero status."""
-    from .helpers import print_error
-
     code, err_id, message = describe_error(error)
-    if json_mode:
-        print(json.dumps({"error": err_id, "message": message}))
-    elif not quiet:
-        print_error(message)
-    return code
+    current = output_mode.get()
+    token = output_mode.set(
+        OutputMode(
+            json=json_mode or current.json,
+            raw=current.raw,
+            quiet=quiet or current.quiet,
+        )
+    )
+    try:
+        return failure(code, err_id, message)
+    finally:
+        output_mode.reset(token)
 
 
 def exit_for_error(
@@ -94,17 +101,36 @@ def exit_for_error(
 def command_errors(function: Callable[P, R]) -> Callable[P, R]:
     """Catch expected failures outside operation-specific error handlers."""
 
+    parameters = signature(function)
+
     @wraps(function)
     def guarded(*args: P.args, **kwargs: P.kwargs) -> R:
+        token = None
+        if "json_mode" in parameters.parameters:
+            bound = parameters.bind_partial(*args, **kwargs).arguments
+            token = output_mode.set(
+                OutputMode(
+                    json=bool(bound.get("json_mode", False)),
+                    raw=bool(bound.get("raw", False)),
+                    quiet=bool(bound.get("quiet", False)),
+                )
+            )
         try:
             return function(*args, **kwargs)
-        except (typer.Exit, typer.Abort):
+        except typer.Exit:
             raise
+        except (typer.Abort, EOFError, KeyboardInterrupt):
+            from .output import fail
+
+            fail(ExitCode.VALIDATION_ERROR, "input_aborted", "Input cancelled.")
         except CLI_ERRORS as error:
             exit_for_error(error)
         except Exception as error:
             # The CLI boundary must not expose traceback locals/exception text
             # from unexpected failures. Domain APIs still propagate exceptions.
             exit_for_error(error)
+        finally:
+            if token is not None:
+                output_mode.reset(token)
 
     return guarded
