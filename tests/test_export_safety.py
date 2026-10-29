@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 
 import pytest
+from rich.text import Text
 from typer.testing import CliRunner
 
 from desktop_2fa.cli import helpers
@@ -185,9 +186,12 @@ def test_save_create_only_link_failure_is_io_error(
     assert list(source.parent.iterdir()) == [source]
 
 
-def test_help_describes_binary_export() -> None:
-    result = CliRunner().invoke(app, ["export", "--help"])
+@pytest.mark.parametrize("color", [False, True])
+def test_help_describes_binary_export(color: bool) -> None:
+    result = CliRunner().invoke(app, ["export", "--help"], color=color)
     assert result.exit_code == 0
-    assert "D2FA" in result.output
-    assert "JSON" not in result.output
-    assert "--force" in result.output
+    # Rich can put ANSI styling between the dashes and option name in CI.
+    visible = Text.from_ansi(result.output).plain
+    assert "D2FA" in visible
+    assert "JSON" not in visible
+    assert "--force" in visible
