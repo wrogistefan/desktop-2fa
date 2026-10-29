@@ -96,6 +96,19 @@ Invalid vault password.
 
 ---
 
+## Interactive Secret Entry
+
+Interactive `add` retains the visible `Name (unique identifier):` and `Issuer:`
+prompts. Its dedicated `Secret:` prompt hides input without a second secret
+confirmation. This applies when all values are prompted and when only the
+secret is missing. Success and validation messages do not reproduce the secret
+or the entire provisioning URI. Existing positional arguments remain available.
+
+A URI entered at the visible issuer prompt can still be echoed. For hidden key
+entry, use a plain issuer and the dedicated secret prompt; argument-based secrets
+and URIs may also be exposed in shell history or process inspection. Hiding
+terminal input does not protect against a compromised host.
+
 ## URI-based Add
 
 `d2fa add "otpauth://totp/..."` and a URI entered at the interactive issuer

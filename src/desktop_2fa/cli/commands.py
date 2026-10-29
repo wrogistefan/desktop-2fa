@@ -105,9 +105,10 @@ def _prepare_add(name: str, issuer: str, secret: str) -> helpers.ParsedOtpauth:
             if secret:
                 raise ValueError("Do not combine an otpauth URL with a separate secret")
             return helpers.parse_otpauth_url(issuer)
-        except ValueError as e:
-            helpers.print_error(f"Invalid otpauth URL: {e}")
-            raise typer.Exit(ExitCode.VALIDATION_ERROR) from e
+        except ValueError:
+            # URL parser exceptions can include credential-bearing input.
+            helpers.print_error("Invalid otpauth URL: invalid provisioning data.")
+            raise typer.Exit(ExitCode.VALIDATION_ERROR) from None
     try:
         secret = normalize_base32(secret)
     except InvalidSecret:

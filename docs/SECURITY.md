@@ -90,6 +90,21 @@ for that command; later commands still need a password or interactive prompt.
 Avoid `--password` where command-line arguments may be visible to other users
 or recorded by tooling.
 
+## TOTP secret entry
+
+Interactive `add` requests its dedicated secret with hidden input, reducing
+exposure through normal terminal echo and scrollback. Name and issuer prompts
+remain visible. Add success/validation messages omit the key and the complete
+provisioning URI. CLI URI errors use a fixed message, since parser exceptions
+may contain input. This does not change validation, stored key bytes, encryption
+or TOTP parameters.
+
+Positional secret and URI arguments are still supported and may be exposed by
+shell history, process inspection or recordings. A URI pasted at the visible
+issuer prompt can also be echoed in full. Use a plain issuer plus the dedicated
+hidden secret prompt when avoiding these input exposures. Hidden entry does not
+protect against keyloggers, a compromised host or process-memory inspection.
+
 ## TOTP input and entry selection
 
 TOTP creation and generation reject invalid Base32 and empty decoded keys.

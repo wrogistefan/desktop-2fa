@@ -103,6 +103,12 @@ provisioning data exits with status 6 before vault access. Interactive add also
 accepts a URI at the issuer prompt and skips the separate secret prompt. The URI
 label supplies the account name.
 
+Interactive `add` hides input at the dedicated `Secret` prompt; name and issuer
+remain visible. Secrets/URIs passed as arguments can appear in shell history or
+process inspection, and a URI pasted into the visible issuer prompt can be
+echoed. Prefer a plain issuer name plus the hidden secret prompt to avoid those
+exposures. See [interactive add](docs/user_manual.md#add---add-new-totp-entry).
+
 The Textual UI is at an **early prototype stage**. It prompts for the vault
 password unless one is supplied with `--password` or `--password-file`, and
 supports listing entries, generating codes, and copying codes to the clipboard.

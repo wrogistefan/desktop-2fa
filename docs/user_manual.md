@@ -168,8 +168,24 @@ When run in a terminal without arguments, prompts for name, issuer and secret:
 d2fa add
 Name (unique identifier): GitHub
 Issuer: GitHub
-Secret: JBSWY3DPEHPK3PXP
+Secret:
+# Secret input is hidden; no characters are echoed.
 ```
+
+The dedicated `Secret` prompt does not echo the entered Base32 key. The name
+and issuer prompts remain visible. Success and validation diagnostics omit the
+secret and the complete provisioning URI. URI validation failures use a generic
+message rather than parser exception text, which can contain input. The stored
+key and TOTP parameters are unchanged.
+
+`SECRET` and `otpauth://` positional arguments remain supported, but putting a
+credential in a command can expose it in shell history, process arguments or
+recordings. Quoting an argument does not hide it. Pasting a provisioning URI
+into the visible issuer prompt can likewise echo the entire URI, including its
+secret. To avoid normal terminal echo and secret-bearing command arguments,
+use a plain issuer name and supply the key at the dedicated hidden `Secret`
+prompt. Hidden input does not protect against keyloggers, compromised hosts or
+software that observes process memory.
 
 **Examples:**
 ```bash
@@ -216,7 +232,7 @@ are ignored. See [Key URI Format](https://github.com/google/google-authenticator
 - Secrets must be valid Base32
 - otpauth URLs are automatically parsed
 - If vault doesn't exist, it will be created automatically
-- In interactive mode, the secret is entered visibly (not hidden)
+- The dedicated interactive `Secret` prompt hides input; name and issuer remain visible
 
 ### `vault unlock` - Unlock and Verify Vault
 
