@@ -59,24 +59,28 @@ class D2FAApp(App[object]):
     def compose(self) -> ComposeResult:
         yield Header()
         if self.error:
-            yield Container(Label(self.error, id="message"), Label("", id="output"))
+            yield Container(
+                Label(self.error, id="message", markup=False),
+                Label("", id="output", markup=False),
+            )
         elif not self.vault or not self.vault.entries:
             yield Container(
-                Label("Vault is empty", id="message"), Label("", id="output")
+                Label("Vault is empty", id="message", markup=False),
+                Label("", id="output", markup=False),
             )
         else:
             yield Container(
-                Label("Accounts", id="title"),
+                Label("Accounts", id="title", markup=False),
                 ListView(
                     *[
-                        ListItem(Label(self._entry_label(entry)))
+                        ListItem(Label(self._entry_label(entry), markup=False))
                         for entry in self.vault.entries
                     ],
                     id="accounts",
                 ),
                 Button("Generate Code", id="generate"),
                 Button("Copy Code", id="copy"),
-                Label("", id="output"),
+                Label("", id="output", markup=False),
             )
         yield Footer()
 

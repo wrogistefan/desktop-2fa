@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Textual account labels and runtime messages now render as literal text.
+  Markup-looking names such as `[/bold]` no longer crash the account list;
+  selection and TOTP parameters remain unchanged.
+
 - External adapter helpers now read Aegis `db.entries` / `info.algo` and
   Bitwarden CSV `login_totp`, sharing URI/Base32 validation and preserving TOTP
   parameters. Unsupported/encrypted inputs, malformed records and zero-token
