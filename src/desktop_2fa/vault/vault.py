@@ -13,6 +13,7 @@ from pydantic import ValidationError
 from ..crypto.aesgcm import decrypt, encrypt
 from ..crypto.argon2 import derive_key
 from ..utils.base32 import normalize_base32
+from .durability import sync_parent
 from .locking import LockBusy, publication_lock
 from .models import TotpEntry, VaultData
 
@@ -71,6 +72,10 @@ class PermissionDenied(VaultIOError):
     """Raised when the user lacks permission to access the vault."""
 
     pass
+
+
+class VaultDurabilityError(VaultIOError):
+    """Publication committed, but completion/durability could not be confirmed."""
 
 
 class VaultNotFound(VaultIOError):
@@ -359,6 +364,8 @@ class Vault:
             VaultValidationError: If data is invalid or output exceeds the
                 loader's size limit.
             VaultIOError: If saving fails due to IO errors.
+            VaultDurabilityError: If publication succeeded but directory sync or
+                temporary-link cleanup failed. The destination has changed.
             ExportRefused: If overwrite is False and the destination exists.
             VaultConflict: If a loaded/saved revision changed, another writer
                 holds the publication lock, or the target uses file links.
@@ -393,6 +400,7 @@ class Vault:
         revision_keys = {canonical}
         temp_path: Path | None = None
         fd: int | None = None
+        committed = False
 
         try:
             try:
@@ -440,6 +448,7 @@ class Vault:
                             "Vault changed since it was loaded. Reload and retry."
                         )
                     os.replace(temp_path, path)
+                    committed = True
                     temp_path = None
             else:
                 # Atomic create-only publication: a competing creator wins
@@ -450,16 +459,26 @@ class Vault:
                     raise ExportRefused(
                         "Destination already exists. Operation aborted."
                     ) from None
+                committed = True
             saved_revision = hashlib.sha256(blob).digest()
             for revision_key in revision_keys:
                 self._revisions[revision_key] = saved_revision
+            if temp_path is not None:
+                temp_path.unlink()
+                temp_path = None
+            sync_parent(path)
         except LockBusy:
             raise VaultConflict("Vault is being updated. Reload and retry.") from None
-        except PermissionError:
-            raise PermissionDenied(
-                "Cannot access vault directory (permission denied)"
-            ) from None
         except OSError as e:
+            if committed:
+                raise VaultDurabilityError(
+                    "Vault was written, but durable completion could not be confirmed. "
+                    "Reload the destination before retrying; do not assume rollback."
+                ) from None
+            if isinstance(e, PermissionError):
+                raise PermissionDenied(
+                    "Cannot access vault directory (permission denied)"
+                ) from None
             error_msg = e.strerror if e.strerror else str(e)
             raise VaultIOError(f"Failed to save vault: {error_msg}") from None
         finally:

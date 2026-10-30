@@ -4,6 +4,11 @@ This document summarizes the security properties and limitations of the
 currently implemented Desktop-2FA application. It is not an independent audit,
 certification, or guarantee that every deployment is secure.
 
+Atomic publication and crash durability are separate guarantees. POSIX writers
+sync the parent directory after publication; Windows has no added directory
+sync. A post-publication error does not mean rollback. See
+[persistence evidence and platform limits](persistence.md).
+
 ## What the application does
 
 - Stores TOTP entries in a local encrypted vault; there is no cloud vault or

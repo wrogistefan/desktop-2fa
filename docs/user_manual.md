@@ -1027,6 +1027,11 @@ d2fa ui                       # Launch the early Textual UI prototype
 
 ## Security Best Practices
 
+If a command reports that the vault was written but durable completion is
+uncertain, the destination may already contain the new data/password. Reload
+it with the password just used before retrying; do not assume rollback or delete
+it. Keep independent backups. See [platform persistence limits](persistence.md).
+
 1. **Use strong passwords** for your vault (zxcvbn score 3-4 recommended)
    - Examples of strong passwords: "Battery-Horse-Staple", "Mountain@River2024"
    - Avoid common words, sequential numbers, keyboard patterns

@@ -20,6 +20,7 @@ from desktop_2fa.vault.vault import (
     PermissionDenied,
     UnsupportedFormat,
     VaultConflict,
+    VaultDurabilityError,
     VaultError,
     VaultIOError,
     VaultNotFound,
@@ -59,6 +60,8 @@ def describe_error(error: Exception) -> tuple[ExitCode, str, str]:
             "unsupported_format",
             "Vault file format is unsupported.",
         )
+    if isinstance(error, VaultDurabilityError):
+        return ExitCode.GENERAL_ERROR, "vault_durability_uncertain", str(error)
     if isinstance(error, (VaultIOError, OSError)):
         return ExitCode.GENERAL_ERROR, "vault_io_error", "Failed to access vault file."
     if isinstance(error, AmbiguousEntry):

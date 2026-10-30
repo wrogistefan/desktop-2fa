@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Textual validity ticks now tolerate screen teardown while a code is active,
   avoiding a shutdown-time missing-widget exception.
 
+- POSIX vault writes now synchronize the parent directory after publication.
+  A failure after publication raises `VaultDurabilityError` (CLI status 1,
+  `vault_durability_uncertain`) and explicitly reports that the destination
+  was written. Windows behavior and format/KDF are unchanged. Platform and
+  power-loss limitations are documented in `docs/persistence.md`.
+
 - Textual generated/copied codes now show validity for the selected entry's
   actual period, using the same timestamp as generation. Expired codes are
   removed, selection changes clear the previous result, and copy feedback

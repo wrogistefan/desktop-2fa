@@ -9,6 +9,7 @@ from .vault import (
     ExportRefused,
     Vault,
     VaultConflict,
+    VaultDurabilityError,
     VaultValidationError,
 )
 
@@ -23,4 +24,5 @@ __all__ = [
     "Vault",
     "VaultValidationError",
     "VaultConflict",
+    "VaultDurabilityError",
 ]
