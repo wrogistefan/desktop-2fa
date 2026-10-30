@@ -116,10 +116,10 @@ zxcvbn unless bypassed. Supplied password options skip this enforcement. If weak
 - In default mode: A warning is shown, and you can confirm to continue
 - In strict mode (with `reject_weak_passwords = true`): The weak password is rejected immediately
 
-Example of password strength feedback:
+Diagnostics use fixed messages; evaluator scores and feedback are not printed.
+Example of a password strength warning:
 ```
-Password too weak (score 1 < 3). This is similar to a word by itself. 
-Add another word or two. Otherwise, a few variations of this are very guessable.
+Password too weak. Use a longer, less predictable password.
 Continue with weak password? [y/N]:
 ```
 
@@ -257,7 +257,7 @@ d2fa vault unlock
 d2fa --password mypassword vault unlock
 # Output: Vault unlocked successfully.
 # (If vault password is weak and warn_on_weak_existing_passwords is true)
-# Warning: Your vault password is weak (score 1). Consider changing it.
+# Warning: Your vault password is weak. Consider changing it.
 ```
 
 **Notes:**
@@ -819,7 +819,7 @@ For safety, vault files must be regular files no larger than 10 MiB.
 - The specified entry doesn't exist
 - Use `d2fa list` to see available entries
 
-**"Password too weak (score X < Y)"**
+**"Password too weak."**
 - The vault password doesn't meet strength requirements (zxcvbn score is weak)
 - Examples of weak passwords: "password", "123456", "admin2024"
 - Either strengthen the password or use `--allow-weak-passwords`
@@ -1081,3 +1081,14 @@ for current contracts and evidence. Historical reports are [archived](archive/RE
 and do not certify current security. Examples use synthetic keys and passwords;
 use a temporary selected vault when trying them. Windows redirected help output
 on legacy code pages requires UTF-8 mode (`PYTHONUTF8=1`).
+
+## Programmatic entry helpers
+
+The existing `desktop_2fa.cli.helpers` signatures remain supported.
+`add_entry(path, issuer, account, secret, password)` accepts a Base32 key,
+or an otpauth URI as `issuer` with an empty `secret`; the URI label and TOTP
+parameters take precedence. Helpers require an existing vault and propagate
+domain exceptions. CLI prompting, output and exit-status handling remain at
+the CLI boundary. Both paths share entry preparation, code generation and
+rename persistence through `desktop_2fa.entry_service`, while `Vault` owns
+account resolution and collision checks. No format migration is required.

@@ -9,8 +9,9 @@ from pathlib import Path
 import typer
 
 import desktop_2fa.cli.helpers as helpers
+from desktop_2fa import entry_service
 from desktop_2fa.constants import ExitCode
-from desktop_2fa.utils.base32 import InvalidSecret, normalize_base32
+from desktop_2fa.utils.base32 import InvalidSecret
 from desktop_2fa.vault import Vault
 from desktop_2fa.vault.password_strength import evaluate_password_strength
 from desktop_2fa.vault.vault import (
@@ -100,87 +101,27 @@ def _vault_exists(path: Path) -> bool | None:
 
 
 def _prepare_add(name: str, issuer: str, secret: str) -> helpers.ParsedOtpauth:
-    if issuer.startswith("otpauth://"):
-        try:
-            if secret:
-                raise ValueError("Do not combine an otpauth URL with a separate secret")
-            return helpers.parse_otpauth_url(issuer)
-        except ValueError:
-            # URL parser exceptions can include credential-bearing input.
+    try:
+        return entry_service.prepare_add(name, issuer, secret)
+    except InvalidSecret:
+        if issuer.startswith("otpauth://"):
             helpers.print_error("Invalid otpauth URL: invalid provisioning data.")
             raise typer.Exit(ExitCode.VALIDATION_ERROR) from None
-    try:
-        secret = normalize_base32(secret)
-    except InvalidSecret:
         helpers.print_error("Invalid secret: not valid Base32.")
         helpers.print_error(
             "A non-empty Base32 key is required. Example: ABCDEFGHIJKL2345"
         )
         raise typer.Exit(ExitCode.VALIDATION_ERROR) from None
-    return {
-        "label": name,
-        "issuer": issuer,
-        "secret": secret,
-        "algorithm": "SHA1",
-        "digits": 6,
-        "period": 30,
-    }
+    except ValueError:
+        helpers.print_error("Invalid otpauth URL: invalid provisioning data.")
+        raise typer.Exit(ExitCode.VALIDATION_ERROR) from None
 
 
-@command_errors
 def add_entry_interactive(
     name: str, issuer: str, secret: str, ctx: typer.Context
 ) -> None:
-    """Add an entry to the vault in interactive mode.
-
-    Args:
-        name: The unique account name.
-        issuer: The issuer name or otpauth:// URL.
-        secret: The Base32-encoded TOTP secret.
-        ctx: Typer context with password options.
-    """
-    path = _path(ctx)
-    parsed = _prepare_add(name, issuer, secret)
-    name, issuer, secret = parsed["label"], parsed["issuer"], parsed["secret"]
-    parameters: helpers.TotpParameters = {
-        "algorithm": parsed["algorithm"],
-        "digits": parsed["digits"],
-        "period": parsed["period"],
-    }
-
-    # DEF-02: Use safe vault existence check (avoids PermissionError from path.exists())
-    try:
-        vault_exists = _vault_exists(path)
-    except CLI_ERRORS as error:
-        exit_for_error(error)
-
-    # DEF-02: Handle permission denied during existence check
-    if vault_exists is None:
-        exit_for_error(PermissionDenied())
-
-    if not vault_exists:
-        helpers.print_warning("No vault found.")
-        helpers.print_info("A new encrypted vault will be created.")
-        password = helpers.get_password_for_vault(ctx, new_vault=True)
-        vault = Vault()
-        vault.add_entry(name=name, issuer=issuer, secret=secret, **parameters)
-        try:
-            vault.save(path, password, overwrite=False)
-        except CLI_ERRORS as error:
-            exit_for_error(error)
-        print(f"Vault created at {path}")
-        print(f"Entry added: {name}")
-    else:
-        password = helpers.get_password_for_vault(ctx, new_vault=False)
-        try:
-            vault = Vault.load(path, password)
-            if vault.duplicate_account_names:
-                helpers.print_warning(DUPLICATE_WARNING)
-            vault.add_entry(name=name, issuer=issuer, secret=secret, **parameters)
-            vault.save(path, password)
-            helpers.print_success(f"Entry added: {name}")
-        except CLI_ERRORS as error:
-            exit_for_error(error)
+    """Compatibility adapter for interactive callers; share the full add flow."""
+    add_entry(name, issuer, secret, ctx)
 
 
 @command_errors
@@ -243,11 +184,6 @@ def add_entry(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
 
     parsed = _prepare_add(name, issuer, secret)
     name, issuer, secret = parsed["label"], parsed["issuer"], parsed["secret"]
-    parameters: helpers.TotpParameters = {
-        "algorithm": parsed["algorithm"],
-        "digits": parsed["digits"],
-        "period": parsed["period"],
-    }
 
     # DEF-02: Use safe vault existence check (avoids PermissionError from path.exists())
     try:
@@ -264,7 +200,7 @@ def add_entry(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
         helpers.print_info("A new encrypted vault will be created.")
         password = helpers.get_password_for_vault(ctx, new_vault=True)
         vault = Vault()
-        vault.add_entry(name=name, issuer=issuer, secret=secret, **parameters)
+        entry_service.add_prepared(vault, parsed)
         try:
             vault.save(path, password, overwrite=False)
         except CLI_ERRORS as error:
@@ -277,7 +213,7 @@ def add_entry(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
             vault = Vault.load(path, password)
             if vault.duplicate_account_names:
                 helpers.print_warning(DUPLICATE_WARNING)
-            vault.add_entry(name=name, issuer=issuer, secret=secret, **parameters)
+            entry_service.add_prepared(vault, parsed)
             vault.save(path, password)
             helpers.print_success(f"Entry added: {name}")
         except CLI_ERRORS as error:
@@ -337,18 +273,9 @@ def generate_code(
         vault = Vault.load(path, password)
         if vault.duplicate_account_names:
             helpers.print_warning(DUPLICATE_WARNING)
-        entry = vault.get_entry(name)
-        from desktop_2fa.totp.generator import generate
-
-        timestamp = int(time.time())
-        code = generate(
-            secret=entry.secret,
-            timestamp=timestamp,
-            digits=entry.digits,
-            period=entry.period,
-            algorithm=entry.algorithm,
+        entry, code, remaining = entry_service.generate_code(
+            vault, name, timestamp=int(time.time())
         )
-        remaining = entry.period - (timestamp % entry.period)
 
         # Handle clipboard operations
         clipboard_success = _handle_clipboard(code, copy, copy_only)
@@ -431,8 +358,7 @@ def rename_entry(
         vault = Vault.load(path, password)
         if vault.duplicate_account_names:
             helpers.print_warning(DUPLICATE_WARNING)
-        vault.rename_entry(old, new, index=index)
-        vault.save(path, password)
+        entry_service.rename_and_save(vault, path, password, old, new, index=index)
         helpers.print_success(f"Renamed '{old}' → '{new}'")
     except CLI_ERRORS as error:
         exit_for_error(error)
@@ -637,10 +563,7 @@ def unlock_vault(ctx: typer.Context) -> None:
         result = evaluate_password_strength(password)
         score = result["score"]
         if score < 3:
-            warning = (
-                f"Warning: Your vault password is weak (score {score}). "
-                "Consider changing it."
-            )
+            warning = "Warning: Your vault password is weak. " "Consider changing it."
 
     helpers.print_success("Vault unlocked successfully.")
     if warning:

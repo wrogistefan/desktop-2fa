@@ -13,7 +13,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   password confirmation/policy descriptions and synthetic Base32 examples;
   removed stale coverage/test-count claims and the proposed unlock-window UX.
 
+- Removed stale generated egg-info from version control and retired an unused
+  duplicate requirements list and one-off README image rewrite script.
+  `pyproject.toml` remains authoritative; importable skeleton modules and
+  historical fixtures remain available. See `docs/repository_inventory.md`.
+
+- CLI add flows and public helpers now share entry preparation, code generation
+  and rename persistence through a small entry service. Helper signatures and
+  exceptions remain compatible; `helpers.add_entry` additionally accepts an
+  otpauth URI in the issuer argument with an empty secret, preserving parameters.
+  Account resolution/collision rules remain in Vault; no storage format change.
+
 ### Fixed
+
+- Development reset now creates/reuses only the repository `.venv` and never
+  deletes user data or user-wide packages. Make recipes use one selected Python,
+  correct tab indentation, source-only mypy and a non-mutating format check.
+
+
+- Password-strength diagnostics now use fixed messages instead of rendering
+  evaluator scores or feedback, preventing evaluator data from reaching CLI
+  output (CodeQL alert #9). Strength thresholds and rejection rules are unchanged.
 
 - Textual validity ticks now tolerate screen teardown while a code is active,
   avoiding a shutdown-time missing-widget exception.

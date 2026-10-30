@@ -64,6 +64,11 @@ weak passwords unguessable or eliminate the risk of offline guessing.
 
 ## Password handling
 
+Password-strength diagnostics use fixed messages. Evaluator scores and feedback
+are not rendered, so unexpected password-derived text cannot enter diagnostics.
+The weak/strong decision is still visible; this does not protect passwords from
+process inspection or guarantee erasure from Python memory.
+
 The CLI rejects empty passwords. For interactive creation and password
 changes, it evaluates the proposed password with `zxcvbn` and treats scores
 below 3 as weak. By default, a weak password triggers a warning and
