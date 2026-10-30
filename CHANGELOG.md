@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Password-strength diagnostics now use fixed messages instead of rendering
+  evaluator scores or feedback, preventing evaluator data from reaching CLI
+  output (CodeQL alert #9). Strength thresholds and rejection rules are unchanged.
+
 - Textual validity ticks now tolerate screen teardown while a code is active,
   avoiding a shutdown-time missing-widget exception.
 
