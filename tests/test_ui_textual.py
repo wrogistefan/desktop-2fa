@@ -78,6 +78,10 @@ def test_selection_generate_and_copy_keep_original_totp_parameters(
 
     async def check() -> None:
         async with app.run_test() as pilot:
+            # Repeated activations test parameter parity, not the 0.2s button
+            # animation during which Textual deliberately ignores new presses.
+            for button in app.query(Button):
+                button.active_effect_duration = 0
             for index, entry in enumerate(entries):
                 app.query_one("#accounts", ListView).index = index
                 await pilot.pause()
@@ -89,7 +93,6 @@ def test_selection_generate_and_copy_keep_original_totp_parameters(
                     period=entry.period,
                 )
                 # Parameter parity does not depend on pointer coordinates.
-                # Focus can scroll the container between simulated mouse events.
                 app.query_one("#generate", Button).focus()
                 await pilot.pause()
                 await pilot.press("enter")
