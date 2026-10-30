@@ -30,17 +30,25 @@ A secure, offline two-factor authentication (2FA) manager for desktop environmen
 
 ## 📸 Screenshots
 
-![Add entry interactively](https://raw.githubusercontent.com/wrogistefan/desktop-2fa/main/assets/screenshots/add_interactive.png)
-*Adding a new TOTP entry interactively*
+English dark-terminal captures from the 0.10.0 candidate. All accounts and
+credentials are synthetic. Terminal images render actual command output;
+interactive prompts use a test runner and Textual runs headlessly.
+See the [capture notes and report](assets/screenshots/release-0.10.0/README.md).
 
-![Code generation](https://raw.githubusercontent.com/wrogistefan/desktop-2fa/main/assets/screenshots/codegen_ss.png)
-*Generating a TOTP code for an entry*
+![Add entry with hidden secret](assets/screenshots/release-0.10.0/interactive.png)
+*Adding an entry without displaying its secret.*
 
-![Rename and duplicate error](https://raw.githubusercontent.com/wrogistefan/desktop-2fa/main/assets/screenshots/rename_add_duplicate.png)
-*Renaming an entry with duplicate detection*
+![Accounts and indices](assets/screenshots/release-0.10.0/accounts.png)
+*Initializing a vault and listing synthetic accounts.*
 
-![Version and list](https://raw.githubusercontent.com/wrogistefan/desktop-2fa/main/assets/screenshots/version_list_ss.png)
-*Viewing version info and listing all entries*
+![Code output modes](assets/screenshots/release-0.10.0/codes.png)
+*Human-readable, raw and JSON code output.*
+
+![Encrypted backup and recovery](assets/screenshots/release-0.10.0/recovery.png)
+*Encrypted export, overwrite refusal and recovery into a separate vault.*
+
+![Textual prototype](assets/screenshots/release-0.10.0/textual.png)
+*The Textual prototype lists accounts; entry management uses the CLI.*
 
 ---
 
@@ -56,7 +64,7 @@ Verify installation:
 
 ```bash
 python -c "import desktop_2fa; print(desktop_2fa.__version__)"
-# Output: 0.9.0
+# Output for this release candidate: 0.10.0
 ```
 
 ### Basic Usage

@@ -16,7 +16,7 @@ on Windows legacy code pages, use UTF-8 mode (`PYTHONUTF8=1`).
 pip install desktop-2fa
 ```
 
-This manual covers Desktop-2FA 0.9.0. The public Python `Vault.save()` and
+This manual covers the Desktop-2FA 0.10.0 release candidate. The public Python `Vault.save()` and
 `Vault.load()` methods require an explicit, non-empty password. If you created
 a passwordless vault through the Python API in an earlier version, open and
 re-save it with a non-empty password using that previous version before
@@ -1072,7 +1072,7 @@ For issues and questions:
 
 ---
 
-*This manual covers desktop-2fa version 0.9.0*
+*This manual covers the desktop-2fa 0.10.0 release candidate.*
 
 ## Documentation and verification
 

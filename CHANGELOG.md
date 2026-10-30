@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.10.0] - Unreleased
+
+### Release preparation
+
+- Align package/runtime versions on the 0.10.0 candidate; publication and
+  maintainer approval remain pending.
+- Add a repeatable synthetic CLI release campaign and English dark-terminal
+  captures, with machine-readable results and explicit headless/clipboard limits.
+
 ### Changed
 
 - Added a current documentation index and archived superseded completion/UX
