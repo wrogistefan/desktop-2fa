@@ -336,7 +336,10 @@ If none of these tools are installed on Linux, clipboard operations will fail an
 ### Early Textual UI Prototype
 
 The optional Textual interface is at an **early prototype stage**. It displays
-vault entries and lets you generate or copy a TOTP code for the selected entry:
+vault entries and lets you generate or copy a TOTP code for the selected entry.
+
+Names, issuers and runtime messages are displayed literally, including brackets
+and markup-looking text. Display formatting does not rewrite vault entries.
 
 ```bash
 # Use the default vault
