@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Textual validity ticks now tolerate screen teardown while a code is active,
+  avoiding a shutdown-time missing-widget exception.
+
 - Textual generated/copied codes now show validity for the selected entry's
   actual period, using the same timestamp as generation. Expired codes are
   removed, selection changes clear the previous result, and copy feedback

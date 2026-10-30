@@ -76,6 +76,10 @@ class D2FAApp(App[object]):
         displayed = self._displayed_code
         if displayed is None or self.vault is None:
             return
+        # Shutdown can remove the screen's children before its timers stop.
+        if not self.query("#output") or not self.query("#accounts"):
+            self._displayed_code = None
+            return
         output = self.query_one("#output", Label)
         if self.query_one("#accounts", ListView).index != displayed.index:
             self._displayed_code = None

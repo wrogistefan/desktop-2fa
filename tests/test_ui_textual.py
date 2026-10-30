@@ -38,6 +38,7 @@ def test_labels_render_literally_without_breaking_other_entries(
     ]
     before = [entry.model_dump() for entry in entries]
     app = make_app(monkeypatch, entries)
+    monkeypatch.setattr("desktop_2fa.ui_textual.app.time.time", lambda: 59)
 
     async def check() -> None:
         async with app.run_test() as pilot:
