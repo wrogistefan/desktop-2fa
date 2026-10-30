@@ -235,11 +235,11 @@ def import_cmd(
     source: str,
     force: bool = typer.Option(False, "--force", help="Overwrite existing vault"),
 ) -> None:
-    """Import entries from an external source.
+    """Import an encrypted D2FA vault file.
 
     Args:
         ctx: Typer context object containing configuration.
-        source: File path or URI to import from.
+        source: Path to an encrypted D2FA vault, not a foreign-provider export.
         force: Whether to overwrite existing vault.
     """
     commands.import_vault(source, force, ctx)
