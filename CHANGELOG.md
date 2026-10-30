@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Added a current documentation index and archived superseded completion/UX
+  reports with original-path/hash provenance. Corrected option placement,
+  password confirmation/policy descriptions and synthetic Base32 examples;
+  removed stale coverage/test-count claims and the proposed unlock-window UX.
+
 ### Fixed
 
 - Textual validity ticks now tolerate screen teardown while a code is active,

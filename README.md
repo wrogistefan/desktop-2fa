@@ -9,7 +9,6 @@ A secure, offline two-factor authentication (2FA) manager for desktop environmen
 ![Python versions](https://img.shields.io/pypi/pyversions/desktop-2fa.svg)
 ![License](https://img.shields.io/github/license/wrogistefan/desktop-2fa)
 ![Build](https://github.com/wrogistefan/desktop-2fa/actions/workflows/ci.yml/badge.svg)
-[![codecov](https://codecov.io/gh/wrogistefan/desktop-2fa/branch/main/graph/badge.svg)](https://codecov.io/gh/wrogistefan/desktop-2fa)
 
 ---
 
@@ -23,7 +22,7 @@ A secure, offline two-factor authentication (2FA) manager for desktop environmen
 | 📋 **Clipboard Support** | Automatic copying of TOTP codes to clipboard |
 | 🔓 **Stateless Design** | Vault contents require authentication; no long-lived sessions |
 | 🛡️ **Password Policy** | Configurable password strength enforcement with zxcvbn |
-| 🧪 **Well Tested** | 312 tests passing with comprehensive coverage |
+| 🧪 **Well Tested** | Regression tests include RFC 6238 vectors and historical vault fixtures |
 | 📖 **Security Model** | Detailed threat analysis and cryptographic design documentation |
 | 🖥️ **Textual UI** | Early prototype for listing accounts and generating or copying TOTP codes |
 
@@ -158,11 +157,12 @@ historically admitted Unicode-folded secrets remain listable but cannot generate
 codes; `code` reports `invalid_secret` with status 6. See the
 [explicit repair procedure](docs/user_manual.md#legacy-invalid-totp-secrets).
 
-When a CLI command that creates or updates entries requires a vault and none exists:
+Only `vault init`, `list` and `add` create missing vaults. Other content commands
+report a missing-vault error. For creation:
 
 1. The CLI prompts for a new password (interactive mode) or requires `--password`/`--password-file` (non-interactive mode)
-2. An empty encrypted vault is created
-3. **A confirmation message is always printed:** `Vault created at <path>`
+2. `list` creates an empty encrypted vault; `add` creates one with the validated entry
+3. Successful creation prints: `Vault created at <path>`
 
 The Textual UI does not create a missing vault; it displays the vault-loading
 error instead.
@@ -289,7 +289,7 @@ reject_weak_passwords = false  # warn but allow | true: reject weak passwords
 ```
 
 When `reject_weak_passwords = false`:
-- Weak passwords trigger a yellow warning
+- Weak passwords trigger a diagnostic warning
 - User is prompted to confirm continuation
 - Password acceptance is non-blocking
 
@@ -324,6 +324,9 @@ passwords in the public Python vault API:
 
 ## 📚 Documentation
 
+Start at the [documentation index](docs/README.md). Historical audits and
+completion reports are archived and are not current verification evidence.
+
 | Document | Description |
 |----------|-------------|
 | [User Manual](docs/user_manual.md) | Complete usage guide |
@@ -335,10 +338,9 @@ passwords in the public Python vault API:
 
 ## 🧪 Testing
 
-```bash
-pytest tests/              # Run all tests
-pytest --cov=src/desktop_2fa  # Run with coverage
-```
+See [development commands](docs/development.md) for the project environment,
+quality checks and optional coverage measurement. Test counts and coverage
+change; use CI results for the exact commit rather than historical totals.
 
 ---
 
@@ -346,7 +348,7 @@ pytest --cov=src/desktop_2fa  # Run with coverage
 
 ```
 src/desktop_2fa/
-├── app/           # Application components
+├── app/           # Retained dormant module paths
 ├── cli/           # Command-line interface
 ├── crypto/        # Encryption utilities
 ├── totp/          # TOTP generation

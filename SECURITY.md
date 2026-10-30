@@ -51,7 +51,7 @@ reject_weak_passwords = false
 reject_weak_passwords = false
 ```
 When a weak password is entered:
-1. A yellow warning message is displayed
+1. A diagnostic warning is displayed
 2. User is prompted: `Continue with weak password? [y/N]`
 3. User can choose to accept the weak password or re-enter
 
@@ -72,11 +72,11 @@ This mode enforces strict security policies.
 Using CLI flags or environment variables:
 ```bash
 # Skip password strength checks
-d2fa init-vault --allow-weak-passwords
+d2fa --allow-weak-passwords vault init
 
 # Or via environment variable
 export D2FA_ALLOW_WEAK_PASSWORDS=1
-d2fa change-password
+d2fa vault change-password
 ```
 
 This mode is useful for testing but should NOT be used in production.
@@ -102,7 +102,7 @@ when decryption succeeds but JSON or vault-model validation fails.
 
 1. **Use Passphrases**: Longer passphrases are often stronger than complex single words
    - ✅ `Correct-Horse-Battery-Staple` (4 words)
-   - ✅ `My-Vault-Password-2024` (memorable, ~40+ bits entropy)
+   - Use a unique generated passphrase; published examples are not suitable passwords.
 
 2. **Mix Entropy Sources**: Combine case, numbers, and symbols
    - ✅ `Mountain1Blue$River` (mixed case + digit + symbol)

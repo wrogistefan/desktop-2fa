@@ -8,6 +8,10 @@ Desktop-2FA is a secure, offline two-factor authentication (2FA) manager for des
 
 ### Installation
 
+Use a virtual environment with Python 3.11 or later. Published package versions
+may differ from the repository; check the installed version. For captured output
+on Windows legacy code pages, use UTF-8 mode (`PYTHONUTF8=1`).
+
 ```bash
 pip install desktop-2fa
 ```
@@ -107,7 +111,8 @@ d2fa vault init --force
 d2fa --password-file ~/.vault_pass vault init
 ```
 
-**Password Strength:** The vault password is evaluated using zxcvbn. If the password is weak:
+**Password Strength:** Interactive creation/change evaluates the password using
+zxcvbn unless bypassed. Supplied password options skip this enforcement. If weak:
 - In default mode: A warning is shown, and you can confirm to continue
 - In strict mode (with `reject_weak_passwords = true`): The weak password is rejected immediately
 
@@ -730,7 +735,7 @@ min_password_entropy = 60
 **Configuration Options:**
 - **reject_weak_passwords**: If true, weak passwords are rejected immediately; if false (default), user is warned and can confirm
 - **warn_on_weak_existing_passwords**: If true, warns when unlocking vault with weak password (non-blocking)
-- **min_password_entropy**: Legacy option - values are mapped to zxcvbn score thresholds (60+ bits ≈ score 3)
+- **min_password_entropy**: Legacy option - presence of the option selects the existing score-3 threshold; its numeric value is not measured entropy
 
 **Bypass:** Use `--allow-weak-passwords` or set `D2FA_ALLOW_WEAK_PASSWORDS=1` to skip strength checks.
 
@@ -744,14 +749,14 @@ Desktop-2FA enforces the following password validation rules:
    - No confirmation prompt is shown for empty passwords
    - Vault creation is blocked
 
-2. **Password Confirmation**: When creating a new vault, you must enter the password twice for confirmation
-   - If passwords don't match, you'll be prompted to try again
+2. **Password Confirmation**: Interactive creation and password change ask for confirmation; supplied password options are not confirmed
+   - If passwords do not match, the command fails with status 6; run it again
 
-3. **Password Strength**: Weak passwords trigger a warning or rejection based on configuration
+3. **Password Strength**: Interactive creation/change checks weak passwords according to configuration; supplied password options bypass that enforcement
 
 ### Security Notes
 
-- Passwords are never stored or logged (except temporarily in memory)
+- The application keeps passwords in process memory and avoids password-derived diagnostics. Python does not guarantee erasure; command arguments and external tooling can expose them.
 - Use strong, unique passwords
 - Consider using password managers for vault passwords
 - The vault is encrypted with AES-256-GCM + Argon2
@@ -778,7 +783,7 @@ min_password_entropy = 60
 
 - **reject_weak_passwords** (default: false): Whether to reject weak passwords (true) or warn and allow (false)
 - **warn_on_weak_existing_passwords** (default: false): Whether to warn when unlocking vault with weak password
-- **min_password_entropy** (default: 60): Legacy option - minimum password entropy in bits (mapped to zxcvbn score ≥ 3)
+- **min_password_entropy** (default: 60): Legacy option - recognized for compatibility; the active score threshold remains 3
 
 The config file is optional - defaults are used if the file doesn't exist.
 
@@ -850,7 +855,7 @@ For safety, vault files must be regular files no larger than 10 MiB.
 # Add multiple entries
 d2fa add GitHub GitHub JBSWY3DPEHPK3PXP
 d2fa add AWS Amazon ABCDEFGHIJKLMNOP
-d2fa add Google Google QRSTUVWXYZ123456
+d2fa add Google Google MZXW6YTBOI======
 
 # List all
 d2fa list
@@ -1058,3 +1063,11 @@ For issues and questions:
 ---
 
 *This manual covers desktop-2fa version 0.9.0*
+
+## Documentation and verification
+
+See the [documentation index](README.md) and [release checklist](release_checklist.md)
+for current contracts and evidence. Historical reports are [archived](archive/README.md)
+and do not certify current security. Examples use synthetic keys and passwords;
+use a temporary selected vault when trying them. Windows redirected help output
+on legacy code pages requires UTF-8 mode (`PYTHONUTF8=1`).

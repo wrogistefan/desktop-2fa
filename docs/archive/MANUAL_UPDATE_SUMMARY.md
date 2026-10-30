@@ -1,3 +1,5 @@
+> **Historical / superseded.** Archived during S21 (#52). Original path: `MANUAL_UPDATE_SUMMARY.md` at `60afdb7`. This report records past claims, not current proof or security guarantees. See [current documentation](../README.md). Content is retained; relative links are adjusted or marked unavailable.
+
 # User Manual Update Summary
 
 ## Overview

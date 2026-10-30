@@ -18,11 +18,11 @@ implementations.
 ## Core UX Principles
 
 1. Vault creation must never be silent.
-2. Password confirmation is required only when creating a new vault.
+2. Interactive creation and password change require confirmation; supplied options do not.
 3. Invalid passwords must never mutate state.
 4. Every command must clearly communicate what is happening.
 5. UX describes intent, even if implementation is implicit.
-6. All state-mutating operations MUST emit confirmation messages regardless of interactive mode.
+6. Successful mutations report confirmation; output modes apply only where explicitly supported.
 
 ---
 
@@ -47,7 +47,7 @@ A new encrypted vault will be created.
 Enter new vault password:
 Confirm vault password:
 
-Vault created at <path>.
+Vault created at <path>
 No entries found.
 
 d2fa add NAME ISSUER SECRET
@@ -58,13 +58,12 @@ A new encrypted vault will be created.
 Enter new vault password:
 Confirm vault password:
 
-Vault created at <path>.
+Vault created at <path>
 Entry added: NAME
 
 d2fa code NAME
 
 No vault found.
-Nothing to generate.
 
 No vault is created in this case.
 

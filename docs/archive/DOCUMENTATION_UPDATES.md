@@ -1,3 +1,5 @@
+> **Historical / superseded.** Archived during S21 (#52). Original path: `DOCUMENTATION_UPDATES.md` at `60afdb7`. This report records past claims, not current proof or security guarantees. See [current documentation](../README.md). Content is retained; relative links are adjusted or marked unavailable.
+
 # Documentation Review & Update Summary
 
 ## Changes Made
@@ -268,10 +270,10 @@ d2fa vault import <path>              # Import from file
 ## Links for Users
 
 ### Quick Reference
-- 🔐 [Security Model](docs/SECURITY.md) - Detailed threat analysis
-- 📖 [User Manual](docs/user_manual.md) - How to use Desktop-2FA
-- 🔧 [UX Specification](docs/ux.md) - Command behavior
-- 🔑 [Cryptography](docs/crypto.md) - Technical details
+- 🔐 [Security Model](../SECURITY.md) - Detailed threat analysis
+- 📖 [User Manual](../user_manual.md) - How to use Desktop-2FA
+- 🔧 [UX Specification](../ux.md) - Command behavior
+- 🔑 [Cryptography](../crypto.md) - Technical details
 
 ### External Resources
 - OWASP Password Storage Cheat Sheet

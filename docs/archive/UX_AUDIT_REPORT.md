@@ -1,15 +1,17 @@
+> **Historical / superseded.** Archived during S21 (#52). Original path: `docs/UX_AUDIT_REPORT.md` at `60afdb7`. This report records past claims, not current proof or security guarantees. See [current documentation](../README.md). Content is retained; relative links are adjusted or marked unavailable.
+
 # Desktop‑2FA CLI UX Audit Report
 
-**Date:** 2026-01-05  
-**Auditor:** External UX Auditor  
-**Document Version:** Based on `docs/ux.md` (CLI UX Specification — Vault Lifecycle)  
+**Date:** 2026-01-05
+**Auditor:** External UX Auditor
+**Document Version:** Based on `docs/ux.md` (CLI UX Specification — Vault Lifecycle)
 **Scope:** Core UX Principles, Vault Lifecycle States, Password Handling, Commands & Messaging, Error Handling, Determinism, Silent Side‑Effects, Consistency
 
 ---
 
 ## 1. Executive Summary
 
-This audit evaluates the desktop‑2fa CLI implementation against the official UX contract defined in [`docs/ux.md`](docs/ux.md). The implementation demonstrates strong compliance with several core UX principles, including password confirmation requirements and error handling. However, one **critical deviation** was identified: the `d2fa list` command creates a vault silently in non-interactive mode without announcing the creation, violating the contract's fundamental rule that "Vault creation must never be silent."
+This audit evaluates the desktop‑2fa CLI implementation against the official UX contract defined in `docs/ux.md` (`docs/ux.md`, historical target unavailable). The implementation demonstrates strong compliance with several core UX principles, including password confirmation requirements and error handling. However, one **critical deviation** was identified: the `d2fa list` command creates a vault silently in non-interactive mode without announcing the creation, violating the contract's fundamental rule that "Vault creation must never be silent."
 
 **Overall Assessment:** Partial Compliance. The CLI follows most of the UX contract but requires remediation to address the silent vault creation issue.
 
@@ -19,9 +21,9 @@ This audit evaluates the desktop‑2fa CLI implementation against the official U
 
 The audit was conducted by:
 
-1. **Document Review:** Analyzing [`docs/ux.md`](docs/ux.md) as the authoritative UX contract
-2. **Code Review:** Examining [`src/desktop_2fa/cli/main.py`](src/desktop_2fa/cli/main.py), [`src/desktop_2fa/cli/commands.py`](src/desktop_2fa/cli/commands.py), and [`src/desktop_2fa/cli/helpers.py`](src/desktop_2fa/cli/helpers.py)
-3. **Test Validation:** Reviewing [`tests/test_commands.py`](tests/test_commands.py) and [`tests/test_cli.py`](tests/test_cli.py) for expected behaviors
+1. **Document Review:** Analyzing `docs/ux.md` (`docs/ux.md`, historical target unavailable) as the authoritative UX contract
+2. **Code Review:** Examining `src/desktop_2fa/cli/main.py` (`src/desktop_2fa/cli/main.py`, historical target unavailable), `src/desktop_2fa/cli/commands.py` (`src/desktop_2fa/cli/commands.py`, historical target unavailable), and `src/desktop_2fa/cli/helpers.py` (`src/desktop_2fa/cli/helpers.py`, historical target unavailable)
+3. **Test Validation:** Reviewing `tests/test_commands.py` (`tests/test_commands.py`, historical target unavailable) and `tests/test_cli.py` (`tests/test_cli.py`, historical target unavailable) for expected behaviors
 4. **Behavioral Analysis:** Mapping implementation behavior against the defined vault lifecycle states
 
 ---
@@ -29,8 +31,8 @@ The audit was conducted by:
 ## 3. Scope & Constraints
 
 ### 3.1 Documents Reviewed
-- [`docs/ux.md`](docs/ux.md) — Primary UX contract (Vault Lifecycle)
-- [`docs/cli-ux.md`](docs/cli-ux.md) — Enhanced CLI UX specification (color + interactive mode)
+- `docs/ux.md` (`docs/ux.md`, historical target unavailable) — Primary UX contract (Vault Lifecycle)
+- `docs/cli-ux.md` (`docs/cli-ux.md`, historical target unavailable) — Enhanced CLI UX specification (color + interactive mode)
 
 ### 3.2 Scope Limitations
 - GUI components were not evaluated (out of scope)
@@ -45,10 +47,10 @@ The audit was conducted by:
 
 **Category:** Core UX Principles / Vault Lifecycle States
 
-**Description:**  
+**Description:**
 When running `d2fa list` with `--password` in non-interactive mode (no TTY), the command creates a new vault without announcing the creation. The user receives no indication that a vault file was created on disk.
 
-**Evidence (from [`commands.py:64-76`](src/desktop_2fa/cli/commands.py:64)):**
+**Evidence (from `commands.py:64-76` (`src/desktop_2fa/cli/commands.py:64`, historical target unavailable)):**
 ```python
 def list_entries(ctx: typer.Context) -> None:
     path = _path()
@@ -65,7 +67,7 @@ def list_entries(ctx: typer.Context) -> None:
             helpers.print_info("No entries found.")
 ```
 
-**Expected Behavior (from [`ux.md:40-50`](docs/ux.md:40)):**
+**Expected Behavior (from `ux.md:40-50` (`docs/ux.md:40`, historical target unavailable)):**
 ```
 d2fa list
 
@@ -92,10 +94,10 @@ The contract explicitly requires:
 
 **Category:** Vault Lifecycle States / Commands & Messaging
 
-**Description:**  
+**Description:**
 When running `d2fa add NAME ISSUER SECRET` with `--password` in non-interactive mode on a missing vault, the implementation creates the vault but omits the "A new encrypted vault will be created." message present in the interactive flow.
 
-**Evidence (from [`commands.py:124-132`](src/desktop_2fa/cli/commands.py:124)):**
+**Evidence (from `commands.py:124-132` (`src/desktop_2fa/cli/commands.py:124`, historical target unavailable)):**
 ```python
 if not path.exists():
     helpers.print_warning("No vault found.")
@@ -116,10 +118,10 @@ if not path.exists():
 
 **Category:** Password Handling
 
-**Description:**  
+**Description:**
 Password confirmation (double-entry) occurs only when creating a new vault. For existing vaults, a single password prompt is shown.
 
-**Evidence (from [`helpers.py:143-156`](src/desktop_2fa/cli/helpers.py:143)):**
+**Evidence (from `helpers.py:143-156` (`src/desktop_2fa/cli/helpers.py:143`, historical target unavailable)):**
 ```python
 if new_vault:
     rprint(Text("Enter new vault password:", style="cyan"))
@@ -132,7 +134,7 @@ else:
     pwd = typer.prompt("", hide_input=True)
 ```
 
-**Expected Behavior (from [`ux.md:21`](docs/ux.md:21)):**  
+**Expected Behavior (from `ux.md:21` (`docs/ux.md:21`, historical target unavailable)):**
 "Password confirmation is required only when creating a new vault."
 
 **Status:** Compliant. The implementation correctly enforces double-entry only for new vaults.
@@ -143,10 +145,10 @@ else:
 
 **Category:** Error Handling / Silent Side‑Effects
 
-**Description:**  
+**Description:**
 Invalid passwords never mutate state. The vault remains unchanged after an invalid password attempt.
 
-**Evidence (from [`commands.py:79-84`](src/desktop_2fa/cli/commands.py:79)):**
+**Evidence (from `commands.py:79-84` (`src/desktop_2fa/cli/commands.py:79`, historical target unavailable)):**
 ```python
 try:
     vault = Vault.load(path, password)
@@ -156,7 +158,7 @@ except InvalidPassword:
     return  # Early return - no state mutation
 ```
 
-**Expected Behavior (from [`ux.md:86-95`](docs/ux.md:86)):**
+**Expected Behavior (from `ux.md:86-95` (`docs/ux.md:86`, historical target unavailable)):**
 ```
 Invalid vault password.
 
@@ -173,10 +175,10 @@ Invalid vault password.
 
 **Category:** Vault Lifecycle States / Commands & Messaging
 
-**Description:**  
+**Description:**
 When no vault exists and `d2fa generate` is called, the command outputs "No vault found." and "Nothing to generate." without creating a vault.
 
-**Evidence (from [`commands.py:155-160`](src/desktop_2fa/cli/commands.py:155)):**
+**Evidence (from `commands.py:155-160` (`src/desktop_2fa/cli/commands.py:155`, historical target unavailable)):**
 ```python
 def generate_code(name: str, ctx: typer.Context) -> None:
     path = _path()
@@ -186,7 +188,7 @@ def generate_code(name: str, ctx: typer.Context) -> None:
         return  # No vault creation
 ```
 
-**Expected Behavior (from [`ux.md:63-68`](docs/ux.md:63)):**
+**Expected Behavior (from `ux.md:63-68` (`docs/ux.md:63`, historical target unavailable)):**
 ```
 d2fa generate
 
@@ -204,7 +206,7 @@ No vault is created in this case.
 
 **Category:** Error Handling / Commands & Messaging
 
-**Description:**  
+**Description:**
 All error conditions produce clear, descriptive messages without exposing internal implementation details.
 
 **Observed Error Messages:**
@@ -214,7 +216,7 @@ All error conditions produce clear, descriptive messages without exposing intern
 - "Failed to access vault file."
 - "Invalid secret: not valid Base32."
 
-**Expected Behavior (from [`ux.md:23`](docs/ux.md:23)):**  
+**Expected Behavior (from `ux.md:23` (`docs/ux.md:23`, historical target unavailable)):**
 "Every command must clearly communicate what is happening."
 
 **Status:** Compliant. Error messages are user-facing and informative.
@@ -225,10 +227,10 @@ All error conditions produce clear, descriptive messages without exposing intern
 
 **Category:** Determinism
 
-**Description:**  
+**Description:**
 CLI output is deterministic and testable. The test suite validates specific output strings.
 
-**Evidence (from [`tests/test_commands.py:51-59`](tests/test_commands.py:51)):**
+**Evidence (from `tests/test_commands.py:51-59` (`tests/test_commands.py:51`, historical target unavailable)):**
 ```python
 def test_list_entries_empty(fake_vault_env: Path, capsys: Any, fake_ctx: Any) -> None:
     commands.list_entries(fake_ctx)
@@ -241,7 +243,7 @@ def test_list_entries_empty(fake_vault_env: Path, capsys: Any, fake_ctx: Any) ->
     ]
 ```
 
-**Expected Behavior (from [`ux.md:103`](docs/ux.md:103)):**  
+**Expected Behavior (from `ux.md:103` (`docs/ux.md:103`, historical target unavailable)):**
 "Output is deterministic and testable."
 
 **Status:** Compliant. The test suite confirms deterministic output behavior.
@@ -252,17 +254,17 @@ def test_list_entries_empty(fake_vault_env: Path, capsys: Any, fake_ctx: Any) ->
 
 **Category:** Core UX Principles / UX Invariants
 
-**Description:**  
+**Description:**
 Vault creation is announced with "Vault created." message. However, the announcement is conditional on `interactive=True`, meaning non-interactive users miss this confirmation.
 
-**Evidence (from [`commands.py:74-76`](src/desktop_2fa/cli/commands.py:74)):**
+**Evidence (from `commands.py:74-76` (`src/desktop_2fa/cli/commands.py:74`, historical target unavailable)):**
 ```python
 if interactive:
     helpers.print_success("Vault created.")
     helpers.print_info("No entries found.")
 ```
 
-**Expected Behavior (from [`ux.md:100`](docs/ux.md:100)):**  
+**Expected Behavior (from `ux.md:100` (`docs/ux.md:100`, historical target unavailable)):**
 "Vault creation is always announced."
 
 **Severity:** Medium — Non-interactive users receive no confirmation that the vault was created successfully.
@@ -273,10 +275,10 @@ if interactive:
 
 **Category:** Password Handling
 
-**Description:**  
+**Description:**
 The implementation enforces password strength through entropy calculations.
 
-**Observation:** While not explicitly defined in the base UX contract, the password strength enforcement in [`helpers.py:182-236`](src/desktop_2fa/cli/helpers.py:182) is a security enhancement that does not violate the UX contract.
+**Observation:** While not explicitly defined in the base UX contract, the password strength enforcement in `helpers.py:182-236` (`src/desktop_2fa/cli/helpers.py:182`, historical target unavailable) is a security enhancement that does not violate the UX contract.
 
 **Status:** Not applicable to the base contract. Security features are orthogonal to UX compliance.
 
@@ -327,7 +329,7 @@ The CLI implementation demonstrates strong adherence to most UX principles but c
 
 **Fix Silent Vault Creation in Non-Interactive Mode**
 
-Modify [`commands.py:64-76`](src/desktop_2fa/cli/commands.py:64) to always announce vault creation, regardless of interactive mode:
+Modify `commands.py:64-76` (`src/desktop_2fa/cli/commands.py:64`, historical target unavailable) to always announce vault creation, regardless of interactive mode:
 
 ```python
 def list_entries(ctx: typer.Context) -> None:
@@ -422,13 +424,13 @@ Nothing to generate.
 
 | Document | Path |
 |----------|------|
-| Base UX Specification | [`docs/ux.md`](docs/ux.md) |
-| Enhanced CLI UX Specification | [`docs/cli-ux.md`](docs/cli-ux.md) |
-| CLI Main Entry Point | [`src/desktop_2fa/cli/main.py`](src/desktop_2fa/cli/main.py) |
-| Command Implementations | [`src/desktop_2fa/cli/commands.py`](src/desktop_2fa/cli/commands.py) |
-| Helper Functions | [`src/desktop_2fa/cli/helpers.py`](src/desktop_2fa/cli/helpers.py) |
-| Command Tests | [`tests/test_commands.py`](tests/test_commands.py) |
-| CLI Tests | [`tests/test_cli.py`](tests/test_cli.py) |
+| Base UX Specification | `docs/ux.md` (`docs/ux.md`, historical target unavailable) |
+| Enhanced CLI UX Specification | `docs/cli-ux.md` (`docs/cli-ux.md`, historical target unavailable) |
+| CLI Main Entry Point | `src/desktop_2fa/cli/main.py` (`src/desktop_2fa/cli/main.py`, historical target unavailable) |
+| Command Implementations | `src/desktop_2fa/cli/commands.py` (`src/desktop_2fa/cli/commands.py`, historical target unavailable) |
+| Helper Functions | `src/desktop_2fa/cli/helpers.py` (`src/desktop_2fa/cli/helpers.py`, historical target unavailable) |
+| Command Tests | `tests/test_commands.py` (`tests/test_commands.py`, historical target unavailable) |
+| CLI Tests | `tests/test_cli.py` (`tests/test_cli.py`, historical target unavailable) |
 
 ## Contact
 
