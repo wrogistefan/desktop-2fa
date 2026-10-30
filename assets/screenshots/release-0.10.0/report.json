@@ -1,0 +1,383 @@
+{
+  "version": "0.10.0",
+  "cases": [
+    {
+      "case": "help ",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "help list",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "help add",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "help code",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "help remove",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "help rename",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "help export",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "help import",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "help backup",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "help init-vault",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "help ui",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "help vault",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "help vault unlock",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "help vault change-password",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "help vault init",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "help vault path",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "no arguments",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "version",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "desktop-2fa --version",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "desktop-2fa --help",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "init",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "empty list",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "manual add",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "URI add",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "list indices",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "code",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "raw",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "json",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "quiet",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "unlock",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "path",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "duplicate add",
+      "status": 6,
+      "driver": "subprocess"
+    },
+    {
+      "case": "rename",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "collision",
+      "status": 6,
+      "driver": "subprocess"
+    },
+    {
+      "case": "indexed rename",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "invalid index",
+      "status": 6,
+      "driver": "subprocess"
+    },
+    {
+      "case": "backup",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "second backup",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "export",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "export refusal",
+      "status": 6,
+      "driver": "subprocess"
+    },
+    {
+      "case": "force export",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "import",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "import refusal",
+      "status": 6,
+      "driver": "subprocess"
+    },
+    {
+      "case": "force import",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "remove",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "missing entry",
+      "status": 3,
+      "driver": "subprocess"
+    },
+    {
+      "case": "alias init",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "init refusal",
+      "status": 6,
+      "driver": "subprocess"
+    },
+    {
+      "case": "force init",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "wrong password",
+      "status": 2,
+      "driver": "subprocess"
+    },
+    {
+      "case": "missing vault",
+      "status": 4,
+      "driver": "subprocess"
+    },
+    {
+      "case": "corrupt vault",
+      "status": 1,
+      "driver": "subprocess"
+    },
+    {
+      "case": "invalid secret",
+      "status": 6,
+      "driver": "subprocess"
+    },
+    {
+      "case": "invalid URI",
+      "status": 6,
+      "driver": "subprocess"
+    },
+    {
+      "case": "incomplete add",
+      "status": 6,
+      "driver": "subprocess"
+    },
+    {
+      "case": "conflicting output",
+      "status": 6,
+      "driver": "subprocess"
+    },
+    {
+      "case": "usage error",
+      "status": 2,
+      "driver": "subprocess"
+    },
+    {
+      "case": "noninteractive password change",
+      "status": 6,
+      "driver": "subprocess"
+    },
+    {
+      "case": "self export refusal",
+      "status": 6,
+      "driver": "subprocess"
+    },
+    {
+      "case": "empty password file",
+      "status": 6,
+      "driver": "subprocess"
+    },
+    {
+      "case": "BOM password file",
+      "status": 6,
+      "driver": "subprocess"
+    },
+    {
+      "case": "invalid UTF-8 password file",
+      "status": 6,
+      "driver": "subprocess"
+    },
+    {
+      "case": "missing password file",
+      "status": 1,
+      "driver": "subprocess"
+    },
+    {
+      "case": "quiet wrong password",
+      "status": 2,
+      "driver": "subprocess"
+    },
+    {
+      "case": "JSON missing account",
+      "status": 3,
+      "driver": "subprocess"
+    },
+    {
+      "case": "interactive hidden-secret add",
+      "status": 0,
+      "driver": "CliRunner"
+    },
+    {
+      "case": "--copy",
+      "status": 0,
+      "driver": "stub clipboard"
+    },
+    {
+      "case": "--copy-only",
+      "status": 0,
+      "driver": "stub clipboard"
+    },
+    {
+      "case": "-c",
+      "status": 0,
+      "driver": "stub clipboard"
+    },
+    {
+      "case": "copy fallback without clipboard",
+      "status": 0,
+      "driver": "stub clipboard"
+    },
+    {
+      "case": "clipboard unavailable",
+      "status": 5,
+      "driver": "stub clipboard"
+    },
+    {
+      "case": "ui mount and capture",
+      "status": 0,
+      "driver": "Textual headless"
+    },
+    {
+      "case": "old password rejected after change",
+      "status": 2,
+      "driver": "subprocess"
+    },
+    {
+      "case": "password change and reopen",
+      "status": 0,
+      "driver": "CliRunner / stub getpass"
+    }
+  ],
+  "passed": 74,
+  "limitations": [
+    "Windows / Python 3.13.11",
+    "Interactive prompts use CliRunner, not a native TTY",
+    "System clipboard replaced by a stub",
+    "Textual exercised headlessly; SVG is a rendered screen",
+    "Terminal SVGs replay actual output; not desktop screenshots"
+  ]
+}

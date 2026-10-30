@@ -5,13 +5,15 @@ Completing this checklist does not publish a release or certify security.
 
 ## Compatibility and version choice
 
-The next release candidate is **0.10.0**, rather than a patch: the roadmap adds
+This release is **0.10.0**, rather than a patch: the roadmap adds
 stricter input/schema rejection, reliable failure statuses, concurrency conflicts
 and explicit overwrite controls that can affect callers and automation. D2FA v1,
 Argon2id parameters, AES-GCM, UTF-8 password derivation and valid TOTP parameters
-remain unchanged. This is the version choice for later release preparation;
-project/runtime metadata remain 0.9.0 until a separately reviewed version bump.
-Do not create a v0.10.0 tag against the current metadata.
+remain unchanged. Project/runtime metadata agree on 0.10.0.
+On 2026-10-30 the maintainer authorized merging after successful checks,
+followed by a signed `v0.10.0` tag, PyPI publication verification and a GitHub
+Release. Follow [release PR #81](https://github.com/wrogistefan/desktop-2fa/pull/81)
+and the tag's CI run for the exact commit and publication results.
 
 Supported fixture evidence covers v0.7.3 and v0.8.3 non-empty-password vaults.
 Pre-header vaults remain unsupported: preserve the original and recover from a
@@ -21,11 +23,12 @@ before upgrading. The current loader has no silent fallback or password retry.
 See [cryptographic compatibility](crypto.md#compatibility) and the
 [fixture inventory](../tests/fixtures/vaults/README.md).
 
-## Criteria to recheck for the exact candidate commit
+## Criteria to recheck for the exact release commit
 
 These are repeatable release requirements. The stabilization evidence below
-covers the current code; a future version bump/tag needs its own successful
-validation. The tracker records completion of S01–S22 separately.
+predates the release version bump. Version 0.10.0 has separate local evidence;
+CI must validate its exact commit before release. The tracker records completion
+of S01–S22 separately.
 
 - All S01–S22 issues resolved through focused PRs with review evidence.
 - Full tests and quality checks pass on the supported runtime/OS matrix.
@@ -41,7 +44,34 @@ validation. The tracker records completion of S01–S22 separately.
 - Evidence URLs, measured coverage, known skips and remaining limitations
   are recorded below. No release is published as part of stabilization.
 
-## Evidence log
+## Release verification evidence
+
+Branch: `release/0.10.0-preparation`. The local full suite on Windows/Python
+3.13.11 passed: **1052 passed, 7 skipped**, one zxcvbn deprecation warning.
+Ruff, Black and source mypy passed. The skips and platform limits described
+below still apply. No cryptographic format or parameters changed.
+
+The [synthetic CLI campaign](../scripts/release_cli.py) passed **74 checks**, exercising every command
+and recursive help, success/error output modes, password change, encrypted
+backup/export/recovery and write refusal. Its [report and captures](
+../assets/screenshots/release-0.10.0/README.md) distinguish real subprocesses,
+prompt/clipboard stubs and headless Textual. Separate native Windows terminal
+checks passed initialization with hidden password/confirmation, interactive add
+with hidden secret, and password change followed by reopening the vault.
+The generated native-test vault/password files were removed. System clipboard
+and native UI checks on other platforms remain manual. PNG and SVG assets
+are linked from README.
+
+Both distribution formats built. Installation of the wheel into a separate
+venv passed `scripts/smoke_installed.py` with isolated imports and supported
+historical fixtures. Twine **7.0.0** accepted both archives; the older local
+Twine 6.2.0 rejected metadata version 2.5 and is unsuitable for this build.
+The isolated installation resolved current dependencies separately from the
+existing development venv. CI and Kilo review validate the final PR commit;
+the tag's workflow validates and publishes its own checked distribution
+artifacts. Verify the published PyPI files before creating the GitHub Release.
+
+## Stabilization evidence (before the release version bump)
 
 Local integrated preflight on Windows/Python 3.13.11: **1052 passed, 7 skipped**,
 with one existing zxcvbn deprecation warning. Ruff, Black, source mypy and

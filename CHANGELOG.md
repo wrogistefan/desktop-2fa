@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-30
+
+### Added
+
+- Add a repeatable synthetic CLI release campaign and English dark-terminal
+  captures, with machine-readable results and explicit headless/clipboard limits.
+
 ### Changed
 
 - Added a current documentation index and archived superseded completion/UX
