@@ -71,6 +71,31 @@ Loading currently accepts only the `D2FA` magic and format version `0x01`.
 There is no migration path in the current loader for older files that lack this
 header, nor support for other format versions.
 
+### Encrypted payload schema
+
+The JSON payload version is separate from the binary header byte. Only integer
+payload version `1` is supported. Other integers raise `UnsupportedFormat`;
+boolean, floating-point, string and null versions are invalid data. A missing
+version retains the existing model default of 1. Optional/missing issuer and
+account names retain their existing defaults, including `None`; no name
+migration is performed.
+
+Known fields are `version` and `entries` at vault level, and `issuer`,
+`account_name`, `secret`, `algorithm`, `digits`, `period` at entry level.
+Unknown fields at either level are explicitly rejected, rather than discarded
+on re-save. This deliberately refuses unsupported extension metadata; it does
+not claim those extensions are safe to interpret. Load raises `CorruptedVault`
+for such unsupported data, while invalid save snapshots raise
+`VaultValidationError` before filesystem changes. Diagnostics exclude payload
+values. The original encrypted bytes remain untouched on refusal.
+
+The supported historical fixtures (v0.7.3 at `5570839` and v0.8.3 at `cd8c3ae`)
+and their pinned source models use version 1 and only these known fields.
+Their optional names, secret text and TOTP parameters remain supported. This
+inventory is limited to those fixtures and source models; it does not prove
+that every vault produced by every release lacks extension metadata. No binary
+fixtures were regenerated and no automatic stripping/downgrade is provided.
+
 ### TOTP secret text
 
 TOTP secret decoding is shared across input validation and code generation.

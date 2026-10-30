@@ -55,3 +55,9 @@ Normal saves replace only the selected file. An explicit CLI `backup` creates a
 separately encrypted snapshot; it need not be byte-identical to the source.
 Tests recover its entries and check that later saves leave that snapshot intact.
 Fixtures cover these identified releases, not every historical release or OS.
+
+The pinned v0.7.3 and v0.8.3 models define payload version 1 and no extension
+fields. The loader now refuses other payload versions and unknown vault/entry
+fields before they can be dropped on re-save. Supported fixtures and optional
+names remain readable; this does not establish support for unrecorded schemas
+or metadata extensions. Fixture binaries remain unchanged.

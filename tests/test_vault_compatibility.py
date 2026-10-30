@@ -12,6 +12,7 @@ from typer.testing import CliRunner
 
 from desktop_2fa.cli.main import app
 from desktop_2fa.crypto.argon2 import derive_key
+from desktop_2fa.totp.generator import generate
 from desktop_2fa.vault.vault import InvalidPassword, UnsupportedFormat, Vault
 
 FIXTURES = Path(__file__).parent / "fixtures" / "vaults"
@@ -48,6 +49,20 @@ def test_historical_load_and_resave(case: dict, tmp_path: Path) -> None:
         assert base64.b32decode(entry.secret, casefold=True) == base64.b32decode(
             expected["secret"]
         )
+        for timestamp in (entry.period - 1, entry.period, entry.period + 1):
+            assert generate(
+                entry.secret,
+                timestamp=timestamp,
+                digits=entry.digits,
+                period=entry.period,
+                algorithm=entry.algorithm,
+            ) == generate(
+                expected["secret"],
+                timestamp=timestamp,
+                digits=expected["digits"],
+                period=expected["period"],
+                algorithm=expected["algorithm"],
+            )
     # Missing names remain None; load has no implicit issuer-to-name migration.
     assert loaded.entries[2].account_name is None
 

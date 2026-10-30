@@ -8,6 +8,10 @@ certification, or guarantee that every deployment is secure.
 
 - Stores TOTP entries in a local encrypted vault; there is no cloud vault or
   server-side password verifier.
+- Accepts only encrypted payload schema 1. Unknown schema versions and unknown
+  vault/entry fields are refused before mutation or re-save, preventing silent
+  metadata loss. Refusal does not alter the original file; no automatic format
+  downgrade, metadata stripping or recovery is attempted.
 - Derives a 32-byte key using Argon2id (time cost 4, memory cost 128 MiB,
   parallelism 2, 16-byte salt) and encrypts vault data using AES-256-GCM
   (12-byte random nonce and 16-byte authentication tag).

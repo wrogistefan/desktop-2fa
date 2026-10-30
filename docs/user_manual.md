@@ -530,6 +530,18 @@ the public rename helper apply the same rules. Python callers receive
 `AmbiguousEntry` for unresolved ambiguity (both are `ValueError` subclasses).
 The previously unimplemented `Vault.rename_entry()` now performs the rename.
 
+### Payload compatibility
+
+The binary D2FA v1 header and encrypted JSON payload version are separate.
+Only integer payload version 1 is supported. Unknown versions and unknown
+vault/entry fields are refused (CLI status 1) before operations can rewrite the
+vault and discard metadata. Missing optional names remain supported.
+
+Keep the original file and use a compatible producing application if a vault
+contains unsupported schema data or extensions. There is no automatic downgrade
+or metadata removal. Supported historical fixtures cover v0.7.3 and v0.8.3;
+compatibility with arbitrary untested extensions is not promised.
+
 ### Concurrent operations
 
 When another process changes a vault after it was loaded, a mutation can exit

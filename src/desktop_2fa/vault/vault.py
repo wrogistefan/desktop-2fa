@@ -329,9 +329,14 @@ class Vault:
         try:
             data = VaultData.model_validate_json(raw_json)
         except ValidationError as e:
+            if any(
+                error["loc"] == ("version",) and error["type"] == "literal_error"
+                for error in e.errors(include_input=False, include_context=False)
+            ):
+                raise UnsupportedFormat("Unsupported vault payload version") from None
             # If Pydantic validation fails, it's corrupted data (not a password issue)
             # because the decryption succeeded but the data structure is wrong
-            raise CorruptedVault("Vault contains invalid data") from e
+            raise CorruptedVault("Vault contains invalid data") from None
 
         vault = cls(data)
         vault._revisions[_canonical(path)] = hashlib.sha256(blob).digest()

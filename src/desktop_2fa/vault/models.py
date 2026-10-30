@@ -2,7 +2,7 @@
 
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from ..utils.base32 import InvalidSecret, decode_base32
 
@@ -18,6 +18,8 @@ class TotpEntry(BaseModel):
         period: Time period in seconds between code changes (default 30).
         algorithm: Hash algorithm used for TOTP generation (SHA1, SHA256, SHA512).
     """
+
+    model_config = ConfigDict(extra="forbid")
 
     issuer: Optional[str] = Field(None)
     account_name: Optional[str] = Field(None)
@@ -77,9 +79,19 @@ class VaultData(BaseModel):
     """Model representing the vault data structure.
 
     Attributes:
-        version: Vault format version (default 1).
+        version: Supported encrypted payload schema (1, separate from header).
         entries: List of TOTP entries in the vault.
     """
 
-    version: int = 1
+    model_config = ConfigDict(extra="forbid")
+
+    version: Literal[1] = 1
     entries: list[TotpEntry] = Field(default_factory=list)
+
+    @field_validator("version", mode="before")
+    @classmethod
+    def validate_version_type(cls, value: object) -> object:
+        """Do not coerce bool, float or string versions into schema 1."""
+        if type(value) is not int:
+            raise ValueError("Payload version must be an integer")
+        return value
