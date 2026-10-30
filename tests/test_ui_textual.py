@@ -3,7 +3,7 @@
 import asyncio
 
 import pytest
-from textual.widgets import Label, ListView
+from textual.widgets import Button, Label, ListView
 
 from desktop_2fa.totp.generator import generate
 from desktop_2fa.ui_textual.app import D2FAApp
@@ -78,6 +78,10 @@ def test_selection_generate_and_copy_keep_original_totp_parameters(
 
     async def check() -> None:
         async with app.run_test() as pilot:
+            # Repeated activations test parameter parity, not the 0.2s button
+            # animation during which Textual deliberately ignores new presses.
+            for button in app.query(Button):
+                button.active_effect_duration = 0
             for index, entry in enumerate(entries):
                 app.query_one("#accounts", ListView).index = index
                 await pilot.pause()
@@ -88,12 +92,17 @@ def test_selection_generate_and_copy_keep_original_totp_parameters(
                     digits=entry.digits,
                     period=entry.period,
                 )
-                await pilot.click("#generate")
+                # Parameter parity does not depend on pointer coordinates.
+                app.query_one("#generate", Button).focus()
+                await pilot.pause()
+                await pilot.press("enter")
                 remaining = entry.period - 59 % entry.period
                 assert str(app.query_one("#output", Label).render()) == (
                     f"Code: {expected} (valid for {remaining}s)"
                 )
-                await pilot.click("#copy")
+                app.query_one("#copy", Button).focus()
+                await pilot.pause()
+                await pilot.press("enter")
                 assert copied[-1] == expected
 
     asyncio.run(check())
