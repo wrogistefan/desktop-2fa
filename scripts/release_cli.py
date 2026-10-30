@@ -9,13 +9,13 @@ import asyncio
 import io
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-import click
 import pyperclip
 from rich.console import Console
 from rich.terminal_theme import MONOKAI
@@ -27,9 +27,10 @@ from desktop_2fa.cli.main import app
 from desktop_2fa.ui_textual.app import D2FAApp
 from desktop_2fa.vault import Vault
 
-PASSWORD = "synthetic-release-password"
 SECRET = "JBSWY3DPEHPK3PXP"
 ROOT = Path(__file__).resolve().parents[1]
+DEMO_CREDENTIAL = ROOT / "tests/fixtures/release/demo-password.txt"
+PASSWORD = DEMO_CREDENTIAL.read_text(encoding="utf-8").rstrip("\n")
 
 
 def save_svg(path: Path, content: str) -> None:
@@ -55,7 +56,7 @@ def main() -> None:
     )
     with tempfile.TemporaryDirectory(prefix="d2fa-release-") as directory:
         work = Path(directory)
-        (work / "demo-password.txt").write_text(PASSWORD, encoding="utf-8")
+        shutil.copyfile(DEMO_CREDENTIAL, work / "demo-password.txt")
         (work / "wrong.txt").write_text("synthetic-wrong", encoding="utf-8")
         env = {
             **os.environ,
@@ -88,6 +89,7 @@ def main() -> None:
                 f"{result.stdout}{result.stderr}"
             )
             cases.append({"case": name, "status": status, "driver": "subprocess"})
+            print(f"PASS: {name}", flush=True)
             if session:
                 sessions.setdefault(session, []).append(
                     (
@@ -99,9 +101,10 @@ def main() -> None:
 
         def helps(command, prefix=()):
             run("help " + " ".join(prefix), [], extra=[*prefix, "--help"])
-            if isinstance(command, click.Group):
-                for name, child in command.commands.items():
-                    helps(child, (*prefix, name))
+            # Typer may use its own Click implementation; inspect the command
+            # mapping rather than depending on one concrete Click Group class.
+            for name, child in getattr(command, "commands", {}).items():
+                helps(child, (*prefix, name))
 
         helps(get_command(app))
         run("no arguments", [], extra=[])

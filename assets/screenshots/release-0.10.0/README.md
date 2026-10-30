@@ -29,7 +29,9 @@ From the checkout root, using the existing editable development installation:
 ```
 
 The campaign invokes the installed `d2fa` and `desktop-2fa` entry points. It
-uses explicit vault paths, password files and a temporary home. Vault files and
+uses explicit vault paths, password files and a temporary home. Its public
+password file is copied from the [demo fixture](../../../tests/fixtures/release/README.md).
+Vault files and
 password files are removed with the temporary directory; the report contains
 case names/statuses, not their contents. The renderer uses a temporary browser
 profile and local files. Edge did not produce an image on this machine; Chrome

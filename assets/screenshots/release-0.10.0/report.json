@@ -7,6 +7,81 @@
       "driver": "subprocess"
     },
     {
+      "case": "help list",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "help add",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "help code",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "help remove",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "help rename",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "help export",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "help import",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "help backup",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "help init-vault",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "help ui",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "help vault",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "help vault unlock",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "help vault change-password",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "help vault init",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
+      "case": "help vault path",
+      "status": 0,
+      "driver": "subprocess"
+    },
+    {
       "case": "no arguments",
       "status": 0,
       "driver": "subprocess"
@@ -297,7 +372,7 @@
       "driver": "CliRunner / stub getpass"
     }
   ],
-  "passed": 59,
+  "passed": 74,
   "limitations": [
     "Windows / Python 3.13.11",
     "Interactive prompts use CliRunner, not a native TTY",

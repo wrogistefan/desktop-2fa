@@ -50,7 +50,7 @@ Branch: `release/0.10.0-preparation`. The local full suite on Windows/Python
 Ruff, Black and source mypy passed. The skips and platform limits described
 below still apply. No cryptographic format or parameters changed.
 
-The [synthetic CLI campaign](../scripts/release_cli.py) passed **59 checks**, exercising every command
+The [synthetic CLI campaign](../scripts/release_cli.py) passed **74 checks**, exercising every command
 and recursive help, success/error output modes, password change, encrypted
 backup/export/recovery and write refusal. Its [report and captures](
 ../assets/screenshots/release-0.10.0/README.md) distinguish real subprocesses,
