@@ -25,22 +25,39 @@ See [cryptographic compatibility](crypto.md#compatibility) and the
 
 - [ ] All S01–S22 issues resolved through focused PRs with review evidence.
 - [ ] Full tests and quality checks pass on the supported runtime/OS matrix.
-- [ ] RFC 6238 vectors and immutable supported historical-vault round trips pass.
-- [ ] Wrong password, tampering, malformed data and failed-write preservation pass.
-- [ ] Password change, encrypted backup/export and recovery pass with synthetic data.
-- [ ] Built wheel installs outside the checkout; both entry points, versions,
+- [x] RFC 6238 vectors and immutable supported historical-vault round trips pass.
+- [x] Wrong password, tampering, malformed data and failed-write preservation pass.
+- [x] Password change, encrypted backup/export and recovery pass with synthetic data.
+- [x] Built wheel installs outside the checkout; both entry points, versions,
   retained imports and bundled Textual CSS work without a src fallback.
 - [ ] Tag/version mismatch and failed/skipped validation block publication;
   validated artifacts are reused without rebuilding.
-- [ ] Code scanning has no remaining open alert introduced by this work.
-- [ ] Current documentation examples and local relative links are checked.
+- [x] Code scanning has no remaining open alert introduced by this work.
+- [x] Current documentation examples and local relative links are checked.
 - [ ] Evidence URLs, measured coverage, known skips and remaining limitations
   are recorded below. No release is published as part of stabilization.
 
 ## Evidence log
 
-Pending final integrated CI validation. Record concrete run/PR links here before
-closing the roadmap; historical test totals are not substitute evidence.
+Local integrated preflight on Windows/Python 3.13.11: **1052 passed, 7 skipped**,
+with one existing zxcvbn deprecation warning. Ruff, Black, source mypy and
+pinned/checksummed actionlint passed. Native GNU make was unavailable; the
+Makefile dry run passed separately with GNU Make 4.3 in WSL. The other local
+skips concern filesystem alias support; CI must provide the platform evidence.
+No user vault or clipboard was used.
+
+The integrated wheel/sdist built successfully. A fresh temporary Windows venv
+outside the checkout passed isolated imports, both entry points, version
+agreement, bundled Textual CSS/mount, non-default TOTP parameters, password
+change, backup/export recovery and supported historical-vault round trips.
+Representative CLI documentation examples and the integrated local relative-file
+link scan passed. Historical binary fixtures are unchanged.
+
+CodeQL alert #9 is **fixed**, and the open-alert query returned no alerts after
+[security PR #72](https://github.com/wrogistefan/desktop-2fa/pull/72) merged.
+Kilo accepted the focused PRs, including corrections to URI-label output and
+development-tool failure messages. Final integrated CI matrix/coverage evidence
+and the remaining merge results must be recorded before closing the roadmap.
 
 ## Remaining limitations
 
