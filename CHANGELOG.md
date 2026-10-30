@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- CLI add flows and public helpers now share entry preparation, code generation
+  and rename persistence through a small entry service. Helper signatures and
+  exceptions remain compatible; `helpers.add_entry` additionally accepts an
+  otpauth URI in the issuer argument with an empty secret, preserving parameters.
+  Account resolution/collision rules remain in Vault; no storage format change.
+
 ### Fixed
 
 - Password-strength diagnostics now use fixed messages instead of rendering
