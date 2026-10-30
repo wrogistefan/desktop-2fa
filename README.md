@@ -227,6 +227,9 @@ See [duplicate recovery](docs/user_manual.md#duplicate-names-in-vault).
 | `d2fa import <path> [--force]` | Import vault from file |
 | `d2fa ui` | Launch the early Textual UI prototype |
 
+External-format Python helpers are described in the
+[adapter contract](docs/import_adapters.md); they are not CLI import modes.
+
 ### Global Options
 
 | Option | Description |

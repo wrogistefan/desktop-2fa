@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- External adapter helpers now read Aegis `db.entries` / `info.algo` and
+  Bitwarden CSV `login_totp`, sharing URI/Base32 validation and preserving TOTP
+  parameters. Unsupported/encrypted inputs, malformed records and zero-token
+  exports fail explicitly instead of returning misleading empty/partial data.
+  CSV quoting and multiline values are preserved. Existing custom 1Password
+  and FreeOTP variants are documented without claiming broad native support.
+  Encrypted D2FA CLI import, storage format and cryptography are unchanged.
+
 - Vault payload schemas now accept only integer version 1, independently of
   the D2FA binary header version. Unsupported integer versions cannot be loaded
   and rewritten. Unknown vault/entry fields are rejected rather than silently

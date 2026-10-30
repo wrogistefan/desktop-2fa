@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "header": {
+    "slots": null,
+    "params": null
+  },
+  "db": {
+    "version": 1,
+    "entries": [
+      {
+        "type": "totp",
+        "uuid": "00000000-0000-4000-8000-000000000001",
+        "name": "konto@example.invalid",
+        "issuer": "Żółw",
+        "icon": null,
+        "info": {
+          "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZA====",
+          "algo": "SHA256",
+          "digits": 8,
+          "period": 45
+        }
+      },
+      {
+        "type": "totp",
+        "uuid": "00000000-0000-4000-8000-000000000002",
+        "name": "raw@example.invalid",
+        "issuer": "Example",
+        "info": {
+          "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ",
+          "algo": "SHA1",
+          "digits": 6,
+          "period": 30
+        }
+      }
+    ]
+  }
+}

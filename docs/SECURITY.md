@@ -8,6 +8,10 @@ certification, or guarantee that every deployment is secure.
 
 - Stores TOTP entries in a local encrypted vault; there is no cloud vault or
   server-side password verifier.
+- Experimental external adapters parse selected plaintext files locally and
+  validate their TOTP outputs. They are not wired into CLI import, do not decrypt
+  foreign encrypted backups, and abort on malformed/unsupported OTP records.
+  Their error messages exclude export contents. See [adapter limits](import_adapters.md).
 - Accepts only encrypted payload schema 1. Unknown schema versions and unknown
   vault/entry fields are refused before mutation or re-save, preventing silent
   metadata loss. Refusal does not alter the original file; no automatic format

@@ -1,0 +1,7 @@
+folder,favorite,type,name,notes,fields,reprompt,login_uri,login_username,login_password,login_totp
+,,login,CSV fallback,synthetic-private-notes,,0,,ignored@example.invalid,,otpauth://totp/%C5%BB%C3%B3%C5%82w:konto%40example.invalid?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNA&issuer=%C5%BB%C3%B3%C5%82w&algorithm=SHA512&digits=7&period=60
+,,login,"CSV, multiline
+Żółw",,,0,,"raw@example.invalid
+second",,GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ
+,,login,No token,,,0,,,,
+,,note,Non-login without token,,,0,,,,

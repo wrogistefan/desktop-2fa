@@ -594,7 +594,9 @@ d2fa export backup.bin --force
 
 ### `import` - Import Vault
 
-Imports a vault from a file.
+Imports an encrypted D2FA vault from a file. Foreign Aegis/Bitwarden exports
+and provisioning URIs are not accepted by this command. Experimental Python
+helpers have a separate [adapter contract](import_adapters.md).
 
 ```bash
 d2fa import SOURCE_FILE [--force]
