@@ -1058,3 +1058,14 @@ For issues and questions:
 ---
 
 *This manual covers desktop-2fa version 0.9.0*
+
+### Programmatic entry helpers
+
+The existing `desktop_2fa.cli.helpers` signatures remain supported.
+`add_entry(path, issuer, account, secret, password)` accepts a Base32 key,
+or an otpauth URI as `issuer` with an empty `secret`; the URI label and TOTP
+parameters take precedence. Helpers require an existing vault and propagate
+domain exceptions. CLI prompting, output and exit-status handling remain at
+the CLI boundary. Both paths share entry preparation, code generation and
+rename persistence through `desktop_2fa.entry_service`, while `Vault` owns
+account resolution and collision checks. No format migration is required.

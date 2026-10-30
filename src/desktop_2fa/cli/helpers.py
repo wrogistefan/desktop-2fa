@@ -3,18 +3,26 @@
 import getpass
 import math
 import os
-import re
 import tomllib
-import urllib.parse
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, TypedDict, cast
+from typing import TYPE_CHECKING, Any
 
 import typer
 from rich import print as rprint
 from rich.text import Text
 
+from desktop_2fa import entry_service
 from desktop_2fa.constants import ExitCode
-from desktop_2fa.utils.base32 import InvalidSecret, decode_base32, normalize_base32
+from desktop_2fa.entry_service import (
+    ParsedOtpauth as ParsedOtpauth,
+)
+from desktop_2fa.entry_service import (
+    TotpParameters as TotpParameters,
+)
+from desktop_2fa.entry_service import (
+    parse_otpauth_url as parse_otpauth_url,
+)
+from desktop_2fa.utils.base32 import InvalidSecret, decode_base32
 from desktop_2fa.vault import Vault
 from desktop_2fa.vault.password_strength import evaluate_password_strength
 from desktop_2fa.vault.vault import ExportRefused
@@ -29,18 +37,6 @@ class ValidationError(Exception):
 
 if TYPE_CHECKING:
     from desktop_2fa.vault.models import TotpEntry
-
-
-class TotpParameters(TypedDict):
-    algorithm: Literal["SHA1", "SHA256", "SHA512"]
-    digits: Literal[6, 7, 8]
-    period: int
-
-
-class ParsedOtpauth(TotpParameters):
-    issuer: str
-    label: str
-    secret: str
 
 
 def list_entries(path: Path, password: str) -> None:
@@ -67,9 +63,9 @@ def add_entry(
         secret: The Base32-encoded TOTP secret.
         password: Password to encrypt the vault.
     """
-    secret = normalize_base32(secret)
+    parsed = entry_service.prepare_add(account, issuer, secret)
     vault = Vault.load(path, password)
-    vault.add_entry(name=account, issuer=issuer, secret=secret)
+    entry_service.add_prepared(vault, parsed)
     vault.save(path, password)
     print(f"Added entry: {account}")
 
@@ -83,16 +79,7 @@ def generate_code(path: Path, name: str, password: str) -> None:
         password: Password to decrypt the vault.
     """
     vault = Vault.load(path, password)
-    entry = vault.get_entry(name)
-
-    from desktop_2fa.totp.generator import generate
-
-    code = generate(
-        secret=entry.secret,
-        digits=entry.digits,
-        period=entry.period,
-        algorithm=entry.algorithm,
-    )
+    _, code, _ = entry_service.generate_code(vault, name)
 
     print(code)
 
@@ -124,9 +111,7 @@ def rename_entry(
         index: Optional one-based index shown by list --indices.
     """
     vault = Vault.load(path, password)
-    vault.rename_entry(old, new, index=index)
-
-    vault.save(path, password)
+    entry_service.rename_and_save(vault, path, password, old, new, index=index)
     print(f"Renamed '{old}' → '{new}'")
 
 
@@ -571,68 +556,6 @@ def validate_base32(secret: str) -> bool:
         return True
     except InvalidSecret:
         return False
-
-
-def parse_otpauth_url(url: str) -> ParsedOtpauth:
-    """Validate TOTP provisioning data without dropping code parameters."""
-    if not url.startswith("otpauth://"):
-        raise ValueError("Invalid otpauth URL")
-
-    parsed = urllib.parse.urlparse(url)
-    if parsed.scheme != "otpauth" or parsed.netloc != "totp":
-        raise ValueError("Only TOTP otpauth URLs are supported")
-
-    if parsed.fragment or re.search(r"%(?![0-9a-fA-F]{2})", url):
-        raise ValueError("Invalid otpauth URL encoding or fragment")
-    path = urllib.parse.unquote(parsed.path.removeprefix("/"), errors="strict")
-    if ":" in path:
-        prefix, label = path.split(":", 1)
-        label = label.lstrip(" ")
-        if ":" in label:
-            raise ValueError("Issuer and account label cannot contain colons")
-    else:
-        prefix = ""
-        label = path
-    if not label:
-        raise ValueError("Account label is required")
-
-    query = urllib.parse.parse_qs(parsed.query, keep_blank_values=True, errors="strict")
-    for parameter in ("secret", "issuer", "algorithm", "digits", "period", "counter"):
-        if len(query.get(parameter, [])) > 1:
-            raise ValueError(f"Duplicate {parameter} parameter")
-    if "counter" in query:
-        raise ValueError("Counter is not supported for TOTP provisioning")
-    secret = query.get("secret", [""])[0]
-    if not secret:
-        raise ValueError("Secret parameter is required")
-
-    url_issuer = query.get("issuer", [""])[0]
-    if "issuer" in query and not url_issuer:
-        raise ValueError("Issuer parameter cannot be empty")
-    if ":" in url_issuer:
-        raise ValueError("Issuer cannot contain colons")
-    if prefix and url_issuer and prefix != url_issuer:
-        raise ValueError("Issuer parameter conflicts with the label prefix")
-    issuer = url_issuer or prefix or (label if ":" not in path else "Unknown")
-
-    algorithm = query.get("algorithm", ["SHA1"])[0].upper()
-    if algorithm not in ("SHA1", "SHA256", "SHA512"):
-        raise ValueError("Unsupported algorithm (expected SHA1, SHA256 or SHA512)")
-    digits = query.get("digits", ["6"])[0]
-    if digits not in ("6", "7", "8"):
-        raise ValueError("Invalid digits (expected 6, 7 or 8)")
-    period = query.get("period", ["30"])[0]
-    if not period.isascii() or not period.isdecimal() or int(period) <= 0:
-        raise ValueError("Period must be a positive integer")
-
-    return {
-        "issuer": issuer,
-        "label": label,
-        "secret": normalize_base32(secret),
-        "algorithm": cast(Literal["SHA1", "SHA256", "SHA512"], algorithm),
-        "digits": cast(Literal[6, 7, 8], int(digits)),
-        "period": int(period),
-    }
 
 
 def validate_code_options(
