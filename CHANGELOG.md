@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Removed stale generated egg-info from version control and retired an unused
+  duplicate requirements list and one-off README image rewrite script.
+  `pyproject.toml` remains authoritative; importable skeleton modules and
+  historical fixtures remain available. See `docs/repository_inventory.md`.
+
 - CLI add flows and public helpers now share entry preparation, code generation
   and rename persistence through a small entry service. Helper signatures and
   exceptions remain compatible; `helpers.add_entry` additionally accepts an
