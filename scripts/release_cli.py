@@ -32,6 +32,14 @@ SECRET = "JBSWY3DPEHPK3PXP"
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def save_svg(path: Path, content: str) -> None:
+    """Remove whitespace-only artifacts emitted by Rich's SVG template."""
+    path.write_text(
+        "\n".join(line.rstrip() for line in content.splitlines()) + "\n",
+        encoding="utf-8",
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -298,9 +306,9 @@ def main() -> None:
             ui = D2FAApp(str(work / "demo.bin"), PASSWORD)
             async with ui.run_test(size=(100, 30)) as pilot:
                 await pilot.pause()
-                (output / "textual.svg").write_text(
+                save_svg(
+                    output / "textual.svg",
                     ui.export_screenshot(title="Desktop-2FA | SYNTHETIC DEMO"),
-                    encoding="utf-8",
                 )
 
         with patch(
@@ -344,13 +352,13 @@ def main() -> None:
             console.print(Text("$ " + command, style="bold green"))
             console.print(Text.from_ansi(result.rstrip()))
             console.print()
-        (output / f"{name}.svg").write_text(
+        save_svg(
+            output / f"{name}.svg",
             console.export_svg(
                 title="Desktop-2FA | Demo terminal",
                 theme=MONOKAI,
                 unique_id="d2fa-" + name,
             ),
-            encoding="utf-8",
         )
     report = {
         "version": "0.10.0",
