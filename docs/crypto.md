@@ -214,6 +214,10 @@ with a particular security standard.
 
 ## Compatibility
 
+Storage publication does not change the cryptographic format. See
+[atomicity, crash durability and post-publication errors](persistence.md) for
+the POSIX directory-sync decision and Windows/macOS/device-cache limitations.
+
 The current loader supports vault format version 1 only. The version byte
 allows a future implementation to distinguish formats, but does not guarantee
 that future releases will support every older format. Back up the vault before
