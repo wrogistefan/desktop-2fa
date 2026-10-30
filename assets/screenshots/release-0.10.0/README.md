@@ -1,6 +1,6 @@
-# Release candidate captures
+# Desktop-2FA 0.10.0 captures
 
-English, dark-terminal captures for the **0.10.0 candidate**, made on Windows
+English, dark-terminal captures for **Desktop-2FA 0.10.0**, made on Windows
 with Python 3.13.11. All accounts, passwords and vaults are synthetic. Displayed
 codes are temporary values from public example secrets, not real credentials.
 
@@ -48,5 +48,4 @@ seconds vary between runs. Check subprocess statuses; only a completed
 successful campaign writes a new report.
 
 The version/policy flag shown in captures is for these synthetic examples;
-keep strong passwords for real vaults. This material does not authorize a
-merge, tag or publication.
+keep strong passwords for real vaults.

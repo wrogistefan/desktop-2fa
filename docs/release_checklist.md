@@ -5,14 +5,15 @@ Completing this checklist does not publish a release or certify security.
 
 ## Compatibility and version choice
 
-The next release candidate is **0.10.0**, rather than a patch: the roadmap adds
+This release is **0.10.0**, rather than a patch: the roadmap adds
 stricter input/schema rejection, reliable failure statuses, concurrency conflicts
 and explicit overwrite controls that can affect callers and automation. D2FA v1,
 Argon2id parameters, AES-GCM, UTF-8 password derivation and valid TOTP parameters
-remain unchanged. Project/runtime metadata on `release/0.10.0-preparation`
-now agree on 0.10.0. This branch is a candidate, not a published release.
-Merging requires the maintainer's explicit approval; tagging and publication
-are separate actions and are not authorized by this checklist.
+remain unchanged. Project/runtime metadata agree on 0.10.0.
+On 2026-10-30 the maintainer authorized merging after successful checks,
+followed by a signed `v0.10.0` tag, PyPI publication verification and a GitHub
+Release. Follow [release PR #81](https://github.com/wrogistefan/desktop-2fa/pull/81)
+and the tag's CI run for the exact commit and publication results.
 
 Supported fixture evidence covers v0.7.3 and v0.8.3 non-empty-password vaults.
 Pre-header vaults remain unsupported: preserve the original and recover from a
@@ -22,10 +23,10 @@ before upgrading. The current loader has no silent fallback or password retry.
 See [cryptographic compatibility](crypto.md#compatibility) and the
 [fixture inventory](../tests/fixtures/vaults/README.md).
 
-## Criteria to recheck for the exact candidate commit
+## Criteria to recheck for the exact release commit
 
 These are repeatable release requirements. The stabilization evidence below
-predates the candidate version bump. The candidate has separate local evidence;
+predates the release version bump. Version 0.10.0 has separate local evidence;
 CI must validate its exact commit before release. The tracker records completion
 of S01–S22 separately.
 
@@ -43,7 +44,7 @@ of S01–S22 separately.
 - Evidence URLs, measured coverage, known skips and remaining limitations
   are recorded below. No release is published as part of stabilization.
 
-## Candidate preparation evidence
+## Release verification evidence
 
 Branch: `release/0.10.0-preparation`. The local full suite on Windows/Python
 3.13.11 passed: **1052 passed, 7 skipped**, one zxcvbn deprecation warning.
@@ -66,10 +67,11 @@ venv passed `scripts/smoke_installed.py` with isolated imports and supported
 historical fixtures. Twine **7.0.0** accepted both archives; the older local
 Twine 6.2.0 rejected metadata version 2.5 and is unsuitable for this build.
 The isolated installation resolved current dependencies separately from the
-existing development venv. Candidate CI and maintainer approval are pending.
-No merge, tag or release has been performed.
+existing development venv. CI and Kilo review validate the final PR commit;
+the tag's workflow validates and publishes its own checked distribution
+artifacts. Verify the published PyPI files before creating the GitHub Release.
 
-## Stabilization evidence (before the candidate version bump)
+## Stabilization evidence (before the release version bump)
 
 Local integrated preflight on Windows/Python 3.13.11: **1052 passed, 7 skipped**,
 with one existing zxcvbn deprecation warning. Ruff, Black, source mypy and

@@ -30,7 +30,7 @@ A secure, offline two-factor authentication (2FA) manager for desktop environmen
 
 ## 📸 Screenshots
 
-English dark-terminal captures from the 0.10.0 candidate. All accounts and
+English dark-terminal captures from Desktop-2FA 0.10.0. All accounts and
 credentials are synthetic. Terminal images render actual command output;
 interactive prompts use a test runner and Textual runs headlessly.
 See the [capture notes and report](assets/screenshots/release-0.10.0/README.md).
@@ -64,7 +64,7 @@ Verify installation:
 
 ```bash
 python -c "import desktop_2fa; print(desktop_2fa.__version__)"
-# Output for this release candidate: 0.10.0
+# Output: 0.10.0
 ```
 
 ### Basic Usage
