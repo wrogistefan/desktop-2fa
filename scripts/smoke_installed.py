@@ -11,6 +11,22 @@ import tempfile
 from pathlib import Path
 
 
+def check_cli(executable: Path, option: str) -> str:
+    result = subprocess.run(
+        [str(executable), option],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        env={**os.environ, "PYTHONUTF8": "1"},
+    )
+    if result.returncode:
+        raise RuntimeError(
+            f"Installed CLI {executable.name} {option} failed ({result.returncode}):\n"
+            f"{result.stdout}\n{result.stderr}"
+        )
+    return result.stdout
+
+
 def main() -> None:
     import desktop_2fa
     from desktop_2fa.ui_textual.app import D2FAApp
@@ -36,27 +52,23 @@ def main() -> None:
 
     scripts = Path(sys.executable).parent
     # Windows redirected help output needs UTF-8 for the documented Unicode text.
-    child_env = {**os.environ, "PYTHONUTF8": "1"}
     for command in ("d2fa", "desktop-2fa"):
         executable = scripts / (command + (".exe" if os.name == "nt" else ""))
-        result = subprocess.run(
-            [str(executable), "--version"],
-            check=True,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            env=child_env,
-        )
-        assert version in result.stdout
-        subprocess.run(
-            [str(executable), "--help"], check=True, capture_output=True, env=child_env
-        )
+        assert version in check_cli(executable, "--version")
+        check_cli(executable, "--help")
 
     with tempfile.TemporaryDirectory(prefix="d2fa-smoke-") as directory:
         path = Path(directory) / "synthetic-vault"
         password = "synthetic-installed-wheel-password"
         vault = Vault()
-        vault.add_entry("synthetic", "Example", "JBSWY3DPEHPK3PXP")
+        vault.add_entry(
+            name="synthetic",
+            issuer="Example",
+            secret="JBSWY3DPEHPK3PXP",
+            algorithm="SHA256",
+            digits=8,
+            period=60,
+        )
         vault.save(path, password, overwrite=False)
         loaded = Vault.load(path, password)
         assert loaded.data == vault.data
