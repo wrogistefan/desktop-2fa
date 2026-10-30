@@ -18,11 +18,11 @@ implementations.
 ## Core UX Principles
 
 1. Vault creation must never be silent.
-2. Password confirmation is required only when creating a new vault.
+2. Interactive creation and password change require confirmation; supplied options do not.
 3. Invalid passwords must never mutate state.
 4. Every command must clearly communicate what is happening.
 5. UX describes intent, even if implementation is implicit.
-6. All state-mutating operations MUST emit confirmation messages regardless of interactive mode.
+6. Successful mutations report confirmation; output modes apply only where explicitly supported.
 
 ---
 
@@ -47,7 +47,7 @@ A new encrypted vault will be created.
 Enter new vault password:
 Confirm vault password:
 
-Vault created at <path>.
+Vault created at <path>
 No entries found.
 
 d2fa add NAME ISSUER SECRET
@@ -58,13 +58,12 @@ A new encrypted vault will be created.
 Enter new vault password:
 Confirm vault password:
 
-Vault created at <path>.
+Vault created at <path>
 Entry added: NAME
 
 d2fa code NAME
 
 No vault found.
-Nothing to generate.
 
 No vault is created in this case.
 
@@ -151,21 +150,21 @@ Current behavior may be transitional while UX is refined.
 This document defines the target behavior and serves as the basis
 for future refactors and GUI development.
 
-### ⚠️ Vault Format Change (0.6.0)
-Starting with desktop‑2fa 0.6.0, vaults created with versions prior to 0.6.0 are not compatible and will be rejected as "unsupported format". Users must initialize a new vault using `d2fa vault init`. See README.md for full details.
+### Vault compatibility and recovery
 
----
+The loader accepts the D2FA v1 header and payload schema 1. Supported historical
+fixture coverage and unsupported pre-header/empty-password cases are described
+in the [manual](user_manual.md#version-compatibility). Never initialize over an
+unreadable original as an automatic recovery step.
 
 ## Rename Command — Duplicate Detection
 
-The `rename` command enforces deterministic behavior when multiple entries match the target name:
-
-- If **multiple entries** match the provided name (issuer or account_name), the rename is **aborted**
-- Error message: `Error: Multiple entries named '<name>' exist. Operation aborted. Resolve duplicates first.`
-- No entry is renamed in this case
-- This check occurs **before** any mutation
-
-This ensures predictable behavior when working with vaults that contain duplicate names from older versions.
+Rename uses an exact account name first, then a unique issuer fallback. Multiple
+matches at the selected tier are refused with status 6 unless `--index N`
+selects a matching entry. The one-based index comes from `list --indices`;
+indices can change after edits. An occupied destination is refused before
+mutation. Successful rename changes both account name and issuer while
+preserving secrets and TOTP parameters. See [duplicate repair](user_manual.md#duplicate-names-in-vault).
 
 ## Contact
 

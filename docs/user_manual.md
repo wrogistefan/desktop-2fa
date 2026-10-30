@@ -8,6 +8,10 @@ Desktop-2FA is a secure, offline two-factor authentication (2FA) manager for des
 
 ### Installation
 
+Use a virtual environment with Python 3.11 or later. Published package versions
+may differ from the repository; check the installed version. For captured output
+on Windows legacy code pages, use UTF-8 mode (`PYTHONUTF8=1`).
+
 ```bash
 pip install desktop-2fa
 ```
@@ -107,7 +111,8 @@ d2fa vault init --force
 d2fa --password-file ~/.vault_pass vault init
 ```
 
-**Password Strength:** The vault password is evaluated using zxcvbn. If the password is weak:
+**Password Strength:** Interactive creation/change evaluates the password using
+zxcvbn unless bypassed. Supplied password options skip this enforcement. If weak:
 - In default mode: A warning is shown, and you can confirm to continue
 - In strict mode (with `reject_weak_passwords = true`): The weak password is rejected immediately
 
@@ -730,7 +735,7 @@ min_password_entropy = 60
 **Configuration Options:**
 - **reject_weak_passwords**: If true, weak passwords are rejected immediately; if false (default), user is warned and can confirm
 - **warn_on_weak_existing_passwords**: If true, warns when unlocking vault with weak password (non-blocking)
-- **min_password_entropy**: Legacy option - values are mapped to zxcvbn score thresholds (60+ bits ≈ score 3)
+- **min_password_entropy**: Legacy option - presence of the option selects the existing score-3 threshold; its numeric value is not measured entropy
 
 **Bypass:** Use `--allow-weak-passwords` or set `D2FA_ALLOW_WEAK_PASSWORDS=1` to skip strength checks.
 
@@ -744,14 +749,14 @@ Desktop-2FA enforces the following password validation rules:
    - No confirmation prompt is shown for empty passwords
    - Vault creation is blocked
 
-2. **Password Confirmation**: When creating a new vault, you must enter the password twice for confirmation
-   - If passwords don't match, you'll be prompted to try again
+2. **Password Confirmation**: Interactive creation and password change ask for confirmation; supplied password options are not confirmed
+   - If passwords do not match, the command fails with status 6; run it again
 
-3. **Password Strength**: Weak passwords trigger a warning or rejection based on configuration
+3. **Password Strength**: Interactive creation/change checks weak passwords according to configuration; supplied password options bypass that enforcement
 
 ### Security Notes
 
-- Passwords are never stored or logged (except temporarily in memory)
+- The application keeps passwords in process memory and avoids password-derived diagnostics. Python does not guarantee erasure; command arguments and external tooling can expose them.
 - Use strong, unique passwords
 - Consider using password managers for vault passwords
 - The vault is encrypted with AES-256-GCM + Argon2
@@ -778,7 +783,7 @@ min_password_entropy = 60
 
 - **reject_weak_passwords** (default: false): Whether to reject weak passwords (true) or warn and allow (false)
 - **warn_on_weak_existing_passwords** (default: false): Whether to warn when unlocking vault with weak password
-- **min_password_entropy** (default: 60): Legacy option - minimum password entropy in bits (mapped to zxcvbn score ≥ 3)
+- **min_password_entropy** (default: 60): Legacy option - recognized for compatibility; the active score threshold remains 3
 
 The config file is optional - defaults are used if the file doesn't exist.
 
@@ -788,7 +793,8 @@ By default, the vault is stored at:
 - Linux/macOS: `~/.desktop-2fa/vault`
 - Windows: `C:\Users\<username>\.desktop-2fa\vault`
 
-The vault file is automatically created on first use. See [Selecting the Vault
+Only `vault init`, `list` and `add` create a missing vault. Other commands
+return an error. See [Selecting the Vault
 File](#selecting-the-vault-file) for custom paths and environment overrides.
 For safety, vault files must be regular files no larger than 10 MiB.
 
@@ -801,8 +807,8 @@ For safety, vault files must be regular files no larger than 10 MiB.
 - Check for typos or use the correct password source
 
 **"Vault file format is unsupported"**
-- You're trying to use a vault created with desktop-2fa < 0.6.0
-- Create a new vault with `d2fa init-vault`
+- The file lacks the supported D2FA v1 header or uses an unsupported version
+- Preserve the original; recover from a supported backup or the original providers. Initialize a separate vault only when intentionally starting over.
 
 **"Invalid secret: not valid Base32"**
 - The TOTP secret contains invalid characters
@@ -850,7 +856,7 @@ For safety, vault files must be regular files no larger than 10 MiB.
 # Add multiple entries
 d2fa add GitHub GitHub JBSWY3DPEHPK3PXP
 d2fa add AWS Amazon ABCDEFGHIJKLMNOP
-d2fa add Google Google QRSTUVWXYZ123456
+d2fa add Google Google MZXW6YTBOI======
 
 # List all
 d2fa list
@@ -911,23 +917,32 @@ chmod 700 ~/.desktop-2fa
 
 ### Forgotten Password
 
-**Important:** There is no way to recover a forgotten password. The vault encryption is designed to be unbreakable without the correct password.
+The application has no password-recovery service. A backup encrypted with the
+same forgotten password cannot bypass that password. Weak passwords may still
+be guessed offline; encryption is not a guarantee against guessing.
 
 If you forget your password:
-1. Restore from a backup (if available)
-2. Re-export tokens from your service providers
-3. Create a new vault
+1. Use a backup only if you know the password that protects it.
+2. Recover/reset 2FA through the original providers and their recovery codes.
+3. Preserve the original vault, then intentionally create a separate vault for recovered entries.
 
 ### Version Compatibility
 
-- Vaults created with desktop-2fa 0.6.0+ are designed to remain compatible with
-  newer releases
-- Older vaults (pre-0.6.0) are not compatible and must be recreated
+The current loader supports the D2FA v1 header and integer payload schema 1.
+Regression fixtures pin non-empty-password vaults from v0.7.3 and v0.8.3;
+this is not a promise covering every release from v0.6.0 onward. Unknown
+payload fields/versions are refused without rewriting the encrypted original.
 
-Although newer releases are designed to remain compatible with vaults from
-0.6.0 onward, we strongly recommend creating and securely storing an encrypted
-backup before every upgrade. Compatibility is not a substitute for a backup:
-an upgrade can still be interrupted or affected by local system issues.
+Pre-header vaults are unsupported. Preserve them and recover from a supported
+backup or re-enroll with the original providers. For historical empty-password
+Python API vaults, use the previous API release (the v0.8.3 case is represented
+in the fixture inventory) in a separate trusted environment to open the vault
+and save a copy with a non-empty password before upgrading. The current API
+will not load or silently migrate such a file. Do not overwrite the original
+until the recovered copy is verified. See the [fixture support table](../tests/fixtures/vaults/README.md).
+
+Create an encrypted backup before upgrading; compatibility cannot protect
+against interrupted writes or filesystem/device failure.
 Create a backup with:
 
 ```bash
@@ -1059,7 +1074,15 @@ For issues and questions:
 
 *This manual covers desktop-2fa version 0.9.0*
 
-### Programmatic entry helpers
+## Documentation and verification
+
+See the [documentation index](README.md) and [release checklist](release_checklist.md)
+for current contracts and evidence. Historical reports are [archived](archive/README.md)
+and do not certify current security. Examples use synthetic keys and passwords;
+use a temporary selected vault when trying them. Windows redirected help output
+on legacy code pages requires UTF-8 mode (`PYTHONUTF8=1`).
+
+## Programmatic entry helpers
 
 The existing `desktop_2fa.cli.helpers` signatures remain supported.
 `add_entry(path, issuer, account, secret, password)` accepts a Base32 key,

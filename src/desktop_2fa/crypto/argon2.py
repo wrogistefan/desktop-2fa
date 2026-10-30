@@ -13,8 +13,8 @@ def derive_key(password: str, salt: bytes) -> bytes:
     - hash_len: 32 bytes (for AES-256)
     - salt_len: 16 bytes (recommended minimum)
 
-    These parameters provide ~100ms derivation time on modern hardware
-    while maintaining strong resistance to offline password guessing.
+    Derivation cost depends on hardware and load; these parameters do not
+    guarantee a fixed time per guess or make weak passwords unguessable.
 
     Args:
         password: The password string.
