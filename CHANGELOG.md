@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Vault payload schemas now accept only integer version 1, independently of
+  the D2FA binary header version. Unsupported integer versions cannot be loaded
+  and rewritten. Unknown vault/entry fields are rejected rather than silently
+  dropped; unsupported metadata is left intact in the original encrypted file.
+  Existing optional names and supported TOTP fields remain unchanged. No format
+  migration or cryptographic change is introduced.
+
 - Vault updates now compare the loaded encrypted revision under a short OS
   publication lock. A stale writer or busy lock returns an explicit conflict
   (CLI status 6) instead of silently losing another update or restoring an old

@@ -306,6 +306,8 @@ passwords in the public Python vault API:
 - Permission errors are distinguished from missing vault files
 - Vault loading accepts only regular files and reads at most 10 MiB
 - Vault saves use unique temporary files and atomic replacement
+- Only payload schema 1 is supported; unknown versions and fields are refused
+  before a vault can be rewritten and lose metadata.
 - Concurrent mutations reject stale revisions under a short OS publication lock;
   status 6 asks you to reload and retry. Empty `.NAME.lock` sidecars remain beside
   vaults. File symlinks and multiply linked files are read-only.
