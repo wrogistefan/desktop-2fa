@@ -31,3 +31,10 @@ to inspect recipes. Coverage is available through `make test-cov` and
 Tooling regression tests run the reset script only in a temporary synthetic
 home/project with stubbed Python/pip commands and sentinel data. Do not run
 historical reset scripts against your actual home directory.
+
+For workflow changes, also run `python scripts/check_workflows.py` with the
+project interpreter (on Windows, `.venv/Scripts/python.exe`). This downloads
+the pinned upstream actionlint binary, verifies its checksum and validates
+workflow syntax. See the [CI contract](ci.md) for the full graph and supported
+OS/Python matrix. Application runtime remains offline; this development check
+requires network access.
