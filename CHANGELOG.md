@@ -13,6 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `pyproject.toml` remains authoritative; importable skeleton modules and
   historical fixtures remain available. See `docs/repository_inventory.md`.
 
+### Changed
+
+- CI now gates tags on quality/workflow validation, a 3-OS x Python 3.11/3.12/3.13
+  test matrix, and isolated installed-wheel checks. The stable CI gate rejects
+  failed/skipped jobs. Publication checks tag/version agreement and reuses
+  validated artifacts. Duplicate macOS/lint workflows and unused write
+  permissions were removed; pip caching, timeouts and PR cancellation added.
+
 ### Fixed
 
 - Textual validity ticks now tolerate screen teardown while a code is active,

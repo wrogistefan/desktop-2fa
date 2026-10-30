@@ -3,6 +3,7 @@
 import asyncio
 import importlib
 import importlib.metadata
+import json
 import os
 import subprocess
 import sys
@@ -59,9 +60,41 @@ def main() -> None:
         vault.save(path, password, overwrite=False)
         loaded = Vault.load(path, password)
         assert loaded.data == vault.data
+        new_password = "synthetic-changed-wheel-password"
+        loaded.save(path, new_password)
+        changed = Vault.load(path, new_password)
+        assert changed.data == vault.data
+        backup = Path(directory) / "synthetic-backup"
+        export = Path(directory) / "synthetic-export"
+        restored = Path(directory) / "synthetic-restored"
+        changed.save(backup, new_password, overwrite=False)
+        changed.save(export, new_password, overwrite=False)
+        recovered = Vault.load(export, new_password)
+        recovered.save(restored, new_password, overwrite=False)
+        assert Vault.load(backup, new_password).data == vault.data
+        assert Vault.load(restored, new_password).data == vault.data
+
+        fixtures = Path(__file__).parent / "fixtures"
+        if fixtures.is_dir():
+            for fixture in json.loads(
+                (fixtures / "manifest.json").read_text(encoding="utf-8")
+            ):
+                if fixture["supported"]:
+                    historical = Vault.load(
+                        fixtures / fixture["file"], fixture["password"]
+                    )
+                    assert historical.data.model_dump() == fixture["expected"]
+                    historical_path = Path(directory) / fixture["file"]
+                    historical.save(
+                        historical_path, fixture["password"], overwrite=False
+                    )
+                    assert (
+                        Vault.load(historical_path, fixture["password"]).data
+                        == historical.data
+                    )
 
         async def check_ui() -> None:
-            app = D2FAApp(str(path), password, raise_load_errors=True)
+            app = D2FAApp(str(path), new_password, raise_load_errors=True)
             async with app.run_test() as pilot:
                 await pilot.pause()
                 assert app.query("#accounts")
