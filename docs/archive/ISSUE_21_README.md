@@ -1,3 +1,5 @@
+> **Historical / superseded.** Archived during S21 (#52). Original path: `ISSUE_21_README.md` at `60afdb7`. This report records past claims, not current proof or security guarantees. See [current documentation](../README.md). Content is retained; relative links are adjusted or marked unavailable.
+
 # ✅ Issue #21 Completion: zxcvbn Password Strength Integration
 
 ## Overview

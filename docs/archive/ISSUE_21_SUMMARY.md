@@ -1,3 +1,5 @@
+> **Historical / superseded.** Archived during S21 (#52). Original path: `ISSUE_21_SUMMARY.md` at `60afdb7`. This report records past claims, not current proof or security guarantees. See [current documentation](../README.md). Content is retained; relative links are adjusted or marked unavailable.
+
 # Issue #21 Implementation Summary
 
 ## 🎯 Objective
@@ -297,10 +299,10 @@ These could be added in future issues:
 ## 📞 Support
 
 **Documentation Files:**
-- [SECURITY.md](./SECURITY.md) - Full security policy
-- [README.md](./README.md#-security) - User guide
-- [docs/crypto.md](./docs/crypto.md) - Cryptographic details
-- [ISSUE_21_COMPLETION.md](./ISSUE_21_COMPLETION.md) - Implementation details
+- [SECURITY.md](../../SECURITY.md) - Full security policy
+- [README.md](../../README.md#-security) - User guide
+- [docs/crypto.md](../crypto.md) - Cryptographic details
+- [ISSUE_21_COMPLETION.md](ISSUE_21_COMPLETION.md) - Implementation details
 
 **Questions or Issues?**
 Check SECURITY.md → Reporting Security Issues section

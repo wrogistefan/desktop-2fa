@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Added a current documentation index and archived superseded completion/UX
+  reports with original-path/hash provenance. Corrected option placement,
+  password confirmation/policy descriptions and synthetic Base32 examples;
+  removed stale coverage/test-count claims and the proposed unlock-window UX.
+
 - Removed stale generated egg-info from version control and retired an unused
   duplicate requirements list and one-off README image rewrite script.
   `pyproject.toml` remains authoritative; importable skeleton modules and
