@@ -150,21 +150,21 @@ Current behavior may be transitional while UX is refined.
 This document defines the target behavior and serves as the basis
 for future refactors and GUI development.
 
-### ⚠️ Vault Format Change (0.6.0)
-Starting with desktop‑2fa 0.6.0, vaults created with versions prior to 0.6.0 are not compatible and will be rejected as "unsupported format". Users must initialize a new vault using `d2fa vault init`. See README.md for full details.
+### Vault compatibility and recovery
 
----
+The loader accepts the D2FA v1 header and payload schema 1. Supported historical
+fixture coverage and unsupported pre-header/empty-password cases are described
+in the [manual](user_manual.md#version-compatibility). Never initialize over an
+unreadable original as an automatic recovery step.
 
 ## Rename Command — Duplicate Detection
 
-The `rename` command enforces deterministic behavior when multiple entries match the target name:
-
-- If **multiple entries** match the provided name (issuer or account_name), the rename is **aborted**
-- Error message: `Error: Multiple entries named '<name>' exist. Operation aborted. Resolve duplicates first.`
-- No entry is renamed in this case
-- This check occurs **before** any mutation
-
-This ensures predictable behavior when working with vaults that contain duplicate names from older versions.
+Rename uses an exact account name first, then a unique issuer fallback. Multiple
+matches at the selected tier are refused with status 6 unless `--index N`
+selects a matching entry. The one-based index comes from `list --indices`;
+indices can change after edits. An occupied destination is refused before
+mutation. Successful rename changes both account name and issuer while
+preserving secrets and TOTP parameters. See [duplicate repair](user_manual.md#duplicate-names-in-vault).
 
 ## Contact
 

@@ -793,7 +793,8 @@ By default, the vault is stored at:
 - Linux/macOS: `~/.desktop-2fa/vault`
 - Windows: `C:\Users\<username>\.desktop-2fa\vault`
 
-The vault file is automatically created on first use. See [Selecting the Vault
+Only `vault init`, `list` and `add` create a missing vault. Other commands
+return an error. See [Selecting the Vault
 File](#selecting-the-vault-file) for custom paths and environment overrides.
 For safety, vault files must be regular files no larger than 10 MiB.
 
@@ -806,8 +807,8 @@ For safety, vault files must be regular files no larger than 10 MiB.
 - Check for typos or use the correct password source
 
 **"Vault file format is unsupported"**
-- You're trying to use a vault created with desktop-2fa < 0.6.0
-- Create a new vault with `d2fa init-vault`
+- The file lacks the supported D2FA v1 header or uses an unsupported version
+- Preserve the original; recover from a supported backup or the original providers. Initialize a separate vault only when intentionally starting over.
 
 **"Invalid secret: not valid Base32"**
 - The TOTP secret contains invalid characters
@@ -916,23 +917,32 @@ chmod 700 ~/.desktop-2fa
 
 ### Forgotten Password
 
-**Important:** There is no way to recover a forgotten password. The vault encryption is designed to be unbreakable without the correct password.
+The application has no password-recovery service. A backup encrypted with the
+same forgotten password cannot bypass that password. Weak passwords may still
+be guessed offline; encryption is not a guarantee against guessing.
 
 If you forget your password:
-1. Restore from a backup (if available)
-2. Re-export tokens from your service providers
-3. Create a new vault
+1. Use a backup only if you know the password that protects it.
+2. Recover/reset 2FA through the original providers and their recovery codes.
+3. Preserve the original vault, then intentionally create a separate vault for recovered entries.
 
 ### Version Compatibility
 
-- Vaults created with desktop-2fa 0.6.0+ are designed to remain compatible with
-  newer releases
-- Older vaults (pre-0.6.0) are not compatible and must be recreated
+The current loader supports the D2FA v1 header and integer payload schema 1.
+Regression fixtures pin non-empty-password vaults from v0.7.3 and v0.8.3;
+this is not a promise covering every release from v0.6.0 onward. Unknown
+payload fields/versions are refused without rewriting the encrypted original.
 
-Although newer releases are designed to remain compatible with vaults from
-0.6.0 onward, we strongly recommend creating and securely storing an encrypted
-backup before every upgrade. Compatibility is not a substitute for a backup:
-an upgrade can still be interrupted or affected by local system issues.
+Pre-header vaults are unsupported. Preserve them and recover from a supported
+backup or re-enroll with the original providers. For historical empty-password
+Python API vaults, use the previous API release (the v0.8.3 case is represented
+in the fixture inventory) in a separate trusted environment to open the vault
+and save a copy with a non-empty password before upgrading. The current API
+will not load or silently migrate such a file. Do not overwrite the original
+until the recovered copy is verified. See the [fixture support table](../tests/fixtures/vaults/README.md).
+
+Create an encrypted backup before upgrading; compatibility cannot protect
+against interrupted writes or filesystem/device failure.
 Create a backup with:
 
 ```bash
