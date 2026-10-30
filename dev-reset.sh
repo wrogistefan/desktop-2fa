@@ -1,40 +1,46 @@
 #!/usr/bin/env bash
-set -e
+# Historical name retained: this now reinstalls only the project environment.
+set -euo pipefail
 
-echo "=== Desktop-2FA DEV RESET ==="
+if [[ $# -gt 0 ]]; then
+    if [[ $# -eq 1 && "$1" == "--help" ]]; then
+        echo "Usage: ./dev-reset.sh"
+        echo "Create/reuse the repository .venv and install development dependencies."
+        echo "No user data, global packages or existing environment are deleted."
+        exit 0
+    fi
+    echo "Unknown option. Use --help." >&2
+    exit 2
+fi
 
-# 1. Remove old entry-points
-echo "[1/6] Removing old entry-points..."
-rm -f ~/.local/bin/d2fa
-rm -f ~/.local/bin/desktop-2fa
+project_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+venv_dir="$project_dir/.venv"
+bootstrap_python="${PYTHON:-python3}"
 
-# 2. Remove old site-packages metadata
-echo "[2/6] Removing old site-packages..."
-rm -rf ~/.local/lib/python*/site-packages/desktop_2fa*
-rm -rf ~/.local/lib/python*/site-packages/desktop-2fa*
+if [[ ! -e "$venv_dir" ]]; then
+    "$bootstrap_python" -m venv "$venv_dir"
+fi
+if [[ ! -f "$venv_dir/pyvenv.cfg" ]]; then
+    echo "Refusing to use .venv without pyvenv.cfg; existing contents preserved." >&2
+    exit 1
+fi
+if [[ -x "$venv_dir/bin/python" ]]; then
+    venv_python="$venv_dir/bin/python"
+elif [[ -x "$venv_dir/Scripts/python.exe" ]]; then
+    venv_python="$venv_dir/Scripts/python.exe"
+else
+    echo "No Python interpreter in .venv; existing contents preserved." >&2
+    exit 1
+fi
 
-# 3. Remove vault config (optional but recommended for clean tests)
-echo "[3/6] Removing old vault..."
-rm -rf ~/.config/desktop-2fa
-
-# 4. Clear Bash command hash cache
-echo "[4/6] Clearing Bash hash..."
-hash -r || true
-
-# 5. Reinstall project
-echo "[5/6] Installing project..."
-pip install . --break-system-packages
-
-# 6. Show results
-echo "[6/6] Installation complete."
-echo
-echo "Installed entry-points:"
-which d2fa || echo "d2fa not found"
-which desktop-2fa || echo "desktop-2fa not found"
-echo
-echo "Version check:"
-desktop-2fa --version || true
-d2fa --version || true
-
-echo
-echo "=== DONE ==="
+# Never install into a system interpreter, even if .venv is malformed.
+if ! "$venv_python" -c 'import sys; sys.exit(0 if sys.prefix != sys.base_prefix else 1)'; then
+    echo "Environment validation failed; refusing installation. Existing contents preserved." >&2
+    exit 1
+fi
+if ! "$venv_python" -m pip install --editable "$project_dir[dev]"; then
+    echo "Development dependency installation failed. Inspect pip output and retry." >&2
+    exit 1
+fi
+echo "Development environment ready: $venv_dir"
+echo "Run its Python/entry points directly or activate it in your current shell."

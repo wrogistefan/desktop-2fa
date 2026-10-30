@@ -1,31 +1,36 @@
-# ============================
-# Desktop-2FA Makefile
-# ============================
+# Use the project environment when available; override with make PYTHON=/path/python.
+ifneq ($(wildcard .venv/Scripts/python.exe),)
+PYTHON ?= .venv/Scripts/python.exe
+else ifneq ($(wildcard .venv/bin/python),)
+PYTHON ?= .venv/bin/python
+else
+PYTHON ?= python
+endif
 
-# --- Testy ---
+.PHONY: test test-cov test-cov-html lint lint-fix format format-check typecheck check-all
+
 test:
-	pytest
+	$(PYTHON) -m pytest -q
 
 test-cov:
-	pytest --cov=desktop_2fa --cov-report=term
+	$(PYTHON) -m pytest --cov=desktop_2fa --cov-report=term
 
 test-cov-html:
-	pytest --cov=desktop_2fa --cov-report=html
+	$(PYTHON) -m pytest --cov=desktop_2fa --cov-report=html
 
-# --- Linting ---
 lint:
-	ruff check .
+	$(PYTHON) -m ruff check .
 
 lint-fix:
-    ruff check . --fix
+	$(PYTHON) -m ruff check . --fix
 
-# --- Formatowanie ---
 format:
-	black .
+	$(PYTHON) -m black .
 
-# --- Type checking ---
+format-check:
+	$(PYTHON) -m black --check .
+
 typecheck:
-	mypy .
+	$(PYTHON) -m mypy src
 
-# --- Full check (idealne przed commit/PR) ---
-check-all: lint typecheck test-cov
+check-all: lint format-check typecheck test

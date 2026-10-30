@@ -21,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Development reset now creates/reuses only the repository `.venv` and never
+  deletes user data or user-wide packages. Make recipes use one selected Python,
+  correct tab indentation, source-only mypy and a non-mutating format check.
+
+
 - Password-strength diagnostics now use fixed messages instead of rendering
   evaluator scores or feedback, preventing evaluator data from reaching CLI
   output (CodeQL alert #9). Strength thresholds and rejection rules are unchanged.
