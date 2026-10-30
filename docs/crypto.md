@@ -114,6 +114,29 @@ no unconditional replacement fallback. Explicit `export --force` selects
 replacement after refusing source aliases and destination symbolic links.
 No binary layout, KDF, password encoding or migration changes are involved.
 
+Instances returned by `Vault.load` remember a SHA-256 digest of the exact
+encrypted bytes read. After each successful save, that destination's revision
+is remembered too. Before replacement, save acquires a nonblocking OS lock on
+the persistent empty `.NAME.lock` sidecar, compares the current encrypted file
+with the remembered revision, and only then replaces it. A mismatch or busy
+lock raises `VaultConflict` (a `VaultError` and `ValueError`); CLI status is 6.
+This optimistic check covers the read-modify-write operation without holding
+a lock across password prompts or key derivation. Reload and reapply the
+intended change after a conflict; passwords are never retried automatically.
+
+Canonical paths and file-identity checks associate path aliases with the
+remembered revision. File symlinks and multiply linked targets are refused
+for writes; directory symlinks resolve to the same lock. Read-only loading is
+unchanged. A freshly constructed `Vault(data).save(..., overwrite=True)` or a
+save to a distinct new destination has no remembered revision: this remains
+an explicit full replacement API, serialized under the publication lock.
+Callers performing mutations must load the destination first rather than
+reconstruct a `Vault` from copied data. CLI initialization/import without
+`--force`, add/list creation, backups and ordinary exports use create-only
+publication. Explicit forced replacement remains deliberate replacement.
+The `create_vault` helper is also create-only; callers that intentionally reset
+a vault must use the explicit replacement API instead of this creation helper.
+
 On load, it checks that the path is a regular file and reads at most 10 MiB. It
 then checks the magic and format version, derives the key from the supplied
 password and stored salt, decrypts the blob, and validates the JSON as vault

@@ -183,7 +183,7 @@ def backup_vault(path: Path, backup_path: Path, password: str) -> None:
         password: Password to decrypt the vault.
     """
     vault = Vault.load(path, password)
-    vault.save(backup_path, password)
+    vault.save(backup_path, password, overwrite=False)
     print("Backup created:")
 
 
@@ -334,7 +334,7 @@ def create_vault(path: Path, password: str) -> None:
     from desktop_2fa.vault import Vault
 
     vault = Vault()
-    vault.save(path, password)
+    vault.save(path, password, overwrite=False)
     print(f"Vault created at {path}")
 
 

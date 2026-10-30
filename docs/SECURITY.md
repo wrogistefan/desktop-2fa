@@ -162,10 +162,34 @@ continue replacing their selected file.
 These checks protect against accidental overwrites and competing destination
 creation. They do not lock the source or protect against an attacker replacing
 path components or file identities during export. Use directories controlled
-by the user. This change adds no general concurrent-update or power-loss
-guarantee. Temporary-name cleanup is best effort; an unlink failure can leave
+by the user. Export adds no power-loss guarantee. Temporary-name cleanup is
+best effort; an unlink failure can leave
 an additional encrypted copy. Export uses fresh salt and nonce, so its bytes
 need not match the source even though the contents and password are retained.
+
+For read-modify-write updates, the loaded encrypted snapshot is hashed in
+memory. Publication takes a short nonblocking OS lock, checks that the snapshot
+is still current, then replaces the file. A stale writer fails explicitly,
+including after a password change. Initial CLI creation and backup publication
+are create-only. Tests reproduced two successful stale writers losing an
+addition before this guard; synchronized regression processes now require an
+explicit conflict. This is regression evidence, not an independent audit.
+
+The persistent `.NAME.lock` sidecar contains no vault data or password. Its
+inode must remain stable; never remove it while writers may be active. Locks
+are released by closing the descriptor, including process exit. A busy lock
+fails immediately (status 6) without waiting or retrying a password. File
+symlinks and multiply linked targets are refused for writes; directory aliases
+share the canonical lock. POSIX uses `flock`; Windows locks one byte with
+`msvcrt.locking`. Validate network/removable filesystem lock semantics before
+relying on them; these tests cover local CI filesystems only.
+
+The guard coordinates writers running this implementation. Older versions,
+external tools, forced full replacements and hostile directory changes are
+outside the optimistic mutation contract. A fresh `Vault` has no loaded
+revision and remains an explicit replacement API; mutation callers must load
+the existing destination. This adds neither rollback protection nor crash
+durability guarantees. The file format and cryptography are unchanged.
 
 The `d2fa backup` command loads and decrypts the source vault, then saves a
 separately encrypted backup using the same password. A backup therefore

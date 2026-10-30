@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Vault updates now compare the loaded encrypted revision under a short OS
+  publication lock. A stale writer or busy lock returns an explicit conflict
+  (CLI status 6) instead of silently losing another update or restoring an old
+  password. New CLI vaults and backups use create-only publication. Updates
+  through file symlinks or multiply linked files are refused; directory aliases
+  share the publication lock. Empty `.NAME.lock` files remain beside vaults
+  intentionally. D2FA v1 and cryptographic parameters are unchanged.
+
 - Encrypted `export` now preserves existing destinations unless `--force` is
   supplied. Create-only publication also refuses a target created concurrently.
   Source aliases and destination symbolic links are refused even with force

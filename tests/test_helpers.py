@@ -791,10 +791,10 @@ def test_create_vault_new(fake_vault_env_helpers: Path, capsys: Any) -> None:
     assert len(vault.entries) == 0
 
 
-def test_create_vault_overwrites_existing(
+def test_create_vault_preserves_existing(
     fake_vault_env_helpers: Path, capsys: Any
 ) -> None:
-    from desktop_2fa.vault import Vault
+    from desktop_2fa.vault import ExportRefused, Vault
     from desktop_2fa.vault.models import TotpEntry
 
     # Create existing vault with an entry (bypass duplicate check)
@@ -803,15 +803,16 @@ def test_create_vault_overwrites_existing(
     vault.data.entries.append(entry)
     vault.save(fake_vault_env_helpers, TEST_PASSWORD)
 
-    # Create new vault (should overwrite)
-    helpers.create_vault(fake_vault_env_helpers, TEST_PASSWORD)
+    original = fake_vault_env_helpers.read_bytes()
+    with pytest.raises(ExportRefused):
+        helpers.create_vault(fake_vault_env_helpers, TEST_PASSWORD)
 
     out = capsys.readouterr().out.strip()
-    assert "Vault created at" in out
+    assert "Vault created at" not in out
 
-    # Verify vault was overwritten (empty)
+    assert fake_vault_env_helpers.read_bytes() == original
     vault = helpers.load_vault(fake_vault_env_helpers, TEST_PASSWORD)
-    assert len(vault.entries) == 0
+    assert len(vault.entries) == 1
 
 
 def test_vault_find_entries_single_match(fake_vault_env_helpers: Path) -> None:

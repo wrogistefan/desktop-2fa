@@ -43,7 +43,7 @@ def test_normal_save_replaces_vault_without_implicit_backup(tmp_path: Path) -> N
 
     loaded = Vault.load(path, TEST_PASSWORD)
     assert [entry.account_name for entry in loaded.entries] == ["A", "B"]
-    assert list(tmp_path.iterdir()) == [path]
+    assert set(tmp_path.iterdir()) == {path, tmp_path / ".vault.bin.lock"}
 
 
 def test_vault_tampering_detection(tmp_path: Path) -> None:

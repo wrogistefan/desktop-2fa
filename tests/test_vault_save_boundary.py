@@ -40,7 +40,7 @@ def test_save_exact_limit_and_one_byte_over(tmp_path: Path, label: str) -> None:
         loaded.save(path, PASSWORD)
     assert path.read_bytes() == original
     assert Vault.load(path, PASSWORD).data == vault.data
-    assert list(tmp_path.iterdir()) == [path]
+    assert set(tmp_path.iterdir()) == {path, tmp_path / ".vault.bin.lock"}
 
 
 @pytest.mark.parametrize("interactive", [False, True])
@@ -62,7 +62,7 @@ def test_cli_add_to_near_limit_preserves_existing_vault(
     assert "Entry added" not in result.output
     assert path.read_bytes() == original
     assert Vault.load(path, PASSWORD).data == vault.data
-    assert list(tmp_path.iterdir()) == [path]
+    assert set(tmp_path.iterdir()) == {path, tmp_path / ".vault.bin.lock"}
 
 
 def test_cli_rename_to_exceed_limit_preserves_existing_vault(tmp_path: Path) -> None:
@@ -96,7 +96,7 @@ def test_cli_rename_to_exceed_limit_preserves_existing_vault(tmp_path: Path) -> 
     assert "Renamed" not in result.output
     assert path.read_bytes() == original
     assert Vault.load(path, PASSWORD).data == vault.data
-    assert list(tmp_path.iterdir()) == [path]
+    assert set(tmp_path.iterdir()) == {path, tmp_path / ".vault.bin.lock"}
 
 
 @pytest.mark.parametrize(
@@ -172,7 +172,12 @@ def test_cli_save_validation_failure_is_reported(
     assert path.read_bytes() == original
     assert source.read_bytes() == original
     assert exported.read_bytes() == b"synthetic existing export"
-    assert set(tmp_path.iterdir()) == {path, source, exported}
+    assert set(tmp_path.iterdir()) == {
+        path,
+        source,
+        exported,
+        tmp_path / ".vault.bin.lock",
+    }
 
 
 @pytest.mark.parametrize(
@@ -197,7 +202,7 @@ def test_invalid_entry_mutation_preserves_previous_bytes(
     assert str(value) not in str(err.value)
     assert path.read_bytes() == original
     assert Vault.load(path, PASSWORD).data == previous
-    assert list(tmp_path.iterdir()) == [path]
+    assert set(tmp_path.iterdir()) == {path, tmp_path / ".vault.bin.lock"}
 
 
 @pytest.mark.parametrize("mutation", ["entry", "list", "version", "unserializable"])
@@ -290,4 +295,4 @@ def test_io_failure_preserves_vault_and_unrelated_temporary_files(
     assert path.read_bytes() == original
     assert Vault.load(path, PASSWORD).entries == []
     assert sibling.read_bytes() == b"synthetic unrelated file"
-    assert set(tmp_path.iterdir()) == {path, sibling}
+    assert set(tmp_path.iterdir()) == {path, sibling, tmp_path / ".vault.bin.lock"}
