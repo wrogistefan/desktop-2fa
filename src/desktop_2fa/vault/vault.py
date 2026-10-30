@@ -1,5 +1,6 @@
 """Vault implementation for storing and managing TOTP entries."""
 
+import hashlib
 import os
 import stat
 import tempfile
@@ -12,6 +13,7 @@ from pydantic import ValidationError
 from ..crypto.aesgcm import decrypt, encrypt
 from ..crypto.argon2 import derive_key
 from ..utils.base32 import normalize_base32
+from .locking import LockBusy, publication_lock
 from .models import TotpEntry, VaultData
 
 # Vault file format constants
@@ -41,6 +43,10 @@ class VaultValidationError(VaultError, ValueError):
 
 class ExportRefused(VaultError, ValueError):
     """Raised when an export destination cannot safely be used."""
+
+
+class VaultConflict(VaultError, ValueError):
+    """The loaded revision changed, or another writer is publishing it."""
 
 
 class CorruptedVault(VaultError):
@@ -99,6 +105,7 @@ class Vault:
             data: The vault data to initialize with.
         """
         self.data = data or VaultData()
+        self._revisions: dict[str, bytes] = {}
 
     @property
     def entries(self) -> list[TotpEntry]:
@@ -327,6 +334,7 @@ class Vault:
             raise CorruptedVault("Vault contains invalid data") from e
 
         vault = cls(data)
+        vault._revisions[_canonical(path)] = hashlib.sha256(blob).digest()
 
         return vault
 
@@ -347,6 +355,8 @@ class Vault:
                 loader's size limit.
             VaultIOError: If saving fails due to IO errors.
             ExportRefused: If overwrite is False and the destination exists.
+            VaultConflict: If a loaded/saved revision changed, another writer
+                holds the publication lock, or the target uses file links.
         """
         _validate_password(password)
         try:
@@ -371,11 +381,32 @@ class Vault:
                 "Vault contains invalid data; correct entries before saving."
             ) from None
 
-        path = Path(path)
+        requested_path = Path(path)
+        path = requested_path.absolute()
+        canonical = _canonical(path)
+        revision = self._revisions.get(canonical)
+        revision_keys = {canonical}
         temp_path: Path | None = None
         fd: int | None = None
 
         try:
+            try:
+                target_info = path.stat()
+                linked = stat.S_ISREG(target_info.st_mode) and target_info.st_nlink > 1
+            except FileNotFoundError:
+                linked = False
+            if requested_path.is_symlink() or linked:
+                raise VaultConflict("Refusing to update a vault through file links.")
+            # Case aliases can have different canonical strings but still
+            # identify the same file. Keep all known aliases on one revision.
+            for original, original_revision in self._revisions.items():
+                try:
+                    if os.path.samefile(original, path):
+                        revision_keys.add(original)
+                        if revision is None:
+                            revision = original_revision
+                except FileNotFoundError:
+                    continue
             # DEF-02: Moved mkdir inside try block to catch PermissionError
             path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -396,9 +427,15 @@ class Vault:
                 f.flush()
                 os.fsync(f.fileno())
 
+            blob = header + salt + encrypted
             if overwrite:
-                os.replace(temp_path, path)
-                temp_path = None
+                with publication_lock(path):
+                    if revision is not None and _revision(path) != revision:
+                        raise VaultConflict(
+                            "Vault changed since it was loaded. Reload and retry."
+                        )
+                    os.replace(temp_path, path)
+                    temp_path = None
             else:
                 # Atomic create-only publication: a competing creator wins
                 # without having its file overwritten (including symlinks).
@@ -406,8 +443,13 @@ class Vault:
                     os.link(temp_path, path)
                 except FileExistsError:
                     raise ExportRefused(
-                        "Export destination exists. Use --force to overwrite."
+                        "Destination already exists. Operation aborted."
                     ) from None
+            saved_revision = hashlib.sha256(blob).digest()
+            for revision_key in revision_keys:
+                self._revisions[revision_key] = saved_revision
+        except LockBusy:
+            raise VaultConflict("Vault is being updated. Reload and retry.") from None
         except PermissionError:
             raise PermissionDenied(
                 "Cannot access vault directory (permission denied)"
@@ -426,6 +468,23 @@ class Vault:
                     temp_path.unlink()
                 except OSError:
                     pass
+
+
+def _canonical(path: str | Path) -> str:
+    return os.path.normcase(str(Path(path).resolve()))
+
+
+def _revision(path: Path) -> bytes:
+    try:
+        fd = os.open(path, os.O_RDONLY | getattr(os, "O_NONBLOCK", 0))
+    except FileNotFoundError:
+        raise VaultConflict(
+            "Vault changed since it was loaded. Reload and retry."
+        ) from None
+    with os.fdopen(fd, "rb") as stream:
+        if not stat.S_ISREG(os.fstat(stream.fileno()).st_mode):
+            raise VaultConflict("Vault is no longer a regular file.")
+        return hashlib.sha256(stream.read(MAX_VAULT_SIZE + 1)).digest()
 
 
 def _validate_password(password: str) -> None:

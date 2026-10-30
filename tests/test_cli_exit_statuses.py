@@ -83,6 +83,10 @@ def _invoke(
             *[arg.format(source=source, export=exported) for arg in command],
         ],
     )
+    lock = tmp_path / ".vault.bin.lock"
+    if lock.exists():
+        assert lock.read_bytes() == b""
+        before[lock.name] = b""
     assert {path.name: path.read_bytes() for path in tmp_path.iterdir()} == before
     assert "Traceback" not in result.output
     assert SECRET not in result.output

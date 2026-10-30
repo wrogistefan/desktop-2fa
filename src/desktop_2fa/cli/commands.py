@@ -165,7 +165,7 @@ def add_entry_interactive(
         vault = Vault()
         vault.add_entry(name=name, issuer=issuer, secret=secret, **parameters)
         try:
-            vault.save(path, password)
+            vault.save(path, password, overwrite=False)
         except CLI_ERRORS as error:
             exit_for_error(error)
         print(f"Vault created at {path}")
@@ -209,7 +209,7 @@ def list_entries(ctx: typer.Context, *, show_indices: bool = False) -> None:
         password = helpers.get_password_for_vault(ctx, new_vault=True)
         vault = Vault()
         try:
-            vault.save(path, password)
+            vault.save(path, password, overwrite=False)
         except CLI_ERRORS as error:
             exit_for_error(error)
         print(f"Vault created at {path}")
@@ -266,7 +266,7 @@ def add_entry(name: str, issuer: str, secret: str, ctx: typer.Context) -> None:
         vault = Vault()
         vault.add_entry(name=name, issuer=issuer, secret=secret, **parameters)
         try:
-            vault.save(path, password)
+            vault.save(path, password, overwrite=False)
         except CLI_ERRORS as error:
             exit_for_error(error)
         print(f"Vault created at {path}")
@@ -503,7 +503,7 @@ def import_vault(source: str, force: bool, ctx: typer.Context) -> None:
     password = helpers.get_password_for_vault(ctx, new_vault=False)
     try:
         vault = Vault.load(Path(source), password)
-        vault.save(path, password)
+        vault.save(path, password, overwrite=force)
         helpers.print_success(f"Vault imported from {source}")
     except CLI_ERRORS as error:
         exit_for_error(error)
@@ -555,7 +555,7 @@ def backup_vault(ctx: typer.Context) -> None:
         if vault.duplicate_account_names:
             helpers.print_warning(DUPLICATE_WARNING)
         backup_path = _get_backup_path(path)
-        vault.save(backup_path, password)
+        vault.save(backup_path, password, overwrite=False)
         helpers.print_success(f"Backup created: {backup_path}")
     except CLI_ERRORS as error:
         exit_for_error(error)
@@ -596,7 +596,7 @@ def init_vault(force: bool, ctx: typer.Context) -> None:
     password = helpers.get_password_for_vault(ctx, new_vault=True)
     vault = Vault()
     try:
-        vault.save(path, password)
+        vault.save(path, password, overwrite=force)
         print(f"Vault created at {path}")
     except CLI_ERRORS as error:
         exit_for_error(error)

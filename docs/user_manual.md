@@ -530,6 +530,22 @@ the public rename helper apply the same rules. Python callers receive
 `AmbiguousEntry` for unresolved ambiguity (both are `ValueError` subclasses).
 The previously unimplemented `Vault.rename_entry()` now performs the rename.
 
+### Concurrent operations
+
+When another process changes a vault after it was loaded, a mutation can exit
+with status 6 and ask you to reload and retry. This also protects a successful
+password change from an older writer. Run the command again using the current
+password and reapply the intended change. A busy publication lock also returns
+status 6 immediately; there is no automatic retry with an old password.
+
+Writes create an empty `.NAME.lock` file beside the vault. Leave it in place;
+its presence does not mean a process still holds the lock. The OS releases
+the lock when its descriptor closes or the process exits. Do not delete lock
+files while any desktop-2fa process may be using the directory. Keep the vault
+directory writable and controlled by you. Updates through file symlinks and
+multiply linked files are refused; use an independent regular copy. Directory
+aliases are supported. Read-only commands can still load linked vaults.
+
 ### `export` - Export Vault
 
 Exports an encrypted D2FA v1 binary vault for backup or transfer, using the

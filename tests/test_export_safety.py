@@ -70,7 +70,10 @@ def test_export_destination_policy(
         assert (
             Vault.load(destination, PASSWORD).data == Vault.load(source, PASSWORD).data
         )
-    assert set(source.parent.iterdir()) == {source, destination}
+    expected = {source, destination, source.parent / ".source.bin.lock"}
+    if force or existing == "vault":
+        expected.add(source.parent / ".export.bin.lock")
+    assert set(source.parent.iterdir()) == expected
 
 
 @pytest.mark.parametrize(
@@ -141,7 +144,11 @@ def test_concurrent_creator_wins(source: Path, monkeypatch: pytest.MonkeyPatch) 
     assert result.exit_code == 6, result.output
     assert destination.read_bytes() == b"synthetic competing writer"
     assert source.read_bytes() == before
-    assert set(source.parent.iterdir()) == {source, destination}
+    assert set(source.parent.iterdir()) == {
+        source,
+        destination,
+        source.parent / ".source.bin.lock",
+    }
 
 
 @pytest.mark.parametrize(
@@ -163,6 +170,8 @@ def test_write_failure_preserves_bytes(
     result = invoke(source, destination, force)
     assert result.exit_code == 1, result.output
     assert "Exported vault" not in result.output
+    if operation == "replace":
+        before[source.parent / ".export.bin.lock"] = b""
     assert {p: p.read_bytes() for p in source.parent.iterdir()} == before
 
 
@@ -171,7 +180,7 @@ def test_save_create_only_preserves_existing_file(source: Path) -> None:
     with pytest.raises(ExportRefused):
         Vault().save(source, PASSWORD, overwrite=False)
     assert source.read_bytes() == before
-    assert list(source.parent.iterdir()) == [source]
+    assert set(source.parent.iterdir()) == {source, source.parent / ".source.bin.lock"}
 
 
 def test_save_create_only_link_failure_is_io_error(
@@ -183,7 +192,7 @@ def test_save_create_only_link_failure_is_io_error(
     monkeypatch.setattr("desktop_2fa.vault.vault.os.link", fail)
     with pytest.raises(VaultIOError):
         Vault().save(source.parent / "new.bin", PASSWORD, overwrite=False)
-    assert list(source.parent.iterdir()) == [source]
+    assert set(source.parent.iterdir()) == {source, source.parent / ".source.bin.lock"}
 
 
 @pytest.mark.parametrize("color", [False, True])
