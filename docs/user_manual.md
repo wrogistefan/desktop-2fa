@@ -341,6 +341,13 @@ vault entries and lets you generate or copy a TOTP code for the selected entry.
 Names, issuers and runtime messages are displayed literally, including brackets
 and markup-looking text. Display formatting does not rewrite vault entries.
 
+Generate shows the code with seconds remaining in that entry's actual period.
+The display checks validity every quarter second and removes an expired code;
+generate or copy again to obtain a fresh value. Copy generates the current code
+and displays the value actually copied with its remaining validity. Changing
+selection clears the previous account's result. The application does not clear
+or refresh clipboard contents automatically; a copied code can expire there.
+
 ```bash
 # Use the default vault
 d2fa ui

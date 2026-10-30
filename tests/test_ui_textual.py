@@ -88,8 +88,9 @@ def test_selection_generate_and_copy_keep_original_totp_parameters(
                     period=entry.period,
                 )
                 await pilot.click("#generate")
-                assert (
-                    str(app.query_one("#output", Label).render()) == f"Code: {expected}"
+                remaining = entry.period - 59 % entry.period
+                assert str(app.query_one("#output", Label).render()) == (
+                    f"Code: {expected} (valid for {remaining}s)"
                 )
                 await pilot.click("#copy")
                 assert copied[-1] == expected

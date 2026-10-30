@@ -1,3 +1,6 @@
+import time
+from dataclasses import dataclass
+
 from textual.app import App, ComposeResult
 from textual.containers import Container
 from textual.widgets import Button, Footer, Header, Label, ListItem, ListView
@@ -7,6 +10,14 @@ from desktop_2fa.utils.base32 import InvalidSecret
 from desktop_2fa.vault import Vault
 from desktop_2fa.vault.models import TotpEntry
 from desktop_2fa.vault.vault import VaultError
+
+
+@dataclass(frozen=True)
+class DisplayedCode:
+    index: int
+    counter: int
+    code: str
+    copied: bool
 
 
 class D2FAApp(App[object]):
@@ -21,6 +32,7 @@ class D2FAApp(App[object]):
         self.vault_path = vault_path
         self.vault: Vault | None = None
         self.error: str | None = None
+        self._displayed_code: DisplayedCode | None = None
         try:
             self.vault = Vault.load(vault_path, password)
         except VaultError as e:
@@ -35,26 +47,52 @@ class D2FAApp(App[object]):
             return f"{name} ({issuer})"
         return name
 
-    def _generate_code(self, entry: TotpEntry) -> str:
+    def _generate_code(self, entry: TotpEntry, timestamp: int | None = None) -> str:
         return generate(
             entry.secret,
+            timestamp=timestamp,
             digits=entry.digits,
             period=entry.period,
             algorithm=entry.algorithm,
         )
 
-    def _copy_to_clipboard(self, code: str) -> None:
+    def _copy_to_clipboard(self, code: str) -> bool:
         try:
             import pyperclip
         except ImportError:
             self.query_one("#output", Label).update("pyperclip is not installed")
-            return
+            return False
         try:
             pyperclip.copy(code)
         except Exception as e:
             self.query_one("#output", Label).update(f"Copy failed: {e}")
+            return False
+        return True
+
+    def on_mount(self) -> None:
+        self.set_interval(0.25, self._update_validity)
+
+    def _update_validity(self, timestamp: int | None = None) -> None:
+        displayed = self._displayed_code
+        if displayed is None or self.vault is None:
             return
-        self.query_one("#output", Label).update("Copied to clipboard!")
+        output = self.query_one("#output", Label)
+        if self.query_one("#accounts", ListView).index != displayed.index:
+            self._displayed_code = None
+            output.update("Selection changed. Generate or copy a new code.")
+            return
+        entry = self.vault.entries[displayed.index]
+        now = int(time.time()) if timestamp is None else timestamp
+        if now // entry.period != displayed.counter:
+            self._displayed_code = None
+            output.update("Code expired. Generate or copy a new code.")
+            return
+        remaining = entry.period - now % entry.period
+        prefix = "Copied to clipboard! " if displayed.copied else ""
+        output.update(f"{prefix}Code: {displayed.code} (valid for {remaining}s)")
+
+    def on_list_view_highlighted(self, event: ListView.Highlighted) -> None:
+        self._update_validity()
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -107,17 +145,22 @@ class D2FAApp(App[object]):
         entry = self.vault.entries[selected]
 
         if button_id in {"generate", "copy"}:
+            self._displayed_code = None
+            timestamp = int(time.time())
             try:
-                code = self._generate_code(entry)
+                code = self._generate_code(entry, timestamp=timestamp)
             except InvalidSecret:
                 self.query_one("#output", Label).update(
                     "Invalid TOTP secret. Repair this entry using the CLI."
                 )
                 return
-            if button_id == "generate":
-                self.query_one("#output", Label).update(f"Code: {code}")
-            else:
-                self._copy_to_clipboard(code)
+            copied = button_id == "copy"
+            if copied and not self._copy_to_clipboard(code):
+                return
+            self._displayed_code = DisplayedCode(
+                selected, timestamp // entry.period, code, copied
+            )
+            self._update_validity(timestamp)
 
 
 def run_textual(vault_path: str, password: str) -> None:
