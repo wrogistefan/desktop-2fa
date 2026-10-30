@@ -314,9 +314,9 @@ passwords in the public Python vault API:
 - Concurrent mutations reject stale revisions under a short OS publication lock;
   status 6 asks you to reload and retry. Empty `.NAME.lock` sidecars remain beside
   vaults. File symlinks and multiply linked files are read-only.
-- No Python stack traces are shown to users
+- The CLI boundary maps failures to documented statuses and messages without exception details
 - User-friendly error messages for filesystem permission issues
-- Modular design separates CLI and core cryptographic components for enhanced security boundaries
+- CLI and cryptographic components are separate modules; this is not a process-isolation guarantee
 - zxcvbn-based password strength evaluation
 
 
