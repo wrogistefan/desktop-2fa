@@ -637,10 +637,7 @@ def unlock_vault(ctx: typer.Context) -> None:
         result = evaluate_password_strength(password)
         score = result["score"]
         if score < 3:
-            warning = (
-                f"Warning: Your vault password is weak (score {score}). "
-                "Consider changing it."
-            )
+            warning = "Warning: Your vault password is weak. " "Consider changing it."
 
     helpers.print_success("Vault unlocked successfully.")
     if warning:

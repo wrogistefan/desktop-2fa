@@ -487,11 +487,9 @@ def _enforce_password_strength(password: str) -> None:
 
     result = evaluate_password_strength(password)
     score = result["score"]
-    feedback = result["feedback"]
     if score < threshold:
-        warning = feedback.get("warning") or ""
-        suggestions = " ".join(feedback.get("suggestions", []))
-        message = f"Password too weak (score {score} < {threshold}). {warning} {suggestions}".strip()
+        # Only the decision crosses the output boundary, never evaluator data.
+        message = "Password too weak. Use a longer, less predictable password."
         if reject_weak:
             print_error(message)
             raise typer.Exit(ExitCode.VALIDATION_ERROR)
