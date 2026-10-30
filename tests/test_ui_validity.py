@@ -3,6 +3,7 @@
 import asyncio
 
 import pytest
+from textual.containers import Container
 from textual.widgets import Label, ListView
 
 from desktop_2fa.totp.generator import generate
@@ -15,6 +16,26 @@ def make_app(monkeypatch: pytest.MonkeyPatch, entries: list[TotpEntry]) -> D2FAA
     vault = Vault(VaultData(entries=entries))
     monkeypatch.setattr(Vault, "load", lambda *args: vault)
     return D2FAApp("synthetic-not-opened", "synthetic-password")
+
+
+def test_active_timer_tolerates_removed_screen_children(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = make_app(
+        monkeypatch, [TotpEntry(account_name="synthetic", secret="MY======")]
+    )
+    monkeypatch.setattr("desktop_2fa.ui_textual.app.time.time", lambda: 29)
+
+    async def check() -> None:
+        async with app.run_test() as pilot:
+            await pilot.click("#generate")
+            assert app._displayed_code is not None
+            await app.query_one(Container).remove()
+            await pilot.pause(0.35)
+            assert app._displayed_code is None
+            app._update_validity()
+
+    asyncio.run(check())
 
 
 @pytest.mark.parametrize("period", [30, 45, 60])
