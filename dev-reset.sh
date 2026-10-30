@@ -34,7 +34,13 @@ else
 fi
 
 # Never install into a system interpreter, even if .venv is malformed.
-"$venv_python" -c 'import sys; sys.exit(0 if sys.prefix != sys.base_prefix else 1)'
-"$venv_python" -m pip install --editable "$project_dir[dev]"
+if ! "$venv_python" -c 'import sys; sys.exit(0 if sys.prefix != sys.base_prefix else 1)'; then
+    echo "Environment validation failed; refusing installation. Existing contents preserved." >&2
+    exit 1
+fi
+if ! "$venv_python" -m pip install --editable "$project_dir[dev]"; then
+    echo "Development dependency installation failed. Inspect pip output and retry." >&2
+    exit 1
+fi
 echo "Development environment ready: $venv_dir"
 echo "Run its Python/entry points directly or activate it in your current shell."

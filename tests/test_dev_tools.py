@@ -91,6 +91,32 @@ def test_reset_refuses_malformed_environment_without_touching_it(
     assert sentinel.read_bytes() == b"synthetic-existing-data"
 
 
+@pytest.mark.skipif(not BASH or not Path(BASH).is_file(), reason="Bash unavailable")
+@pytest.mark.parametrize("stage", ["validation", "installation"])
+def test_reset_explains_interpreter_and_install_failures(
+    tmp_path: Path, stage: str
+) -> None:
+    script = tmp_path / "dev-reset.sh"
+    shutil.copyfile(ROOT / "dev-reset.sh", script)
+    venv = tmp_path / ".venv"
+    (venv / "bin").mkdir(parents=True)
+    (venv / "pyvenv.cfg").touch()
+    interpreter = venv / "bin/python"
+    interpreter.write_text(
+        "#!/usr/bin/env bash\n"
+        + ("exit 1\n" if stage == "validation" else '[[ "$1" == "-c" ]]\n'),
+        encoding="utf-8",
+        newline="\n",
+    )
+    interpreter.chmod(0o755)
+    result = subprocess.run([str(BASH), str(script)], capture_output=True, text=True)
+    assert result.returncode == 1
+    assert (
+        "validation failed" if stage == "validation" else "installation failed"
+    ) in result.stderr
+    assert "Development environment ready" not in result.stdout
+
+
 @pytest.mark.skipif(not shutil.which("make"), reason="GNU make unavailable")
 def test_make_dry_runs_all_supported_targets() -> None:
     result = subprocess.run(
