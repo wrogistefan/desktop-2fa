@@ -10,6 +10,7 @@ synthetic data; choose a temporary vault with `--vault` when trying them.
 - [CLI UX contract](ux.md) and [presentation/output](cli-ux.md)
 - [External adapter scope](import_adapters.md) (Python helpers, not CLI modes)
 - [Development tools](development.md)
+- [CI graph, tested runtimes and publication gates](ci.md)
 - [Repository inventory](repository_inventory.md)
 - [Release readiness checklist](release_checklist.md)
 - [Historical reports](archive/README.md), preserved with provenance and superseded banners

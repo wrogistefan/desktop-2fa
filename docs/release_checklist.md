@@ -21,20 +21,24 @@ before upgrading. The current loader has no silent fallback or password retry.
 See [cryptographic compatibility](crypto.md#compatibility) and the
 [fixture inventory](../tests/fixtures/vaults/README.md).
 
-## Evidence to record for the exact candidate commit
+## Criteria to recheck for the exact candidate commit
 
-- [ ] All S01–S22 issues resolved through focused PRs with review evidence.
-- [ ] Full tests and quality checks pass on the supported runtime/OS matrix.
-- [x] RFC 6238 vectors and immutable supported historical-vault round trips pass.
-- [x] Wrong password, tampering, malformed data and failed-write preservation pass.
-- [x] Password change, encrypted backup/export and recovery pass with synthetic data.
-- [x] Built wheel installs outside the checkout; both entry points, versions,
+These are repeatable release requirements. The stabilization evidence below
+covers the current code; a future version bump/tag needs its own successful
+validation. The tracker records completion of S01–S22 separately.
+
+- All S01–S22 issues resolved through focused PRs with review evidence.
+- Full tests and quality checks pass on the supported runtime/OS matrix.
+- RFC 6238 vectors and immutable supported historical-vault round trips pass.
+- Wrong password, tampering, malformed data and failed-write preservation pass.
+- Password change, encrypted backup/export and recovery pass with synthetic data.
+- Built wheel installs outside the checkout; both entry points, versions,
   retained imports and bundled Textual CSS work without a src fallback.
-- [ ] Tag/version mismatch and failed/skipped validation block publication;
+- Tag/version mismatch and failed/skipped validation block publication;
   validated artifacts are reused without rebuilding.
-- [x] Code scanning has no remaining open alert introduced by this work.
-- [x] Current documentation examples and local relative links are checked.
-- [ ] Evidence URLs, measured coverage, known skips and remaining limitations
+- Code scanning has no remaining open alert introduced by this work.
+- Current documentation examples and local relative links are checked.
+- Evidence URLs, measured coverage, known skips and remaining limitations
   are recorded below. No release is published as part of stabilization.
 
 ## Evidence log
@@ -56,8 +60,16 @@ link scan passed. Historical binary fixtures are unchanged.
 CodeQL alert #9 is **fixed**, and the open-alert query returned no alerts after
 [security PR #72](https://github.com/wrogistefan/desktop-2fa/pull/72) merged.
 Kilo accepted the focused PRs, including corrections to URI-label output and
-development-tool failure messages. Final integrated CI matrix/coverage evidence
-and the remaining merge results must be recorded before closing the roadmap.
+development-tool failure messages. The integrated Quality/Package/CI-gate and
+nine-combination runtime results are attached to
+[S22 PR #80](https://github.com/wrogistefan/desktop-2fa/pull/80); follow its CI
+run for the measured Linux/3.11 `coverage` artifact. No arbitrary percentage
+threshold is imposed. Gate/tag regression tests reject mismatches and failed,
+skipped or incomplete validation results without creating a release tag.
+The [roadmap completion record](https://github.com/wrogistefan/desktop-2fa/issues/31)
+records the final successful run, measured coverage and merge results before
+closure. Passing checks are required before merging S22; these links are not
+permission to publish a release.
 
 ## Remaining limitations
 
