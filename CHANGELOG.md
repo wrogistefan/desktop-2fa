@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Removed stale generated egg-info from version control and retired an unused
+  duplicate requirements list and one-off README image rewrite script.
+  `pyproject.toml` remains authoritative; importable skeleton modules and
+  historical fixtures remain available. See `docs/repository_inventory.md`.
+
 ### Fixed
 
 - Textual validity ticks now tolerate screen teardown while a code is active,
