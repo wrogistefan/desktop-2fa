@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Textual generated/copied codes now show validity for the selected entry's
+  actual period, using the same timestamp as generation. Expired codes are
+  removed, selection changes clear the previous result, and copy feedback
+  shows the current copied value and its remaining validity.
+
 - Textual account labels and runtime messages now render as literal text.
   Markup-looking names such as `[/bold]` no longer crash the account list;
   selection and TOTP parameters remain unchanged.
