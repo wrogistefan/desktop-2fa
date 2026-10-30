@@ -67,7 +67,7 @@ def add_entry(
     vault = Vault.load(path, password)
     entry_service.add_prepared(vault, parsed)
     vault.save(path, password)
-    print(f"Added entry: {account}")
+    print(f"Added entry: {parsed['label']}")
 
 
 def generate_code(path: Path, name: str, password: str) -> None:

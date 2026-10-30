@@ -19,7 +19,10 @@ URI = (
 
 @pytest.mark.parametrize("flow", ["helper", "interactive", "command"])
 def test_add_and_rename_preserve_shared_rules(
-    flow: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    flow: str,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     path = tmp_path / "synthetic-vault"
     Vault().save(path, PASSWORD)
@@ -34,6 +37,9 @@ def test_add_and_rename_preserve_shared_rules(
             else commands.add_entry
         )
         add("ignored", URI, "", ctx)
+    output = capsys.readouterr().out
+    assert "alice" in output
+    assert "ignored" not in output
     before = Vault.load(path, PASSWORD).entries[0].model_dump()
     assert (before["account_name"], before["issuer"]) == ("alice", "Example")
     assert (before["algorithm"], before["digits"], before["period"]) == (
