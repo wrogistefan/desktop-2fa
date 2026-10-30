@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Development reset now creates/reuses only the repository `.venv` and never
+  deletes user data or user-wide packages. Make recipes use one selected Python,
+  correct tab indentation, source-only mypy and a non-mutating format check.
+
+
 - Textual validity ticks now tolerate screen teardown while a code is active,
   avoiding a shutdown-time missing-widget exception.
 
