@@ -13,12 +13,12 @@ def validate_tag(version: str, ref_type: str, ref_name: str) -> None:
 
 
 def validate_gate(needs: dict[str, dict[str, str]]) -> None:
-    required = {"quality", "tests", "package"}
+    required = {"quality", "tests", "package", "cli-minimum"}
     if set(needs) != required or any(
         needs[name].get("result") != "success" for name in required
     ):
         raise ValueError(
-            "Quality, Tests and Package must all succeed; skips fail the gate."
+            "Quality, Tests, Package and CLI minimum must all succeed; skips fail the gate."
         )
 
 
