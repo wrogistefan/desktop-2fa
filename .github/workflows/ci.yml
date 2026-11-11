@@ -96,10 +96,42 @@ jobs:
           path: dist/*
           if-no-files-found: error
 
+  cli-minimum:
+    name: CLI minimum (Python ${{ matrix.python }}, ${{ matrix.click }})
+    needs: [package]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12", "3.13"]
+        click: ["click==8.0.0", "click"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - uses: actions/download-artifact@v4
+        with:
+          name: distributions
+          path: dist
+      - name: Check wheel with minimum Typer and minimum or current Click
+        shell: bash
+        run: |
+          smoke_dir="$(mktemp -d)"
+          python -m venv "$smoke_dir/venv"
+          "$smoke_dir/venv/bin/python" -m pip install dist/*.whl "typer==0.18.0" "${{ matrix.click }}"
+          "$smoke_dir/venv/bin/python" -m pip check
+          cp scripts/smoke_cli.py "$smoke_dir/"
+          cd "$smoke_dir"
+          env -u PYTHONPATH "$smoke_dir/venv/bin/python" -I smoke_cli.py
+
   gate:
     name: CI gate
     if: always()
-    needs: [quality, tests, package]
+    needs: [quality, tests, package, cli-minimum]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
