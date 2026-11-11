@@ -38,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   three supported Python versions, and require these checks in the CI gate.
 - Make README repository/image links absolute and pinned for PyPI, and clarify
   decrypted Textual session lifetime versus independently authenticated CLI
-  commands. Production PyPI verification awaits authorized publication.
+  commands.
 - Require GitHub Actions `CI gate` on main, including administrators, while
   preserving signature/linear-history protections (repository setting).
 

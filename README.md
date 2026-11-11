@@ -24,14 +24,14 @@ A secure, offline two-factor authentication (2FA) manager for desktop environmen
 | 🛡️ **Password Policy** | Configurable password strength enforcement with zxcvbn |
 | 🧪 **Well Tested** | Regression tests include RFC 6238 vectors and historical vault fixtures |
 | 📖 **Security Model** | Detailed threat analysis and cryptographic design documentation |
-| 🖥️ **Textual UI** | Account and vault forms, live TOTP countdowns and clipboard actions (0.11.0 Textual UI) |
+| 🖥️ **Textual UI** | Account and vault forms, live TOTP countdowns and clipboard actions (0.11.0) |
 
 ---
 
 ## 📸 Screenshots
 
 English dark-terminal CLI captures from Desktop-2FA 0.10.0, followed by the
-0.11.0 Textual release candidate. All accounts and credentials are synthetic.
+0.11.0 Textual UI. All accounts and credentials are synthetic.
 Terminal images render actual command output; interactive prompts use a test
 runner and Textual runs headlessly.
 See the [capture notes and report](https://github.com/wrogistefan/desktop-2fa/blob/1fff643ce491f00c1a13cd620780942b278194d5/assets/screenshots/release-0.10.0/README.md).
@@ -117,7 +117,7 @@ process inspection, and a URI pasted into the visible issuer prompt can be
 echoed. Prefer a plain issuer name plus the hidden secret prompt to avoid those
 exposures. See [interactive add](https://github.com/wrogistefan/desktop-2fa/blob/1fff643ce491f00c1a13cd620780942b278194d5/docs/user_manual.md#add---add-new-totp-entry).
 
-The **0.11.0 Textual release candidate** supports account management, vault
+The **0.11.0 Textual UI** supports account management, vault
 creation/unlocking, encrypted import/export/backup and password changes. Codes
 refresh automatically with a countdown and validity bar. Start with `d2fa ui`;
 without supplied credentials it opens a locked screen. Writes ask for a password

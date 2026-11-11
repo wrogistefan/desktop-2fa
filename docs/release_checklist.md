@@ -1,8 +1,9 @@
 # Release 0.11.0 preparation
 
-This branch prepares a release candidate. It does not authorize merging the
-release PR, creating a tag, publishing to PyPI or creating a GitHub Release.
-The maintainer must authorize those steps separately.
+On 2026-11-11 the maintainer authorized merging the release PR, creating a
+signed v0.11.0 tag, publishing the release and checking the PyPI README.
+This checklist records the required validation; follow the GitHub Release
+and tag workflow for the exact source, artifacts and publication evidence.
 
 ## Scope and compatibility
 
