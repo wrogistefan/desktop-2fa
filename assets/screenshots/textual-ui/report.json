@@ -1,0 +1,41 @@
+{
+  "feature": "Unreleased Textual UI",
+  "platform": "Windows",
+  "python": "3.13.11",
+  "passed": 15,
+  "cases": [
+    "create",
+    "add",
+    "add",
+    "automatic refresh across period boundary without clipboard writes",
+    "copy-only with synthetic clipboard stub",
+    "backup",
+    "export",
+    "change-password",
+    "rename",
+    "remove",
+    "import",
+    "manual lock removes accounts and displayed code",
+    "unlock",
+    "filtered selection retains original row identity",
+    "five-minute inactivity lock using a controlled monotonic deadline"
+  ],
+  "captures": [
+    "01-locked",
+    "02-create-vault",
+    "03-accounts",
+    "04-add-account",
+    "05-code-expiring",
+    "06-encrypted-backup",
+    "07-change-password",
+    "08-compact",
+    "09-auto-locked"
+  ],
+  "limitations": [
+    "Synthetic accounts, secrets, passwords and controlled clock only",
+    "Textual headless driver, not a native desktop/TTY capture",
+    "System clipboard replaced by a stub; native clipboard is not verified",
+    "No claim of macOS/Linux validation from this Windows campaign",
+    "SVG files are rendered screens; optional PNGs use a local browser"
+  ]
+}

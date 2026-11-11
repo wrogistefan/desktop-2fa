@@ -15,6 +15,7 @@ synthetic data; choose a temporary vault with `--vault` when trying them.
 - [Release readiness checklist](release_checklist.md)
 - [Historical reports](archive/README.md), preserved with provenance and superseded banners
 
-The Textual interface is a prototype for listing, generating and copying codes;
-it does not manage entries. Vaults remain offline. No document is a certification
+The unreleased [Textual interface](user_manual.md#textual-terminal-ui) includes
+account and vault operations, live codes and password-confirmed writes. See its
+[threat analysis](textual-security.md) and [synthetic captures](../assets/screenshots/textual-ui/README.md). Vaults remain offline. No document is a certification
 or a guarantee against a compromised host, offline guessing or power loss.

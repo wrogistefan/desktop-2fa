@@ -179,3 +179,15 @@ password prompts use stderr. Quiet suppresses both streams while preserving the
 exit status; it requires a supplied password/password file instead of prompting.
 Duplicate warnings omit record names. `Vault.load()` itself is
 silent; callers may inspect `duplicate_account_names` for legacy repair.
+
+## Unreleased Textual workflows
+
+The Textual UI exposes account and vault operations through explicit forms;
+see the [UI contract](user_manual.md#textual-terminal-ui). Without supplied
+startup credentials `d2fa ui` starts locked, with Unlock/Create/Import choices.
+Failed authentication never creates or overwrites a vault. Writes require fresh
+password authentication; removal and overwrite require explicit consent.
+Filtered list selections retain original row identity, so duplicate repairs
+are explicit. Selected codes refresh at period boundaries and never refresh
+the clipboard automatically. A stale vault revision requires lock/unlock before
+retrying a mutation. The CLI contract above remains unchanged.

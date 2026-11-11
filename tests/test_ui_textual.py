@@ -1,4 +1,4 @@
-"""Headless prototype regressions with synthetic, in-memory vaults only."""
+"""Headless terminal UI regressions with synthetic, in-memory vaults only."""
 
 import asyncio
 
@@ -41,14 +41,16 @@ def test_labels_render_literally_without_breaking_other_entries(
     monkeypatch.setattr("desktop_2fa.ui_textual.app.time.time", lambda: 59)
 
     async def check() -> None:
-        async with app.run_test() as pilot:
+        async with app.run_test(size=(110, 38)) as pilot:
+            await asyncio.wait_for(app.view_ready.wait(), timeout=10)
             await pilot.pause()
+            assert str(app.query_one("#message", Label).render()) == "Vault unlocked."
             labels = list(app.query("#accounts Label"))
             expected = name or "(no name)"
             if issuer:
                 expected += f" ({issuer})"
-            assert str(labels[0].render()) == expected
-            assert str(labels[1].render()) == "healthy (Example)"
+            assert str(labels[0].render()) == f"1. {expected}"
+            assert str(labels[1].render()) == "2. healthy (Example)"
             app.query_one("#accounts", ListView).index = 1
             await pilot.click("#generate")
             assert str(app.query_one("#output", Label).render()).startswith("Code: ")
@@ -72,12 +74,13 @@ def test_selection_generate_and_copy_keep_original_totp_parameters(
         ),
     ]
     app = make_app(monkeypatch, entries)
-    monkeypatch.setattr("desktop_2fa.totp.generator.time.time", lambda: 59)
+    monkeypatch.setattr("desktop_2fa.ui_textual.app.time.time", lambda: 59)
     copied: list[str] = []
     monkeypatch.setattr("pyperclip.copy", copied.append)
 
     async def check() -> None:
-        async with app.run_test() as pilot:
+        async with app.run_test(size=(110, 38)) as pilot:
+            await asyncio.wait_for(app.view_ready.wait(), timeout=10)
             # Repeated activations test parameter parity, not the 0.2s button
             # animation during which Textual deliberately ignores new presses.
             for button in app.query(Button):
@@ -103,6 +106,10 @@ def test_selection_generate_and_copy_keep_original_totp_parameters(
                 app.query_one("#copy", Button).focus()
                 await pilot.pause()
                 await pilot.press("enter")
+                async with asyncio.timeout(5):
+                    while len(copied) <= index:
+                        await asyncio.sleep(0.01)
+                await app.workers.wait_for_complete()
                 assert copied[-1] == expected
 
     asyncio.run(check())
@@ -119,7 +126,8 @@ def test_dynamic_error_messages_are_literal(monkeypatch: pytest.MonkeyPatch) -> 
     app = D2FAApp("synthetic-not-opened", "synthetic-password")
 
     async def check() -> None:
-        async with app.run_test() as pilot:
+        async with app.run_test(size=(110, 38)) as pilot:
+            await asyncio.wait_for(app.view_ready.wait(), timeout=10)
             assert str(app.query_one("#message", Label).render()) == app.error
             app.query_one("#output", Label).update("[/bold] [red]literal[/red]")
             await pilot.pause()

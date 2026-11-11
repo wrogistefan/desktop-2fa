@@ -1,14 +1,39 @@
-#title {
-    padding: 1;
-    text-style: bold;
-}
-
-#accounts {
-    height: 10;
-    border: solid green;
-}
-
-#output {
-    padding: 1;
-    text-style: italic;
-}
+/* Dark palette from desktop-2fa.org: ink, slate, blue and mint accents. */
+Screen { background: #0a0e14; color: #e6edf3; }
+Header { background: #161b22; color: #58a6ff; }
+Footer { background: #161b22; }
+#workspace { padding: 1 2; }
+#eyebrow { color: #58a6ff; text-style: bold; margin-bottom: 1; }
+#vault-path { color: #8b949e; height: 1; }
+#message { color: #7ee787; min-height: 2; height: auto; margin-bottom: 1; }
+#body { height: 1fr; min-height: 17; }
+#account-panel { width: 44%; border: round #30363d; padding: 0 1; margin-right: 2; }
+#title { color: #58a6ff; text-style: bold; padding: 1 0; }
+#search { margin-bottom: 1; }
+#accounts { height: 1fr; background: #0a0e14; }
+ListItem { padding: 1 0; }
+ListView > ListItem.--highlight { background: #1f3b5b; }
+#code-panel { width: 1fr; border: round #30363d; background: #10161f; padding: 1 2; }
+.muted { color: #8b949e; }
+#selected-account { margin: 0; text-style: bold; height: auto; }
+#code { color: #7ee787; text-style: bold; padding: 0 2; border: round #238636; width: 100%; height: 3; content-align: center middle; }
+#code.expiring { color: #ffa657; border: round #d29922; }
+#parameters { color: #8b949e; margin-top: 0; }
+#validity { margin-top: 0; width: 100%; }
+#output { color: #c9d1d9; height: auto; min-height: 2; margin: 0; }
+.code-actions { height: auto; }
+Button { min-width: 10; margin-right: 1; background: #21262d; border: tall #30363d; }
+Button.-primary { background: #1f6feb; border: tall #388bfd; }
+Button.-error { background: #45242a; border: tall #8b3036; }
+Button:focus { text-style: bold; border: tall #58a6ff; }
+#tools { height: 7; margin-top: 1; }
+.toolbar { height: 3; }
+#privacy { color: #8b949e; height: 1; margin-top: 1; }
+OperationForm { align: center middle; background: #000000 65%; }
+#dialog { width: 76; max-width: 95%; height: auto; max-height: 95%; border: round #388bfd; background: #10161f; padding: 1 2; }
+#dialog-title { color: #58a6ff; text-style: bold; margin-bottom: 1; }
+#dialog Label { width: 100%; height: auto; margin-bottom: 0; }
+#dialog Input { margin-bottom: 0; }
+#dialog Checkbox { height: auto; margin-bottom: 1; }
+#form-error { color: #ffa657; }
+.dialog-actions { height: 3; margin-top: 1; }

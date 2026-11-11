@@ -307,5 +307,19 @@ def ui_cmd(ctx: typer.Context) -> None:
     """Run the Textual UI."""
     from desktop_2fa.ui_textual.app import run_textual
 
-    password = helpers.get_password_for_vault(ctx)
-    run_textual(ctx.obj["vault_path"], password)
+    def initial_password() -> str | None:
+        # Without supplied credentials, authentication belongs to the UI.
+        if ctx.obj.get("password") is None and not ctx.obj.get("password_file"):
+            return None
+        try:
+            return helpers.get_password_for_vault(ctx)
+        finally:
+            ctx.obj["password"] = None
+            ctx.obj["password_file"] = None
+
+    run_textual(
+        ctx.obj["vault_path"],
+        initial_password(),
+        allow_weak_passwords=bool(ctx.obj.get("allow_weak_passwords"))
+        or os.getenv("D2FA_ALLOW_WEAK_PASSWORDS") == "1",
+    )

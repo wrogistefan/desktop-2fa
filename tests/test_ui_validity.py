@@ -3,8 +3,7 @@
 import asyncio
 
 import pytest
-from textual.containers import Container
-from textual.widgets import Label, ListView
+from textual.widgets import Button, Input, Label, ListView
 
 from desktop_2fa.totp.generator import generate
 from desktop_2fa.ui_textual.app import D2FAApp
@@ -27,11 +26,14 @@ def test_active_timer_tolerates_removed_screen_children(
     monkeypatch.setattr("desktop_2fa.ui_textual.app.time.time", lambda: 29)
 
     async def check() -> None:
-        async with app.run_test() as pilot:
+        async with app.run_test(size=(110, 38)) as pilot:
+            await asyncio.wait_for(app.view_ready.wait(), timeout=10)
             await pilot.click("#generate")
             assert app._displayed_code is not None
-            await app.query_one(Container).remove()
-            await pilot.pause(0.35)
+            await app.query_one("#workspace").remove()
+            async with asyncio.timeout(5):
+                while app._displayed_code is not None:
+                    await asyncio.sleep(0.01)
             assert app._displayed_code is None
             app._update_validity()
 
@@ -40,7 +42,7 @@ def test_active_timer_tolerates_removed_screen_children(
 
 @pytest.mark.parametrize("period", [30, 45, 60])
 @pytest.mark.parametrize("action", ["generate", "copy"])
-def test_validity_expires_and_copy_uses_current_code(
+def test_validity_refreshes_and_copy_uses_current_code(
     monkeypatch: pytest.MonkeyPatch, period: int, action: str
 ) -> None:
     entry = TotpEntry(
@@ -67,8 +69,12 @@ def test_validity_expires_and_copy_uses_current_code(
         )
 
     async def check() -> None:
-        async with app.run_test() as pilot:
-            await pilot.click(f"#{action}")
+        async with app.run_test(size=(110, 38)):
+            await asyncio.wait_for(app.view_ready.wait(), timeout=10)
+            await app.on_button_pressed(
+                Button.Pressed(app.query_one(f"#{action}", Button))
+            )
+            await app.workers.wait_for_complete()
             output = app.query_one("#output", Label)
             prefix = "Copied to clipboard! " if action == "copy" else ""
             assert (
@@ -78,10 +84,18 @@ def test_validity_expires_and_copy_uses_current_code(
             if action == "copy":
                 assert copied == [expected_code()]
             clock[0] = period
-            await pilot.pause(0.35)
-            assert str(output.render()) == "Code expired. Generate or copy a new code."
+            async with asyncio.timeout(5):
+                while (
+                    str(output.render())
+                    != f"Code: {expected_code()} (valid for {period}s)"
+                ):
+                    await asyncio.sleep(0.01)
+            assert (
+                str(output.render()) == f"Code: {expected_code()} (valid for {period}s)"
+            )
             assert len(copied) == (1 if action == "copy" else 0)
-            await pilot.click("#copy")
+            await app.on_button_pressed(Button.Pressed(app.query_one("#copy", Button)))
+            await app.workers.wait_for_complete()
             assert copied[-1] == expected_code()
             assert str(output.render()) == (
                 f"Copied to clipboard! Code: {expected_code()} (valid for {period}s)"
@@ -109,23 +123,50 @@ def test_selection_change_clears_previous_code_and_copy_failure_stays_visible(
     monkeypatch.setattr("pyperclip.copy", fail_copy)
 
     async def check() -> None:
-        async with app.run_test() as pilot:
+        async with app.run_test(size=(110, 38)) as pilot:
+            await asyncio.wait_for(app.view_ready.wait(), timeout=10)
             await pilot.click("#generate")
             output = app.query_one("#output", Label)
             assert str(output.render()).startswith("Code: ")
             app.query_one("#accounts", ListView).index = 1
             await pilot.pause()
+            assert str(output.render()).startswith("Code: ")
+            await app.on_button_pressed(Button.Pressed(app.query_one("#copy", Button)))
+            await app.workers.wait_for_complete()
             assert (
                 str(output.render())
-                == "Selection changed. Generate or copy a new code."
-            )
-            await pilot.click("#copy")
-            assert (
-                str(output.render()) == "Copy failed: synthetic clipboard unavailable"
+                == "Copy failed: clipboard unavailable. Try generating a visible code."
             )
             app._update_validity()
             assert (
-                str(output.render()) == "Copy failed: synthetic clipboard unavailable"
+                str(output.render())
+                == "Copy failed: clipboard unavailable. Try generating a visible code."
             )
+
+    asyncio.run(check())
+
+
+def test_queued_callbacks_tolerate_an_empty_screen_stack(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = make_app(
+        monkeypatch, [TotpEntry(account_name="synthetic", secret="MY======")]
+    )
+
+    async def check() -> None:
+        async with app.run_test(size=(110, 38)):
+            await asyncio.wait_for(app.view_ready.wait(), timeout=10)
+            button = app.query_one("#generate", Button)
+            search = app.query_one("#search", Input)
+            assert app._displayed_code is not None
+        assert not app.screen_stack
+        await app.on_button_pressed(Button.Pressed(button))
+        await app.on_input_changed(Input.Changed(search, "synthetic"))
+        app._update_controls()
+        app._show_selection()
+        await app._refresh_accounts()
+        app._update_validity()
+        await app._check_inactivity(app._last_activity + 301)
+        assert app._displayed_code is None
 
     asyncio.run(check())
