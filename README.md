@@ -24,32 +24,32 @@ A secure, offline two-factor authentication (2FA) manager for desktop environmen
 | 🛡️ **Password Policy** | Configurable password strength enforcement with zxcvbn |
 | 🧪 **Well Tested** | Regression tests include RFC 6238 vectors and historical vault fixtures |
 | 📖 **Security Model** | Detailed threat analysis and cryptographic design documentation |
-| 🖥️ **Textual UI** | Account and vault forms, live TOTP countdowns and clipboard actions (unreleased) |
+| 🖥️ **Textual UI** | Account and vault forms, live TOTP countdowns and clipboard actions (0.11.0) |
 
 ---
 
 ## 📸 Screenshots
 
 English dark-terminal CLI captures from Desktop-2FA 0.10.0, followed by the
-repository's unreleased Textual UI. All accounts and credentials are synthetic.
+0.11.0 Textual UI. All accounts and credentials are synthetic.
 Terminal images render actual command output; interactive prompts use a test
 runner and Textual runs headlessly.
-See the [capture notes and report](assets/screenshots/release-0.10.0/README.md).
+See the [capture notes and report](https://github.com/wrogistefan/desktop-2fa/blob/1fff643ce491f00c1a13cd620780942b278194d5/assets/screenshots/release-0.10.0/README.md).
 
-![Add entry with hidden secret](assets/screenshots/release-0.10.0/interactive.png)
+![Add entry with hidden secret](https://raw.githubusercontent.com/wrogistefan/desktop-2fa/1fff643ce491f00c1a13cd620780942b278194d5/assets/screenshots/release-0.10.0/interactive.png)
 *Adding an entry without displaying its secret.*
 
-![Accounts and indices](assets/screenshots/release-0.10.0/accounts.png)
+![Accounts and indices](https://raw.githubusercontent.com/wrogistefan/desktop-2fa/1fff643ce491f00c1a13cd620780942b278194d5/assets/screenshots/release-0.10.0/accounts.png)
 *Initializing a vault and listing synthetic accounts.*
 
-![Code output modes](assets/screenshots/release-0.10.0/codes.png)
+![Code output modes](https://raw.githubusercontent.com/wrogistefan/desktop-2fa/1fff643ce491f00c1a13cd620780942b278194d5/assets/screenshots/release-0.10.0/codes.png)
 *Human-readable, raw and JSON code output.*
 
-![Encrypted backup and recovery](assets/screenshots/release-0.10.0/recovery.png)
+![Encrypted backup and recovery](https://raw.githubusercontent.com/wrogistefan/desktop-2fa/1fff643ce491f00c1a13cd620780942b278194d5/assets/screenshots/release-0.10.0/recovery.png)
 *Encrypted export, overwrite refusal and recovery into a separate vault.*
 
-![Textual terminal UI, synthetic demo](assets/screenshots/textual-ui/03-accounts.png)
-*Unreleased Textual UI: live codes and full account/vault operations. [Capture method and limits](assets/screenshots/textual-ui/README.md).*
+![Textual terminal UI, synthetic demo](https://raw.githubusercontent.com/wrogistefan/desktop-2fa/1fff643ce491f00c1a13cd620780942b278194d5/assets/screenshots/textual-ui/03-accounts.png)
+*Textual UI: live codes and full account/vault operations. [Capture method and limits](https://github.com/wrogistefan/desktop-2fa/blob/1fff643ce491f00c1a13cd620780942b278194d5/assets/screenshots/textual-ui/README.md).*
 
 ---
 
@@ -65,7 +65,7 @@ Verify installation:
 
 ```bash
 python -c "import desktop_2fa; print(desktop_2fa.__version__)"
-# Output: 0.10.0
+# Output: 0.11.0
 ```
 
 ### Basic Usage
@@ -115,14 +115,15 @@ Interactive `add` hides input at the dedicated `Secret` prompt; name and issuer
 remain visible. Secrets/URIs passed as arguments can appear in shell history or
 process inspection, and a URI pasted into the visible issuer prompt can be
 echoed. Prefer a plain issuer name plus the hidden secret prompt to avoid those
-exposures. See [interactive add](docs/user_manual.md#add---add-new-totp-entry).
+exposures. See [interactive add](https://github.com/wrogistefan/desktop-2fa/blob/1fff643ce491f00c1a13cd620780942b278194d5/docs/user_manual.md#add---add-new-totp-entry).
 
-The repository's **unreleased Textual UI** supports account management, vault
+The **0.11.0 Textual UI** supports account management, vault
 creation/unlocking, encrypted import/export/backup and password changes. Codes
 refresh automatically with a countdown and validity bar. Start with `d2fa ui`;
 without supplied credentials it opens a locked screen. Writes ask for a password
-again; Ctrl+L or five minutes of inactivity locks the session. See the [UI guide](docs/user_manual.md#textual-terminal-ui).
-The published 0.10.0 package still contains the earlier prototype.
+again; Ctrl+L or five minutes of inactivity locks the session. See the [UI guide](https://github.com/wrogistefan/desktop-2fa/blob/1fff643ce491f00c1a13cd620780942b278194d5/docs/user_manual.md#textual-terminal-ui).
+Version 0.10.0 contained the earlier prototype; upgrade to 0.11.0 for these
+account and vault workflows.
 
 ### Non-Interactive Usage
 
@@ -166,7 +167,7 @@ vault access. New records use canonical uppercase padded text with identical
 decoded bytes. Existing secret text is preserved on load/save. Legacy empty or
 historically admitted Unicode-folded secrets remain listable but cannot generate
 codes; `code` reports `invalid_secret` with status 6. See the
-[explicit repair procedure](docs/user_manual.md#legacy-invalid-totp-secrets).
+[explicit repair procedure](https://github.com/wrogistefan/desktop-2fa/blob/1fff643ce491f00c1a13cd620780942b278194d5/docs/user_manual.md#legacy-invalid-totp-secrets).
 
 In the CLI, only `vault init`, `list` and `add` create missing vaults. Other content commands
 report a missing-vault error. For creation:
@@ -175,7 +176,7 @@ report a missing-vault error. For creation:
 2. `list` creates an empty encrypted vault; `add` creates one with the validated entry
 3. Successful creation prints: `Vault created at <path>`
 
-The unreleased Textual UI can explicitly create a vault through **Create vault**,
+The 0.11.0 Textual UI can explicitly create a vault through **Create vault**,
 with password confirmation and an overwrite checkbox for existing destinations.
 
 ### Vault Loading
@@ -185,7 +186,7 @@ When a command requires a vault and it exists:
 1. The CLI prompts for the existing password (interactive mode) or requires credentials (non-interactive mode)
 2. The vault is decrypted and loaded
 3. Authentication failure exits with status 2; other failures use the shared
-   [exit-status contract](docs/user_manual.md#exit-codes) and never report success.
+   [exit-status contract](https://github.com/wrogistefan/desktop-2fa/blob/1fff643ce491f00c1a13cd620780942b278194d5/docs/user_manual.md#exit-codes) and never report success.
 
 ### Duplicate Entry Handling
 
@@ -209,7 +210,7 @@ For legacy duplicates, run `d2fa list --indices`, then
 The selected entry must match `OLD` at the account-name/issuer tier that ordinary
 lookup would use. Indices describe the current list order, not permanent IDs;
 list again after adding/removing entries and avoid concurrent vault edits.
-See [duplicate recovery](docs/user_manual.md#duplicate-names-in-vault).
+See [duplicate recovery](https://github.com/wrogistefan/desktop-2fa/blob/1fff643ce491f00c1a13cd620780942b278194d5/docs/user_manual.md#duplicate-names-in-vault).
 
 ---
 
@@ -239,7 +240,7 @@ See [duplicate recovery](docs/user_manual.md#duplicate-names-in-vault).
 | `d2fa ui` | Launch the Textual terminal UI |
 
 External-format Python helpers are described in the
-[adapter contract](docs/import_adapters.md); they are not CLI import modes.
+[adapter contract](https://github.com/wrogistefan/desktop-2fa/blob/1fff643ce491f00c1a13cd620780942b278194d5/docs/import_adapters.md); they are not CLI import modes.
 
 ### Global Options
 
@@ -255,7 +256,7 @@ External-format Python helpers are described in the
 Password files remove only one optional final LF or CRLF. Spaces, tabs and
 Unicode remain significant. Older files read with `.strip()` may require an
 explicit update to contain the actual previously used password; no alternate
-password is tried automatically. See [password-file compatibility](docs/user_manual.md#password-file-format-and-compatibility).
+password is tried automatically. See [password-file compatibility](https://github.com/wrogistefan/desktop-2fa/blob/1fff643ce491f00c1a13cd620780942b278194d5/docs/user_manual.md#password-file-format-and-compatibility).
 
 The `--vault` option takes precedence over `DESKTOP_2FA_VAULT`. When neither
 is provided, Desktop-2FA uses `~/.desktop-2fa/vault`. The `code` command also
@@ -265,7 +266,7 @@ is available on vault initialization and import commands.
 `code --json` writes one JSON success/error object to stdout, including early
 option and password errors. `code --raw` prints only the code on success.
 Diagnostics and password prompts use stderr; `code --quiet` suppresses both
-streams but retains the exit status. See the [output contract](docs/user_manual.md#json-error-format).
+streams but retains the exit status. See the [output contract](https://github.com/wrogistefan/desktop-2fa/blob/1fff643ce491f00c1a13cd620780942b278194d5/docs/user_manual.md#json-error-format).
 
 ---
 
@@ -277,8 +278,13 @@ The vault uses:
 - **zxcvbn** for password strength evaluation
 - **Versioned header** to identify the vault format
 
-Every command that accesses vault contents requires password authentication.
-Path and version queries do not access vault contents. No session-based access.
+Each CLI command that accesses vault contents authenticates separately; path
+and version queries do not access vault contents. CLI `vault unlock` checks the
+password without authorizing later commands. Textual keeps a decrypted `Vault`
+in its application object during the unlocked session, until manual locking,
+five minutes of inactivity, or exit. Writes, backup and export authenticate
+again. Releasing the session does not guarantee erasure of copies in Python or
+system memory. See the [security model](https://github.com/wrogistefan/desktop-2fa/blob/1fff643ce491f00c1a13cd620780942b278194d5/docs/SECURITY.md#textual-session-0110).
 
 ### Password Strength Evaluation
 
@@ -335,21 +341,21 @@ passwords in the public Python vault API:
 
 ## 📚 Documentation
 
-Start at the [documentation index](docs/README.md). Historical audits and
+Start at the [documentation index](https://github.com/wrogistefan/desktop-2fa/blob/1fff643ce491f00c1a13cd620780942b278194d5/docs/README.md). Historical audits and
 completion reports are archived and are not current verification evidence.
 
 | Document | Description |
 |----------|-------------|
-| [User Manual](docs/user_manual.md) | Complete usage guide |
-| [Security Model](docs/SECURITY.md) | Detailed threat analysis and cryptographic design |
-| [CLI UX Specification](docs/ux.md) | UX contract and behavior |
-| [Cryptography](docs/crypto.md) | Security implementation details |
+| [User Manual](https://github.com/wrogistefan/desktop-2fa/blob/1fff643ce491f00c1a13cd620780942b278194d5/docs/user_manual.md) | Complete usage guide |
+| [Security Model](https://github.com/wrogistefan/desktop-2fa/blob/1fff643ce491f00c1a13cd620780942b278194d5/docs/SECURITY.md) | Detailed threat analysis and cryptographic design |
+| [CLI UX Specification](https://github.com/wrogistefan/desktop-2fa/blob/1fff643ce491f00c1a13cd620780942b278194d5/docs/ux.md) | UX contract and behavior |
+| [Cryptography](https://github.com/wrogistefan/desktop-2fa/blob/1fff643ce491f00c1a13cd620780942b278194d5/docs/crypto.md) | Security implementation details |
 
 ---
 
 ## 🧪 Testing
 
-See [development commands](docs/development.md) for the project environment,
+See [development commands](https://github.com/wrogistefan/desktop-2fa/blob/1fff643ce491f00c1a13cd620780942b278194d5/docs/development.md) for the project environment,
 quality checks and optional coverage measurement. Test counts and coverage
 change; use CI results for the exact commit rather than historical totals.
 
@@ -372,7 +378,7 @@ src/desktop_2fa/
 
 ## 📄 License
 
-Apache License 2.0. See [LICENSE](LICENSE) file.
+Apache License 2.0. See [LICENSE](https://github.com/wrogistefan/desktop-2fa/blob/1fff643ce491f00c1a13cd620780942b278194d5/LICENSE) file.
 
 ---
 

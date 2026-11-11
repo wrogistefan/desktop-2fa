@@ -258,14 +258,18 @@ report. For general questions and support, contact
 
 ---
 
-This document covers the repository's storage model and the unreleased UI
+This document covers the 0.11.0 storage model and Textual UI
 behavior below. Review the source and installed version for a particular release.
 
-## Unreleased Textual session
+## Textual session (0.11.0)
 
 The terminal interface now supports account/vault operations with per-operation
 password authentication, a decrypted in-memory session, manual locking and
 automatic locking after five minutes without keyboard/mouse/paste input.
+The application retains the decrypted `Vault` in `self.vault` between UI
+operations while unlocked. Locking or exit releases that session; neither
+guarantees erasure of Python/system memory copies. This differs from separate
+CLI processes: `vault unlock` does not authenticate subsequent CLI commands.
 Masked inputs and sanitized error boundaries reduce accidental disclosure; they
 do not guarantee erasure of Python objects or queued input messages. Worker
 operations retain the existing vault revision and publication guards, including

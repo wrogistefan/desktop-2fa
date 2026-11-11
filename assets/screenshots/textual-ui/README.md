@@ -1,6 +1,6 @@
-# Unreleased Textual UI captures
+# Textual UI captures — pre-0.11.0 evidence
 
-Real Textual screens from the repository's unreleased UI, captured with its
+Real Textual screens captured before the 0.11.0 version bump, using the
 headless driver. All accounts, passwords, provisioning secrets and codes are
 synthetic. The UI uses a controlled clock. These captures supersede neither the
 historical 0.10.0 assets nor the published package's feature description.
@@ -20,7 +20,8 @@ historical 0.10.0 assets nor the published package's feature description.
 Matching SVG files are included for scalable documentation/marketing use.
 The window frame is Rich's SVG export decoration, not a native operating-system
 window. PNGs are local browser renders of those SVGs. Marketing must identify
-this as the unreleased terminal UI, not a shipped GUI or a new public release.
+these as pre-release terminal UI captures. Their original titles and report are
+retained as capture provenance; they do not prove a public 0.11.0 release.
 
 Reproduce from the repository root with the project environment:
 

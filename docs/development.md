@@ -42,7 +42,7 @@ requires network access.
 ## Synthetic Textual captures
 
 Run `.venv/Scripts/python.exe -m scripts.capture_textual --output assets/screenshots/textual-ui`
-to exercise the unreleased UI with temporary synthetic data and save SVG screens
+to exercise the 0.11.0 Textual UI with temporary synthetic data and save SVG screens
 plus a JSON report. PNG rendering uses the existing local-browser renderer.
 See [capture instructions and limits](../assets/screenshots/textual-ui/README.md).
 This tool never accesses the default vault or system clipboard.

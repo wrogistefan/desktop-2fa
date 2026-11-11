@@ -21,7 +21,7 @@ Te wymagania obowiązują także bez lokalnego, globalnego pliku Codexa. Przy zm
 
 ## Python, vault i interfejsy
 
-- Źródła: `src/desktop_2fa/`; testy: `tests/`. CLI używa Typer, a obecny interfejs jest prototypem Textual. Nie zakładaj istnienia pełnego GUI.
+- Źródła: `src/desktop_2fa/`; testy: `tests/`. CLI używa Typer, a interfejs terminalowy Textual obsługuje operacje kont i vaultu. Nie zakładaj istnienia pełnego GUI.
 - Wymagana wersja Pythona i narzędzia są określone w `pyproject.toml`. Zachowuj zgodność runtime z Pythonem >=3.11; konfiguracja lintera nie upoważnia do używania składni niedostępnej w minimalnej wersji.
 - Model bezpieczeństwa opisują `docs/SECURITY.md` i `docs/crypto.md`; politykę bezpieczeństwa opisuje `SECURITY.md`. Przy zmianie zachowania aktualizuj właściwe dokumenty, instrukcję użytkownika i `CHANGELOG.md`.
 - Obecny vault używa Argon2id i AES-256-GCM. Zachowuj wymaganie jawnego, niepustego hasła, walidację modelu oraz ograniczenia rozmiaru i typu pliku.

@@ -180,7 +180,7 @@ exit status; it requires a supplied password/password file instead of prompting.
 Duplicate warnings omit record names. `Vault.load()` itself is
 silent; callers may inspect `duplicate_account_names` for legacy repair.
 
-## Unreleased Textual workflows
+## Textual workflows (0.11.0)
 
 The Textual UI exposes account and vault operations through explicit forms;
 see the [UI contract](user_manual.md#textual-terminal-ui). Without supplied
