@@ -8,8 +8,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [0.11.0] - 2026-11-11
 
-Release preparation; publication is pending maintainer authorization.
-
 ### Added
 
 - Complete Textual account/vault forms: create, unlock, add manually or from a

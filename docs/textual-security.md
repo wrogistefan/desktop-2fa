@@ -1,4 +1,4 @@
-# Textual UI threat analysis (0.11.0 release candidate)
+# Textual UI threat analysis (0.11.0)
 
 The UI uses the same D2FA v1 format, Argon2id, AES-GCM, loader validation,
 size/type limits, revision checks and atomic publication as the CLI. There is

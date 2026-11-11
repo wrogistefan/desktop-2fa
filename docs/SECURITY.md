@@ -258,7 +258,7 @@ report. For general questions and support, contact
 
 ---
 
-This document covers the 0.11.0 release candidate storage model and Textual UI
+This document covers the 0.11.0 storage model and Textual UI
 behavior below. Review the source and installed version for a particular release.
 
 ## Textual session (0.11.0)
