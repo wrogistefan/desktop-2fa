@@ -3,7 +3,7 @@
 import asyncio
 
 import pytest
-from textual.widgets import Button, Label, ListView
+from textual.widgets import Button, Input, Label, ListView
 
 from desktop_2fa.totp.generator import generate
 from desktop_2fa.ui_textual.app import D2FAApp
@@ -157,10 +157,14 @@ def test_queued_callbacks_tolerate_an_empty_screen_stack(
         async with app.run_test(size=(110, 38)):
             await asyncio.wait_for(app.view_ready.wait(), timeout=10)
             button = app.query_one("#generate", Button)
+            search = app.query_one("#search", Input)
             assert app._displayed_code is not None
         assert not app.screen_stack
         await app.on_button_pressed(Button.Pressed(button))
+        await app.on_input_changed(Input.Changed(search, "synthetic"))
         app._update_controls()
+        app._show_selection()
+        await app._refresh_accounts()
         app._update_validity()
         await app._check_inactivity(app._last_activity + 301)
         assert app._displayed_code is None

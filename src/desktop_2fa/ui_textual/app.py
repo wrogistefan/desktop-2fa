@@ -229,11 +229,14 @@ class D2FAApp(App[object]):
                 self._refreshing = False
 
     async def _rebuild_accounts(self) -> None:
+        if not self.screen_stack or not self.main_screen.query("#workspace"):
+            return
         accounts = self.main_screen.query_one("#accounts", ListView)
+        search_input = self.main_screen.query_one("#search", Input)
         self._displayed_code = None
         self._clear_code()
         await accounts.clear()
-        search = self.main_screen.query_one("#search", Input).value.casefold()
+        search = search_input.value.casefold()
         self._visible_indices = (
             [
                 index
@@ -257,6 +260,8 @@ class D2FAApp(App[object]):
             else []
         )
         accounts.index = 0 if self._visible_indices else None
+        if not self.screen_stack or not self.main_screen.query("#workspace"):
+            return
         self._update_controls()
         if self.vault and not self.vault.entries:
             self.main_screen.query_one("#message", Label).update(
@@ -289,6 +294,8 @@ class D2FAApp(App[object]):
             self.main_screen.query_one("#validity", ProgressBar).update(progress=0)
 
     def _show_selection(self) -> None:
+        if not self.screen_stack or not self.main_screen.query("#selected-account"):
+            return
         index = self.selected_index
         if self.vault is None or index is None:
             self.main_screen.query_one("#selected-account", Label).update(
@@ -406,7 +413,7 @@ class D2FAApp(App[object]):
         self._show_selection()
 
     async def on_input_changed(self, event: Input.Changed) -> None:
-        if event.input.id == "search":
+        if event.input.id == "search" and self.screen_stack:
             await self._refresh_accounts()
 
     async def action_lock(self) -> None:
