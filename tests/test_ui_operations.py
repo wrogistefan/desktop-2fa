@@ -302,3 +302,45 @@ def test_failed_import_preserves_destination(
             },
         )
     assert path.read_bytes() == before
+
+
+@pytest.mark.parametrize("legacy_name", [None, ""])
+def test_explicit_row_can_rename_an_unnamed_legacy_account(
+    tmp_path: Path, legacy_name: str | None
+) -> None:
+    from desktop_2fa.vault.models import TotpEntry, VaultData
+
+    path = tmp_path / "legacy-unnamed.bin"
+    vault = Vault(
+        VaultData(
+            entries=[
+                TotpEntry(account_name="shadow", issuer="Example", secret=SECRET),
+                TotpEntry(
+                    account_name=legacy_name,
+                    issuer="shadow",
+                    secret="MY======",
+                    algorithm="SHA256",
+                    period=45,
+                    digits=8,
+                ),
+            ]
+        )
+    )
+    vault.save(path, PASSWORD)
+    before = path.read_bytes()
+    with pytest.raises(FormError, match="occupied"):
+        perform("rename", path, vault, 1, {"password": PASSWORD, "name": "shadow"})
+    assert path.read_bytes() == before
+    result = perform(
+        "rename", path, vault, 1, {"password": PASSWORD, "name": "repaired"}
+    )
+    entry = result.vault.entries[1]
+    assert (
+        entry.account_name,
+        entry.issuer,
+        entry.secret,
+        entry.algorithm,
+        entry.period,
+        entry.digits,
+    ) == ("repaired", "repaired", "MY======", "SHA256", 45, 8)
+    assert result.vault.entries[0].account_name == "shadow"

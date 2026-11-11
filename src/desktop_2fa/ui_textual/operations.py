@@ -117,9 +117,18 @@ def perform(
             if not name.strip():
                 raise FormError("A new account name is required.")
             # An explicit list position also supports repairing legacy duplicates.
-            vault.rename_entry(
-                entry.account_name or entry.issuer or "", name, index=index + 1
-            )
+            if entry.account_name:
+                vault.rename_entry(entry.account_name, name, index=index + 1)
+            else:
+                # Legacy unnamed rows cannot always be addressed by the CLI's
+                # name/issuer tiers (an issuer may be shadowed by another name).
+                # The UI already has an explicit row and authenticated revision.
+                if any(
+                    other is not entry and other.account_name == name
+                    for other in vault.entries
+                ):
+                    raise FormError("That account name is already occupied.")
+                entry.account_name = entry.issuer = name
         else:
             if values.get("confirm") != "yes":
                 raise FormError("Confirm permanent removal of the selected account.")

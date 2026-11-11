@@ -20,7 +20,7 @@ A secure, offline two-factor authentication (2FA) manager for desktop environmen
 | ⏱️ **TOTP Generation** | RFC 6238 compliant code generation |
 | 💻 **Full CLI** | Complete command-line interface for managing tokens |
 | 📋 **Clipboard Support** | Automatic copying of TOTP codes to clipboard |
-| 🔓 **Stateless Design** | Vault contents require authentication; no long-lived sessions |
+| 🔓 **Session Control** | CLI authenticates each command; UI reauthenticates writes and locks after five minutes without input |
 | 🛡️ **Password Policy** | Configurable password strength enforcement with zxcvbn |
 | 🧪 **Well Tested** | Regression tests include RFC 6238 vectors and historical vault fixtures |
 | 📖 **Security Model** | Detailed threat analysis and cryptographic design documentation |
@@ -30,9 +30,10 @@ A secure, offline two-factor authentication (2FA) manager for desktop environmen
 
 ## 📸 Screenshots
 
-English dark-terminal captures from Desktop-2FA 0.10.0. All accounts and
-credentials are synthetic. Terminal images render actual command output;
-interactive prompts use a test runner and Textual runs headlessly.
+English dark-terminal CLI captures from Desktop-2FA 0.10.0, followed by the
+repository's unreleased Textual UI. All accounts and credentials are synthetic.
+Terminal images render actual command output; interactive prompts use a test
+runner and Textual runs headlessly.
 See the [capture notes and report](assets/screenshots/release-0.10.0/README.md).
 
 ![Add entry with hidden secret](assets/screenshots/release-0.10.0/interactive.png)

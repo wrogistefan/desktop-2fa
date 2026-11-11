@@ -167,7 +167,10 @@ class D2FAApp(App[object]):
 
     async def on_mount(self) -> None:
         self.theme = "textual-dark"
-        await self._refresh_accounts()
+        if self.vault is not None:
+            await self.show_vault(self.vault, "Vault unlocked.")
+        else:
+            await self._refresh_accounts()
         self._update_controls()
         self.set_interval(0.25, self._update_validity)
         self.set_interval(1, self._check_inactivity)

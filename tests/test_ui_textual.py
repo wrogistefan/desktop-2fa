@@ -43,6 +43,7 @@ def test_labels_render_literally_without_breaking_other_entries(
     async def check() -> None:
         async with app.run_test(size=(110, 38)) as pilot:
             await pilot.pause()
+            assert str(app.query_one("#message", Label).render()) == "Vault unlocked."
             labels = list(app.query("#accounts Label"))
             expected = name or "(no name)"
             if issuer:

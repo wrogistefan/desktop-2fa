@@ -490,3 +490,24 @@ def test_no_rich_markup_in_prompts() -> None:
 
     if violations:
         pytest.fail("Found Rich markup in prompts:\n" + "\n".join(violations))
+
+
+@pytest.mark.parametrize("allow_weak", [False, True])
+def test_cli_ui_without_credentials_opens_locked_without_creating_vault(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, allow_weak: bool
+) -> None:
+    from desktop_2fa.ui_textual import app as textual_app
+
+    monkeypatch.delenv("D2FA_ALLOW_WEAK_PASSWORDS", raising=False)
+    selected: list[tuple[str, str | None, bool]] = []
+
+    def start(path: str, password: str | None, *, allow_weak_passwords: bool) -> None:
+        selected.append((path, password, allow_weak_passwords))
+
+    monkeypatch.setattr(textual_app, "run_textual", start)
+    path = tmp_path / "missing-synthetic.bin"
+    options = ["--allow-weak-passwords"] if allow_weak else []
+    result = runner.invoke(app, ["--vault", str(path), *options, "ui"])
+    assert result.exit_code == 0
+    assert selected == [(str(path), None, allow_weak)]
+    assert not path.exists()

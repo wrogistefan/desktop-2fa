@@ -258,8 +258,8 @@ report. For general questions and support, contact
 
 ---
 
-This document describes the implementation at Desktop-2FA 0.9.0. Review it
-alongside the source code for the exact behavior of a particular release.
+This document covers the repository's storage model and the unreleased UI
+behavior below. Review the source and installed version for a particular release.
 
 ## Unreleased Textual session
 
