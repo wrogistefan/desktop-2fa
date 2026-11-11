@@ -33,6 +33,17 @@ Release preparation; publication is pending maintainer authorization.
   exclude traceback locals. D2FA v1, cryptography and CLI command behavior are
   unchanged; no migration is needed.
 
+### Fixed
+
+- Raise the CLI floor to Typer 0.18.0 and explicitly require Click >=8.0.0;
+  test installed wheels with minimum Typer and minimum/current Click on all
+  three supported Python versions, and require these checks in the CI gate.
+- Make README repository/image links absolute and pinned for PyPI, and clarify
+  decrypted Textual session lifetime versus independently authenticated CLI
+  commands. Production PyPI verification awaits authorized publication.
+- Require GitHub Actions `CI gate` on main, including administrators, while
+  preserving signature/linear-history protections (repository setting).
+
 ### Maintenance
 
 - Align package/runtime metadata and current documentation with 0.11.0; preserve

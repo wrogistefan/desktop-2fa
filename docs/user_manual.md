@@ -16,6 +16,9 @@ on Windows legacy code pages, use UTF-8 mode (`PYTHONUTF8=1`).
 pip install desktop-2fa
 ```
 
+The CLI requires Typer >=0.18.0 and Click >=8.0.0; pip resolves these requirements
+automatically. See the [dependency validation policy](ci.md#cli-dependency-bounds).
+
 This manual covers the Desktop-2FA 0.11.0 release candidate (publication pending).
 The public Python `Vault.save()` and
 `Vault.load()` methods require an explicit, non-empty password. If you created
@@ -343,8 +346,7 @@ If none of these tools are installed on Linux, clipboard operations will fail an
 
 The 0.11.0 release candidate UI supports the CLI's vault and account operations
 through forms. Version 0.11.0 has not been published as part of this preparation;
-the published
-0.10.0 package contains the earlier prototype.
+the published 0.10.0 package contains the earlier prototype.
 Launch with `d2fa ui`, optionally selecting a vault:
 
 ```bash
