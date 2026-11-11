@@ -258,10 +258,10 @@ report. For general questions and support, contact
 
 ---
 
-This document covers the repository's storage model and the unreleased UI
+This document covers the 0.11.0 release candidate storage model and Textual UI
 behavior below. Review the source and installed version for a particular release.
 
-## Unreleased Textual session
+## Textual session (0.11.0)
 
 The terminal interface now supports account/vault operations with per-operation
 password authentication, a decrypted in-memory session, manual locking and

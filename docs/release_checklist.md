@@ -1,115 +1,58 @@
-# Stabilization and release readiness
+# Release 0.11.0 preparation
 
-Roadmap: [#31](https://github.com/wrogistefan/desktop-2fa/issues/31), milestone 3.
-Completing this checklist does not publish a release or certify security.
+This branch prepares a release candidate. It does not authorize merging the
+release PR, creating a tag, publishing to PyPI or creating a GitHub Release.
+The maintainer must authorize those steps separately.
 
-## Compatibility and version choice
+## Scope and compatibility
 
-This release is **0.10.0**, rather than a patch: the roadmap adds
-stricter input/schema rejection, reliable failure statuses, concurrency conflicts
-and explicit overwrite controls that can affect callers and automation. D2FA v1,
-Argon2id parameters, AES-GCM, UTF-8 password derivation and valid TOTP parameters
-remain unchanged. Project/runtime metadata agree on 0.10.0.
-On 2026-10-30 the maintainer authorized merging after successful checks,
-followed by a signed `v0.10.0` tag, PyPI publication verification and a GitHub
-Release. Follow [release PR #81](https://github.com/wrogistefan/desktop-2fa/pull/81)
-and the tag's CI run for the exact commit and publication results.
+Version 0.11.0 is a minor release because it completes Textual account/vault
+workflows and changes credential-free `d2fa ui` startup to open a locked UI.
+Supplied credentials retain CLI pre-startup error statuses. Codes refresh with
+entry-specific countdowns. Writes, backup and export authenticate separately;
+the session locks manually or after five minutes of inactivity.
 
-Supported fixture evidence covers v0.7.3 and v0.8.3 non-empty-password vaults.
-Pre-header vaults remain unsupported: preserve the original and recover from a
-supported backup or the original providers. Historical empty-password API vaults
-must be opened and re-saved with a non-empty password using the previous release
-before upgrading. The current loader has no silent fallback or password retry.
-See [cryptographic compatibility](crypto.md#compatibility) and the
-[fixture inventory](../tests/fixtures/vaults/README.md).
+D2FA v1, Argon2id/AES-GCM parameters, historical fixture support and CLI account
+resolution remain unchanged. No vault migration is required. See
+[crypto compatibility](crypto.md#compatibility), [security](SECURITY.md) and the
+[Textual threat analysis](textual-security.md). Python cannot guarantee erasure
+of decrypted data; passing tests do not constitute a security audit.
 
-## Criteria to recheck for the exact release commit
+The completed UI was merged in [PR #85](https://github.com/wrogistefan/desktop-2fa/pull/85),
+merge commit `cae6ec64c4d68a2a0f470f7b7ed79cf17ca66c2d`.
+Its final source commit passed the nine OS/Python CI combinations and quality,
+package, CodeQL and CI gate checks. Kilo reported no issues; Sourcery skipped
+substantive review because its quota was exhausted. These are feature evidence,
+not validation of the later release version bump.
 
-These are repeatable release requirements. The stabilization evidence below
-predates the release version bump. Version 0.10.0 has separate local evidence;
-CI must validate its exact commit before release. The tracker records completion
-of S01–S22 separately.
+## Checks required before publication
 
-- All S01–S22 issues resolved through focused PRs with review evidence.
-- Full tests and quality checks pass on the supported runtime/OS matrix.
-- RFC 6238 vectors and immutable supported historical-vault round trips pass.
-- Wrong password, tampering, malformed data and failed-write preservation pass.
-- Password change, encrypted backup/export and recovery pass with synthetic data.
-- Built wheel installs outside the checkout; both entry points, versions,
-  retained imports and bundled Textual CSS work without a src fallback.
-- Tag/version mismatch and failed/skipped validation block publication;
-  validated artifacts are reused without rebuilding.
-- Code scanning has no remaining open alert introduced by this work.
-- Current documentation examples and local relative links are checked.
-- Evidence URLs, measured coverage, known skips and remaining limitations
-  are recorded below. No release is published as part of stabilization.
+- Validate the exact release PR commit: full tests, Ruff, Black, source mypy,
+  package build and the Windows/macOS/Linux × Python 3.11/3.12/3.13 CI matrix.
+- Check version agreement, wheel/sdist metadata and `twine check`; install the
+  wheel outside the checkout and run `scripts/smoke_installed.py` in isolation.
+- Run synthetic CLI/UI campaigns. Preserve historical captures and record
+  headless/clipboard limits; native clipboard remains a separate manual check.
+- Review current documentation, links and the actual package long description.
+- Resolve or explicitly assess [CLI dependency compatibility #82](https://github.com/wrogistefan/desktop-2fa/issues/82)
+  before publication: current metadata still permits the known-broken minimum
+  Typer configuration. Ordinary latest-dependency CI does not cover it.
+- Recheck [required merge gate #83](https://github.com/wrogistefan/desktop-2fa/issues/83)
+  and [PyPI README/security documentation #84](https://github.com/wrogistefan/desktop-2fa/issues/84).
+  Their historical descriptions were translated, not silently closed or fully
+  implemented by release preparation. Relative README links still need review
+  in PyPI context. Production PyPI rendering cannot be verified before publication.
+- Obtain explicit maintainer authorization before merging, tagging or publishing.
+  Then require matching tag/version and successful validation, reuse validated
+  distribution artifacts, and verify published files and PyPI rendering.
 
-## Release verification evidence
+## Evidence
 
-Branch: `release/0.10.0-preparation`. The local full suite on Windows/Python
-3.13.11 passed: **1052 passed, 7 skipped**, one zxcvbn deprecation warning.
-Ruff, Black and source mypy passed. The skips and platform limits described
-below still apply. No cryptographic format or parameters changed.
+The [original UI screenshots and report](../assets/screenshots/textual-ui/README.md)
+use synthetic data and a controlled clock. Their original pre-release captions
+are preserved. They do not demonstrate native OS clipboard behavior or a GUI.
+The [0.10.0 release record](release-0.10.0-evidence.md) is historical evidence;
+its publication authorization applies only to 0.10.0.
 
-The [synthetic CLI campaign](../scripts/release_cli.py) passed **74 checks**, exercising every command
-and recursive help, success/error output modes, password change, encrypted
-backup/export/recovery and write refusal. Its [report and captures](
-../assets/screenshots/release-0.10.0/README.md) distinguish real subprocesses,
-prompt/clipboard stubs and headless Textual. Separate native Windows terminal
-checks passed initialization with hidden password/confirmation, interactive add
-with hidden secret, and password change followed by reopening the vault.
-The generated native-test vault/password files were removed. System clipboard
-and native UI checks on other platforms remain manual. PNG and SVG assets
-are linked from README.
-
-Both distribution formats built. Installation of the wheel into a separate
-venv passed `scripts/smoke_installed.py` with isolated imports and supported
-historical fixtures. Twine **7.0.0** accepted both archives; the older local
-Twine 6.2.0 rejected metadata version 2.5 and is unsuitable for this build.
-The isolated installation resolved current dependencies separately from the
-existing development venv. CI and Kilo review validate the final PR commit;
-the tag's workflow validates and publishes its own checked distribution
-artifacts. Verify the published PyPI files before creating the GitHub Release.
-
-## Stabilization evidence (before the release version bump)
-
-Local integrated preflight on Windows/Python 3.13.11: **1052 passed, 7 skipped**,
-with one existing zxcvbn deprecation warning. Ruff, Black, source mypy and
-pinned/checksummed actionlint passed. Native GNU make was unavailable; the
-Makefile dry run passed separately with GNU Make 4.3 in WSL. The other local
-skips concern filesystem alias support; CI must provide the platform evidence.
-No user vault or clipboard was used.
-
-The integrated wheel/sdist built successfully. A fresh temporary Windows venv
-outside the checkout passed isolated imports, both entry points, version
-agreement, bundled Textual CSS/mount, non-default TOTP parameters, password
-change, backup/export recovery and supported historical-vault round trips.
-Representative CLI documentation examples and the integrated local relative-file
-link scan passed. Historical binary fixtures are unchanged.
-
-CodeQL alert #9 is **fixed**, and the open-alert query returned no alerts after
-[security PR #72](https://github.com/wrogistefan/desktop-2fa/pull/72) merged.
-Kilo accepted the focused PRs, including corrections to URI-label output and
-development-tool failure messages. The integrated Quality/Package/CI-gate and
-nine-combination runtime results are attached to
-[S22 PR #80](https://github.com/wrogistefan/desktop-2fa/pull/80); follow its CI
-run for the measured Linux/3.11 `coverage` artifact. No arbitrary percentage
-threshold is imposed. Gate/tag regression tests reject mismatches and failed,
-skipped or incomplete validation results without creating a release tag.
-The [roadmap completion record](https://github.com/wrogistefan/desktop-2fa/issues/31)
-records the final successful run, measured coverage and merge results before
-closure. Passing checks are required before merging S22; these links are not
-permission to publish a release.
-
-## Remaining limitations
-
-- Python cannot guarantee erasure of passwords/keys. A compromised host or
-  observed clipboard can disclose secrets/codes. Weak passwords remain guessable.
-- No audit/certification, anti-rollback protection or universal power-loss
-  guarantee is claimed; see [persistence limits](persistence.md).
-- Textual is a prototype for listing, generation and copy, not entry management.
-- External adapters support only the documented fixture variants and are not
-  wired into CLI import. Unsupported payload metadata is refused, not migrated.
-- Windows captured help on legacy code pages needs UTF-8 mode (`PYTHONUTF8=1`).
-- Publication credentials and main branch required-check settings are separate
-  from YAML job dependencies. Inspect their state and report any gap explicitly.
+Release-branch validation results are recorded in the release PR. A green PR
+alone does not resolve the outstanding publication conditions above.

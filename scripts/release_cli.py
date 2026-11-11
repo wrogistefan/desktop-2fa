@@ -23,6 +23,7 @@ from rich.text import Text
 from typer.main import get_command
 from typer.testing import CliRunner
 
+from desktop_2fa import __version__
 from desktop_2fa.cli.main import app
 from desktop_2fa.ui_textual.app import D2FAApp
 from desktop_2fa.vault import Vault
@@ -44,7 +45,9 @@ def save_svg(path: Path, content: str) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--output", type=Path, default=ROOT / "assets/screenshots/release-0.10.0"
+        "--output",
+        type=Path,
+        default=ROOT / f"assets/screenshots/release-{__version__}",
     )
     options = parser.parse_args()
     output = options.output.resolve()
@@ -308,6 +311,7 @@ def main() -> None:
         async def capture_ui():
             ui = D2FAApp(str(work / "demo.bin"), PASSWORD)
             async with ui.run_test(size=(100, 30)) as pilot:
+                await asyncio.wait_for(ui.view_ready.wait(), timeout=10)
                 await pilot.pause()
                 save_svg(
                     output / "textual.svg",
@@ -316,7 +320,7 @@ def main() -> None:
 
         with patch(
             "desktop_2fa.ui_textual.app.run_textual",
-            side_effect=lambda *a: asyncio.run(capture_ui()),
+            side_effect=lambda *a, **kw: asyncio.run(capture_ui()),
         ):
             result = runner.invoke(app, [*absolute, "ui"])
             assert result.exit_code == 0, result.output
@@ -347,7 +351,7 @@ def main() -> None:
         console = Console(
             record=True, width=100, file=io.StringIO(), force_terminal=True
         )
-        console.print("SYNTHETIC DEMO | Desktop-2FA 0.10.0", style="bold cyan")
+        console.print(f"SYNTHETIC DEMO | Desktop-2FA {__version__}", style="bold cyan")
         console.print(
             "Temporary vault and public example accounts. No real credentials.\n"
         )
@@ -364,7 +368,7 @@ def main() -> None:
             ),
         )
     report = {
-        "version": "0.10.0",
+        "version": __version__,
         "cases": cases,
         "passed": len(cases),
         "limitations": [

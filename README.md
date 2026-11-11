@@ -24,14 +24,14 @@ A secure, offline two-factor authentication (2FA) manager for desktop environmen
 | 🛡️ **Password Policy** | Configurable password strength enforcement with zxcvbn |
 | 🧪 **Well Tested** | Regression tests include RFC 6238 vectors and historical vault fixtures |
 | 📖 **Security Model** | Detailed threat analysis and cryptographic design documentation |
-| 🖥️ **Textual UI** | Account and vault forms, live TOTP countdowns and clipboard actions (unreleased) |
+| 🖥️ **Textual UI** | Account and vault forms, live TOTP countdowns and clipboard actions (0.11.0 release candidate) |
 
 ---
 
 ## 📸 Screenshots
 
 English dark-terminal CLI captures from Desktop-2FA 0.10.0, followed by the
-repository's unreleased Textual UI. All accounts and credentials are synthetic.
+0.11.0 Textual release candidate. All accounts and credentials are synthetic.
 Terminal images render actual command output; interactive prompts use a test
 runner and Textual runs headlessly.
 See the [capture notes and report](assets/screenshots/release-0.10.0/README.md).
@@ -49,7 +49,7 @@ See the [capture notes and report](assets/screenshots/release-0.10.0/README.md).
 *Encrypted export, overwrite refusal and recovery into a separate vault.*
 
 ![Textual terminal UI, synthetic demo](assets/screenshots/textual-ui/03-accounts.png)
-*Unreleased Textual UI: live codes and full account/vault operations. [Capture method and limits](assets/screenshots/textual-ui/README.md).*
+*Textual UI release candidate: live codes and full account/vault operations. [Capture method and limits](assets/screenshots/textual-ui/README.md).*
 
 ---
 
@@ -65,7 +65,7 @@ Verify installation:
 
 ```bash
 python -c "import desktop_2fa; print(desktop_2fa.__version__)"
-# Output: 0.10.0
+# Output: 0.11.0 (repository build; PyPI publication pending)
 ```
 
 ### Basic Usage
@@ -117,12 +117,14 @@ process inspection, and a URI pasted into the visible issuer prompt can be
 echoed. Prefer a plain issuer name plus the hidden secret prompt to avoid those
 exposures. See [interactive add](docs/user_manual.md#add---add-new-totp-entry).
 
-The repository's **unreleased Textual UI** supports account management, vault
+The **0.11.0 Textual release candidate** supports account management, vault
 creation/unlocking, encrypted import/export/backup and password changes. Codes
 refresh automatically with a countdown and validity bar. Start with `d2fa ui`;
 without supplied credentials it opens a locked screen. Writes ask for a password
 again; Ctrl+L or five minutes of inactivity locks the session. See the [UI guide](docs/user_manual.md#textual-terminal-ui).
-The published 0.10.0 package still contains the earlier prototype.
+Version 0.11.0 is being prepared; this branch does not publish it. The published
+0.10.0 package contains the earlier prototype. Install this repository build to
+try the new interface before publication.
 
 ### Non-Interactive Usage
 
@@ -175,7 +177,7 @@ report a missing-vault error. For creation:
 2. `list` creates an empty encrypted vault; `add` creates one with the validated entry
 3. Successful creation prints: `Vault created at <path>`
 
-The unreleased Textual UI can explicitly create a vault through **Create vault**,
+The 0.11.0 Textual UI can explicitly create a vault through **Create vault**,
 with password confirmation and an overwrite checkbox for existing destinations.
 
 ### Vault Loading

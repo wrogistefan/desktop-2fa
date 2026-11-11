@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-11-11
+
+Release preparation; publication is pending maintainer authorization.
+
 ### Added
 
 - Complete Textual account/vault forms: create, unlock, add manually or from a
@@ -28,6 +32,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - UI secrets are masked and cleared on submit/cancel. Unexpected UI diagnostics
   exclude traceback locals. D2FA v1, cryptography and CLI command behavior are
   unchanged; no migration is needed.
+
+### Maintenance
+
+- Align package/runtime metadata and current documentation with 0.11.0; preserve
+  historical release evidence and identify outstanding publication conditions.
+- Derive CLI capture versions and output directories from package metadata, and
+  wait for Textual startup before capturing its screen.
 
 ## [0.10.0] - 2026-10-30
 
