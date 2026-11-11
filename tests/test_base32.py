@@ -4,7 +4,6 @@ import asyncio
 import base64
 import json
 from pathlib import Path
-from types import SimpleNamespace
 from urllib.parse import urlencode
 
 import pytest
@@ -245,17 +244,19 @@ def test_ui_reports_legacy_empty_key_without_generating_or_copying(
         path, PASSWORD
     )
     ui = D2FAApp(str(path), PASSWORD)
-    messages: list[str] = []
-    widgets = {
-        "#accounts": SimpleNamespace(index=0),
-        "#output": SimpleNamespace(update=messages.append),
-    }
-    monkeypatch.setattr(ui, "query_one", lambda selector, *args: widgets[selector])
+    from textual.widgets import Button, Label
 
     def unexpected_copy(code: str) -> None:
         pytest.fail("Invalid legacy keys must not produce clipboard data")
 
     monkeypatch.setattr(ui, "_copy_to_clipboard", unexpected_copy)
-    event = SimpleNamespace(button=SimpleNamespace(id=action))
-    asyncio.run(ui.on_button_pressed(event))  # type: ignore[arg-type]
-    assert messages == ["Invalid TOTP secret. Repair this entry using the CLI."]
+
+    async def check() -> None:
+        async with ui.run_test(size=(110, 38)) as pilot:
+            ui.query_one(f"#{action}", Button).focus()
+            await pilot.press("enter")
+            assert str(ui.query_one("#output", Label).render()) == (
+                "Invalid TOTP secret. Add a valid replacement before removing this entry."
+            )
+
+    asyncio.run(check())

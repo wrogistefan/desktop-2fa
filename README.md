@@ -24,7 +24,7 @@ A secure, offline two-factor authentication (2FA) manager for desktop environmen
 | 🛡️ **Password Policy** | Configurable password strength enforcement with zxcvbn |
 | 🧪 **Well Tested** | Regression tests include RFC 6238 vectors and historical vault fixtures |
 | 📖 **Security Model** | Detailed threat analysis and cryptographic design documentation |
-| 🖥️ **Textual UI** | Early prototype for listing accounts and generating or copying TOTP codes |
+| 🖥️ **Textual UI** | Account and vault forms, live TOTP countdowns and clipboard actions (unreleased) |
 
 ---
 
@@ -47,8 +47,8 @@ See the [capture notes and report](assets/screenshots/release-0.10.0/README.md).
 ![Encrypted backup and recovery](assets/screenshots/release-0.10.0/recovery.png)
 *Encrypted export, overwrite refusal and recovery into a separate vault.*
 
-![Textual prototype](assets/screenshots/release-0.10.0/textual.png)
-*The Textual prototype lists accounts; entry management uses the CLI.*
+![Textual terminal UI, synthetic demo](assets/screenshots/textual-ui/03-accounts.png)
+*Unreleased Textual UI: live codes and full account/vault operations. [Capture method and limits](assets/screenshots/textual-ui/README.md).*
 
 ---
 
@@ -99,7 +99,7 @@ d2fa --vault ./development-vault list
 # Show the currently selected vault path
 d2fa --vault ./development-vault vault path
 
-# Launch the early Textual UI prototype with that vault
+# Launch the Textual terminal UI with that vault
 d2fa --vault ./development-vault ui
 ```
 
@@ -116,10 +116,12 @@ process inspection, and a URI pasted into the visible issuer prompt can be
 echoed. Prefer a plain issuer name plus the hidden secret prompt to avoid those
 exposures. See [interactive add](docs/user_manual.md#add---add-new-totp-entry).
 
-The Textual UI is at an **early prototype stage**. It prompts for the vault
-password unless one is supplied with `--password` or `--password-file`, and
-supports listing entries, generating codes, and copying codes to the clipboard.
-It does not support entry management or create a missing vault.
+The repository's **unreleased Textual UI** supports account management, vault
+creation/unlocking, encrypted import/export/backup and password changes. Codes
+refresh automatically with a countdown and validity bar. Start with `d2fa ui`;
+without supplied credentials it opens a locked screen. Writes ask for a password
+again; Ctrl+L or five minutes of inactivity locks the session. See the [UI guide](docs/user_manual.md#textual-terminal-ui).
+The published 0.10.0 package still contains the earlier prototype.
 
 ### Non-Interactive Usage
 
@@ -165,15 +167,15 @@ historically admitted Unicode-folded secrets remain listable but cannot generate
 codes; `code` reports `invalid_secret` with status 6. See the
 [explicit repair procedure](docs/user_manual.md#legacy-invalid-totp-secrets).
 
-Only `vault init`, `list` and `add` create missing vaults. Other content commands
+In the CLI, only `vault init`, `list` and `add` create missing vaults. Other content commands
 report a missing-vault error. For creation:
 
 1. The CLI prompts for a new password (interactive mode) or requires `--password`/`--password-file` (non-interactive mode)
 2. `list` creates an empty encrypted vault; `add` creates one with the validated entry
 3. Successful creation prints: `Vault created at <path>`
 
-The Textual UI does not create a missing vault; it displays the vault-loading
-error instead.
+The unreleased Textual UI can explicitly create a vault through **Create vault**,
+with password confirmation and an overwrite checkbox for existing destinations.
 
 ### Vault Loading
 
@@ -233,7 +235,7 @@ See [duplicate recovery](docs/user_manual.md#duplicate-names-in-vault).
 | `d2fa backup` | Create an encrypted backup of the vault |
 | `d2fa export <path> [--force]` | Export encrypted D2FA v1; existing files require `--force` |
 | `d2fa import <path> [--force]` | Import vault from file |
-| `d2fa ui` | Launch the early Textual UI prototype |
+| `d2fa ui` | Launch the Textual terminal UI |
 
 External-format Python helpers are described in the
 [adapter contract](docs/import_adapters.md); they are not CLI import modes.
@@ -360,7 +362,7 @@ src/desktop_2fa/
 ├── cli/           # Command-line interface
 ├── crypto/        # Encryption utilities
 ├── totp/          # TOTP generation
-├── ui_textual/    # Early Textual UI prototype
+├── ui_textual/    # Textual terminal UI
 ├── vault/         # Vault management
 └── utils/         # Utilities
 ```

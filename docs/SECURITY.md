@@ -260,3 +260,15 @@ report. For general questions and support, contact
 
 This document describes the implementation at Desktop-2FA 0.9.0. Review it
 alongside the source code for the exact behavior of a particular release.
+
+## Unreleased Textual session
+
+The terminal interface now supports account/vault operations with per-operation
+password authentication, a decrypted in-memory session, manual locking and
+automatic locking after five minutes without keyboard/mouse/paste input.
+Masked inputs and sanitized error boundaries reduce accidental disclosure; they
+do not guarantee erasure of Python objects or queued input messages. Worker
+operations retain the existing vault revision and publication guards, including
+post-publication uncertainty. No file format, crypto parameter, networking or
+migration change is introduced. See the [UI threat analysis](textual-security.md)
+and [user guide](user_manual.md#textual-terminal-ui).

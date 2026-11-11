@@ -66,7 +66,7 @@ d2fa --vault ./development-vault vault init
 # Show the selected path in a terminal-safe quoted form
 d2fa --vault ./development-vault vault path
 
-# Launch the Textual prototype with the selected vault
+# Launch the Textual interface with the selected vault
 d2fa --vault ./development-vault ui
 ```
 
@@ -338,32 +338,72 @@ macOS and Windows work out of the box without additional dependencies.
 
 If none of these tools are installed on Linux, clipboard operations will fail and desktop-2fa will fall back to printing the code normally.
 
-### Early Textual UI Prototype
+### Textual Terminal UI
 
-The optional Textual interface is at an **early prototype stage**. It displays
-vault entries and lets you generate or copy a TOTP code for the selected entry.
-
-Names, issuers and runtime messages are displayed literally, including brackets
-and markup-looking text. Display formatting does not rewrite vault entries.
-
-Generate shows the code with seconds remaining in that entry's actual period.
-The display checks validity every quarter second and removes an expired code;
-generate or copy again to obtain a fresh value. Copy generates the current code
-and displays the value actually copied with its remaining validity. Changing
-selection clears the previous account's result. The application does not clear
-or refresh clipboard contents automatically; a copied code can expire there.
+The repository's unreleased UI supports the CLI's vault and account operations
+through forms. The published 0.10.0 package still contains the earlier prototype.
+Launch with `d2fa ui`, optionally selecting a vault:
 
 ```bash
-# Use the default vault
-d2fa ui
-
-# Select a vault and read its password from a file
-d2fa --vault ./development-vault --password-file ~/.vault_pass ui
+d2fa --vault ./development-vault ui
 ```
 
-When no password option is supplied, the CLI prompts for the vault password.
-The interface does not provide entry-management commands or create a missing
-vault; initialize one with `d2fa vault init` before launching the UI.
+Without password options, the UI opens a locked screen: choose **Unlock**,
+**Create vault**, or **Import**. No file is created automatically. Supplied
+`--password` or `--password-file` credentials authenticate before the UI starts;
+startup failures retain CLI exit statuses. These options authenticate startup
+only: later operations ask for a password again. `--allow-weak-passwords` and
+`D2FA_ALLOW_WEAK_PASSWORDS=1` also apply to UI creation and password changes.
+
+| Control | Behavior |
+| --- | --- |
+| Accounts / search | Filter by account or issuer; row numbers identify original vault positions, including duplicate-name repair. |
+| Selected account / Generate | Show a code immediately and refresh automatically each period, with seconds remaining and a progress bar. Parameters come from the selected entry, including non-default periods. |
+| Copy | Generate and copy a current code, with success or failure feedback. |
+| Copy only | Copy a current code and hide it from the code panel. Selecting another account or Generate displays codes again. |
+| Add account | Enter name, issuer and a hidden Base32 secret, OR a hidden `otpauth://` URI. Clear manual fields when using a URI; its label, algorithm, digits and period are preserved. |
+| Rename | Rename the explicitly selected row. As in CLI rename, this changes both account name and issuer and preserves the secret and TOTP parameters. |
+| Remove | Permanently delete the explicitly selected row after password authentication and a confirmation checkbox. |
+| Create vault | Confirm a new non-empty password. Existing destinations require the explicit overwrite checkbox. |
+| Import | Load an encrypted D2FA binary using its source password. This replaces the entire destination vault; it does **not** merge entries or import foreign-provider exports. Existing destinations require explicit overwrite consent. |
+| Export | Save a separately encrypted D2FA copy with the same password. Existing distinct targets require overwrite consent; source aliases and destination symlinks are refused. |
+| Backup | Create the next available `.backup.bin`, `.backup-1.bin`, etc. beside the vault, without overwriting another file. |
+| Password | Authenticate the current password and confirm a new one. Weak passwords require explicit acceptance unless configuration rejects them; evaluator details are never displayed. |
+| Lock / Ctrl+L | Clear accounts and codes from the view, clear/cancel open forms and release the decrypted session. Unlock again to continue. |
+
+The selected vault path is always visible. To select another path, quit and
+restart with `--vault`; the environment/default precedence is unchanged. Use
+Tab/Shift+Tab and Enter to navigate, Escape to cancel a form, Ctrl+N to add,
+Ctrl+B to back up and Ctrl+Q to quit. Scroll in smaller terminals; 110×38 gives
+the full dashboard room. Long forms also scroll to focused controls.
+
+The UI also locks automatically after five minutes without keyboard, paste or
+mouse activity (checked once per second using monotonic time). Timer refreshes
+do not count as activity. It clears/cancels open forms; an active write finishes
+before the pending inactivity lock is applied. Manual Ctrl+L also closes forms.
+
+Every write, backup and export asks for the password again. Heavy file and KDF
+work runs in a worker rather than blocking the interface. Writes work on a copy
+of the displayed snapshot and retain its revision guard. If another CLI/UI
+session changes the file, lock and unlock to reload before retrying. A failed
+write does not mutate the displayed snapshot; a post-publication durability
+warning means the file may already have changed, so reload it before proceeding.
+
+Names, issuers, paths and errors render literally. Secrets, provisioning URIs
+and passwords use masked input and are cleared on submit/cancel. The unlocked
+session holds decrypted entries in memory for code generation. Locking releases
+references; Python does not guarantee memory erasure. The UI does not clear or
+refresh the clipboard: copied codes can expire and clipboard history may retain
+them. If copying finishes after expiry, copy again for a fresh value.
+
+Raw/JSON/quiet output and exit-status automation remain CLI presentation modes;
+they are not visual UI controls. The UI exposes their user-facing equivalents
+(code display and copy-only). Foreign import adapters remain Python helpers.
+No vault format or cryptographic parameter changes, migrations, network requests
+or QR scanner are introduced by this UI.
+
+See the [synthetic screenshots and reproduction instructions](../assets/screenshots/textual-ui/README.md)
+and [UI threat analysis](textual-security.md).
 
 **Examples:**
 ```bash
@@ -416,8 +456,9 @@ requires clipboard success and returns 5 on failure.
 `add`, `list` and `init` may create an initially missing vault. Other commands
 requiring an existing vault return 4 if it is absent. If a vault was detected
 but then cannot be loaded, the operation fails; no empty vault is created as
-recovery. UI startup failures now report the same statuses before starting the
-Textual event loop. Runtime UI interaction errors remain visible in the UI.
+recovery. UI startup failures with supplied credentials report the same statuses
+before starting the Textual event loop. Without supplied credentials the UI
+starts locked; authentication and operation errors remain visible in its forms.
 
 **Compatibility note:** Earlier versions sometimes printed errors and returned
 0 (including export/backup/mutation, non-interactive list, unlock and password
@@ -960,7 +1001,7 @@ creating new records must go through `Vault.add_entry()` or the CLI/helper.
 
 Generation refuses both cases instead of computing a code from an empty or
 folded key. `code` exits with status 6 (`invalid_secret` in JSON mode); the
-Textual prototype shows an error and copies no code. This is a secret-validation
+Textual interface shows an error and copies no code. This is a secret-validation
 error, not a wrong-password error. Other malformed payloads still fail explicitly;
 this is not general recovery for corrupted vaults.
 
@@ -1037,7 +1078,7 @@ d2fa COMMAND --help           # Show help for specific command
 d2fa --version                # Show version
 d2fa                         # Show version (no args)
 d2fa vault path               # Show the selected vault path
-d2fa ui                       # Launch the early Textual UI prototype
+d2fa ui                       # Launch the Textual terminal UI
 ```
 
 ## Security Best Practices

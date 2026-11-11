@@ -6,6 +6,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Complete Textual account/vault forms: create, unlock, add manually or from a
+  masked provisioning URI, rename, remove, encrypted import/export/backup and
+  password changes, with per-operation password authentication and explicit
+  overwrite/removal consent.
+- Searchable account rows, original row indices for duplicate repair, copy-only,
+  manual/five-minute inactivity locking and keyboard navigation, with a landing-page-inspired
+  dark palette and synthetic SVG/PNG documentation captures.
+- Headless end-to-end UI regressions and a repeatable synthetic capture campaign.
+
+### Changed
+
+- Selected TOTP codes refresh automatically at period boundaries, showing an
+  entry-specific countdown/progress bar without automatic clipboard writes.
+- `d2fa ui` without supplied credentials starts locked and authenticates in the
+  UI. Supplied password options retain pre-startup CLI failure statuses.
+- UI file/KDF and clipboard operations run in workers; mutations preserve the
+  displayed revision and leave session data unchanged after failed writes.
+- UI secrets are masked and cleared on submit/cancel. Unexpected UI diagnostics
+  exclude traceback locals. D2FA v1, cryptography and CLI command behavior are
+  unchanged; no migration is needed.
+
 ## [0.10.0] - 2026-10-30
 
 ### Added

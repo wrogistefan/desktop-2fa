@@ -321,7 +321,7 @@ def test_cli_ui_uses_resolved_global_vault_path(
     monkeypatch.setattr(
         textual_app,
         "run_textual",
-        lambda path, password: selected.append((path, password)),
+        lambda path, password, **kwargs: selected.append((path, password)),
     )
 
     result = runner.invoke(

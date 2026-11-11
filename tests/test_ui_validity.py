@@ -3,7 +3,6 @@
 import asyncio
 
 import pytest
-from textual.containers import Container
 from textual.widgets import Label, ListView
 
 from desktop_2fa.totp.generator import generate
@@ -27,10 +26,10 @@ def test_active_timer_tolerates_removed_screen_children(
     monkeypatch.setattr("desktop_2fa.ui_textual.app.time.time", lambda: 29)
 
     async def check() -> None:
-        async with app.run_test() as pilot:
+        async with app.run_test(size=(110, 38)) as pilot:
             await pilot.click("#generate")
             assert app._displayed_code is not None
-            await app.query_one(Container).remove()
+            await app.query_one("#workspace").remove()
             await pilot.pause(0.35)
             assert app._displayed_code is None
             app._update_validity()
@@ -40,7 +39,7 @@ def test_active_timer_tolerates_removed_screen_children(
 
 @pytest.mark.parametrize("period", [30, 45, 60])
 @pytest.mark.parametrize("action", ["generate", "copy"])
-def test_validity_expires_and_copy_uses_current_code(
+def test_validity_refreshes_and_copy_uses_current_code(
     monkeypatch: pytest.MonkeyPatch, period: int, action: str
 ) -> None:
     entry = TotpEntry(
@@ -67,7 +66,7 @@ def test_validity_expires_and_copy_uses_current_code(
         )
 
     async def check() -> None:
-        async with app.run_test() as pilot:
+        async with app.run_test(size=(110, 38)) as pilot:
             await pilot.click(f"#{action}")
             output = app.query_one("#output", Label)
             prefix = "Copied to clipboard! " if action == "copy" else ""
@@ -79,7 +78,9 @@ def test_validity_expires_and_copy_uses_current_code(
                 assert copied == [expected_code()]
             clock[0] = period
             await pilot.pause(0.35)
-            assert str(output.render()) == "Code expired. Generate or copy a new code."
+            assert (
+                str(output.render()) == f"Code: {expected_code()} (valid for {period}s)"
+            )
             assert len(copied) == (1 if action == "copy" else 0)
             await pilot.click("#copy")
             assert copied[-1] == expected_code()
@@ -109,23 +110,22 @@ def test_selection_change_clears_previous_code_and_copy_failure_stays_visible(
     monkeypatch.setattr("pyperclip.copy", fail_copy)
 
     async def check() -> None:
-        async with app.run_test() as pilot:
+        async with app.run_test(size=(110, 38)) as pilot:
             await pilot.click("#generate")
             output = app.query_one("#output", Label)
             assert str(output.render()).startswith("Code: ")
             app.query_one("#accounts", ListView).index = 1
             await pilot.pause()
-            assert (
-                str(output.render())
-                == "Selection changed. Generate or copy a new code."
-            )
+            assert str(output.render()).startswith("Code: ")
             await pilot.click("#copy")
             assert (
-                str(output.render()) == "Copy failed: synthetic clipboard unavailable"
+                str(output.render())
+                == "Copy failed: clipboard unavailable. Try generating a visible code."
             )
             app._update_validity()
             assert (
-                str(output.render()) == "Copy failed: synthetic clipboard unavailable"
+                str(output.render())
+                == "Copy failed: clipboard unavailable. Try generating a visible code."
             )
 
     asyncio.run(check())
