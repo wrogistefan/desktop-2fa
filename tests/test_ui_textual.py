@@ -42,6 +42,7 @@ def test_labels_render_literally_without_breaking_other_entries(
 
     async def check() -> None:
         async with app.run_test(size=(110, 38)) as pilot:
+            await asyncio.wait_for(app.view_ready.wait(), timeout=10)
             await pilot.pause()
             assert str(app.query_one("#message", Label).render()) == "Vault unlocked."
             labels = list(app.query("#accounts Label"))
@@ -79,6 +80,7 @@ def test_selection_generate_and_copy_keep_original_totp_parameters(
 
     async def check() -> None:
         async with app.run_test(size=(110, 38)) as pilot:
+            await asyncio.wait_for(app.view_ready.wait(), timeout=10)
             # Repeated activations test parameter parity, not the 0.2s button
             # animation during which Textual deliberately ignores new presses.
             for button in app.query(Button):
@@ -104,6 +106,10 @@ def test_selection_generate_and_copy_keep_original_totp_parameters(
                 app.query_one("#copy", Button).focus()
                 await pilot.pause()
                 await pilot.press("enter")
+                async with asyncio.timeout(5):
+                    while len(copied) <= index:
+                        await asyncio.sleep(0.01)
+                await app.workers.wait_for_complete()
                 assert copied[-1] == expected
 
     asyncio.run(check())
@@ -121,6 +127,7 @@ def test_dynamic_error_messages_are_literal(monkeypatch: pytest.MonkeyPatch) -> 
 
     async def check() -> None:
         async with app.run_test(size=(110, 38)) as pilot:
+            await asyncio.wait_for(app.view_ready.wait(), timeout=10)
             assert str(app.query_one("#message", Label).render()) == app.error
             app.query_one("#output", Label).update("[/bold] [red]literal[/red]")
             await pilot.pause()

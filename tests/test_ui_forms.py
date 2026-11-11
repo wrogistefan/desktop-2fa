@@ -17,6 +17,9 @@ SECRET = "JBSWY3DPEHPK3PXP"
 async def complete_form(
     app: D2FAApp, values: dict[str, str], checked: tuple[str, ...] = ()
 ) -> None:
+    async with asyncio.timeout(10):
+        while not isinstance(app.screen, OperationForm) or not app.screen.is_mounted:
+            await asyncio.sleep(0.01)
     form = app.screen
     assert isinstance(form, OperationForm)
     for key, value in values.items():
@@ -29,8 +32,11 @@ async def complete_form(
     async with asyncio.timeout(20):
         while app.screen is form:
             await asyncio.sleep(0.05)
-            if not form.busy and str(form.query_one("#form-error", Label).render()):
-                pytest.fail(str(form.query_one("#form-error", Label).render()))
+            if app.screen is not form:
+                break
+            message = str(form.query_one("#form-error", Label).render())
+            if not form.busy and message and message != "Working locally…":
+                pytest.fail(message)
 
 
 def test_ui_manages_vault_from_creation_to_recovery(
@@ -44,6 +50,7 @@ def test_ui_manages_vault_from_creation_to_recovery(
 
     async def check() -> None:
         async with app.run_test(size=(110, 42)) as pilot:
+            await asyncio.wait_for(app.view_ready.wait(), timeout=10)
             await pilot.pause()
             assert app.vault is None
             await pilot.click("#create")
@@ -129,11 +136,12 @@ def test_failed_form_is_sanitized_and_clears_secrets(
 
     async def check() -> None:
         async with app.run_test(size=(80, 24)) as pilot:
-            app.open_form("unlock")
+            await asyncio.wait_for(app.view_ready.wait(), timeout=10)
+            await app.open_form("unlock")
             await pilot.pause()
             form = app.screen
             form.query_one("#password", Input).value = PASSWORD
-            form.query_one("#submit", Button).press()
+            form.submit()
             await app.workers.wait_for_complete()
             await pilot.pause()
             assert (
@@ -161,11 +169,18 @@ def test_search_selects_original_row_and_copy_only_hides_code(
 
     async def check() -> None:
         async with app.run_test(size=(110, 38)) as pilot:
+            await asyncio.wait_for(app.view_ready.wait(), timeout=10)
             app.query_one("#search", Input).value = "other"
             await pilot.pause()
-            assert app.selected_index == 1
+            async with asyncio.timeout(5):
+                while app.selected_index != 1:
+                    await asyncio.sleep(0.01)
             assert len(app.query_one("#accounts", ListView).children) == 1
             await pilot.click("#copy-only")
+            async with asyncio.timeout(5):
+                while not copied:
+                    await asyncio.sleep(0.01)
+            await app.workers.wait_for_complete()
             assert len(copied) == 1 and len(copied[0]) == 8
             await pilot.pause(0.35)
             assert app._displayed_code is None
@@ -197,6 +212,7 @@ def test_slow_clipboard_cannot_restore_a_locked_code(
 
     async def check() -> None:
         async with app.run_test(size=(110, 38)) as pilot:
+            await asyncio.wait_for(app.view_ready.wait(), timeout=10)
             await pilot.pause()
             try:
                 app.query_one("#copy", Button).press()
@@ -242,8 +258,9 @@ def test_busy_file_worker_keeps_timer_running_and_prevents_cancel(
 
     async def check() -> None:
         async with app.run_test(size=(110, 38)) as pilot:
+            await asyncio.wait_for(app.view_ready.wait(), timeout=10)
             await pilot.pause()
-            app.open_form("backup")
+            await app.open_form("backup")
             await pilot.pause()
             form = app.screen
             assert isinstance(form, OperationForm)
@@ -254,8 +271,12 @@ def test_busy_file_worker_keeps_timer_running_and_prevents_cancel(
                     while not started.is_set():
                         await asyncio.sleep(0.01)
                 clock[0] = 30
-                await pilot.pause(0.35)
-                assert app._displayed_code and app._displayed_code.counter == 1
+                async with asyncio.timeout(3):
+                    while (
+                        app._displayed_code is None or app._displayed_code.counter != 1
+                    ):
+                        await asyncio.sleep(0.01)
+                assert app._displayed_code.counter == 1
                 await pilot.press("escape", "ctrl+q")
                 assert app.screen is form and app.busy
                 assert form.query_one("#password", Input).value == ""
@@ -275,6 +296,7 @@ def test_unexpected_ui_error_never_renders_traceback_locals(
     async def check() -> None:
         with pytest.raises(RuntimeError, match=marker):
             async with app.run_test() as pilot:
+                await asyncio.wait_for(app.view_ready.wait(), timeout=10)
                 await pilot.pause()
                 app._handle_exception(RuntimeError(marker))
 
@@ -294,8 +316,9 @@ def test_auto_lock_closes_forms_clears_secrets_and_defers_busy_writes(
 
     async def check() -> None:
         async with app.run_test(size=(110, 38)) as pilot:
+            await asyncio.wait_for(app.view_ready.wait(), timeout=10)
             await pilot.pause()
-            app.open_form("add")
+            await app.open_form("add")
             await pilot.pause()
             form = app.screen
             assert isinstance(form, OperationForm)
@@ -333,20 +356,39 @@ def test_keyboard_mouse_and_paste_extend_inactivity_deadline(
 
     async def check() -> None:
         async with app.run_test(size=(110, 38)) as pilot:
+            await asyncio.wait_for(app.view_ready.wait(), timeout=10)
             await pilot.pause()
-            app.open_form("add")
+            await app.open_form("add")
             await pilot.pause()
             form = app.screen
             form.query_one("#name", Input).focus()
-            app._last_activity = 1
+            baseline = app._last_activity - 10
+            app._last_activity = baseline
             await pilot.press("x")
-            assert app._last_activity > 1
-            app._last_activity = 1
+            async with asyncio.timeout(3):
+                while app._last_activity == baseline:
+                    await asyncio.sleep(0.01)
+            assert app._last_activity > baseline
+            app._last_activity = baseline
             await app.on_event(events.Paste("synthetic-paste"))
-            assert app._last_activity > 1
-            app._last_activity = 1
-            await pilot.click("#issuer")
-            assert app._last_activity > 1
+            assert app._last_activity > baseline
+            app._last_activity = baseline
+            # Native mouse input enters at the app; Pilot.click forwards it
+            # directly to the screen and is not a native driver event.
+            await app.on_event(
+                events.MouseDown(
+                    None,
+                    x=0,
+                    y=0,
+                    delta_x=0,
+                    delta_y=0,
+                    button=1,
+                    shift=False,
+                    meta=False,
+                    ctrl=False,
+                )
+            )
+            assert app._last_activity > baseline
             previous = app._last_activity
             await pilot.pause(0.35)
             assert app._last_activity == previous
@@ -357,15 +399,21 @@ def test_keyboard_mouse_and_paste_extend_inactivity_deadline(
     asyncio.run(check())
 
 
-def test_inactivity_also_clears_password_in_locked_unlock_form() -> None:
+@pytest.mark.parametrize("last_activity", [None, 256.00000000000006])
+def test_inactivity_also_clears_password_in_locked_unlock_form(
+    last_activity: float | None,
+) -> None:
     app = D2FAApp("synthetic-not-opened")
 
     async def check() -> None:
         async with app.run_test(size=(110, 38)) as pilot:
-            app.open_form("unlock")
+            await asyncio.wait_for(app.view_ready.wait(), timeout=10)
+            await app.open_form("unlock")
             await pilot.pause()
             field = app.screen.query_one("#password", Input)
             field.value = PASSWORD
+            if last_activity is not None:
+                app._last_activity = last_activity
             await app._check_inactivity(app._last_activity + app.AUTO_LOCK_SECONDS)
             await pilot.pause()
             assert app.vault is None

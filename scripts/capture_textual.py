@@ -35,6 +35,8 @@ async def campaign(output: Path) -> dict[str, object]:
 
     async with app.run_test(size=(110, 38)) as pilot:
 
+        await asyncio.wait_for(app.view_ready.wait(), timeout=10)
+
         async def capture(name: str) -> None:
             await pilot.pause()
             save_svg(
@@ -49,7 +51,7 @@ async def campaign(output: Path) -> dict[str, object]:
             operation: str, values: dict[str, str], checks: tuple[str, ...] = ()
         ) -> None:
             if not isinstance(app.screen, OperationForm):
-                app.open_form(operation)
+                await app.open_form(operation)
                 await pilot.pause()
             form = app.screen
             assert isinstance(form, OperationForm) and form.operation == operation
@@ -67,7 +69,7 @@ async def campaign(output: Path) -> dict[str, object]:
             cases.append(operation)
 
         await capture("01-locked")
-        app.open_form("create")
+        await app.open_form("create")
         await pilot.pause()
         app.screen.query_one("#new-password", Input).value = PASSWORD
         app.screen.query_one("#confirm-password", Input).value = PASSWORD
@@ -92,7 +94,7 @@ async def campaign(output: Path) -> dict[str, object]:
         assert app.vault is not None and len(app.vault.entries) == 2
         app.main_screen.query_one("#accounts", ListView).index = 1
         await capture("03-accounts")
-        app.open_form("add")
+        await app.open_form("add")
         await pilot.pause()
         app.screen.query_one("#name", Input).value = "personal@example.invalid"
         app.screen.query_one("#issuer", Input).value = "Example Mail"
@@ -113,6 +115,10 @@ async def campaign(output: Path) -> dict[str, object]:
         with patch("pyperclip.copy", clipboard.append):
             app.main_screen.query_one("#copy-only", Button).focus()
             await pilot.press("enter")
+            async with asyncio.timeout(5):
+                while not clipboard:
+                    await asyncio.sleep(0.01)
+            await app.workers.wait_for_complete()
         assert len(clipboard) == 1
         assert str(app.main_screen.query_one("#code", Label).render()) == "------"
         cases.append("copy-only with synthetic clipboard stub")
@@ -120,7 +126,7 @@ async def campaign(output: Path) -> dict[str, object]:
         assert Path("demo-vault.backup.bin").exists()
         await capture("06-encrypted-backup")
         await submit("export", {"file": "demo-export.bin", "password": PASSWORD})
-        app.open_form("change-password")
+        await app.open_form("change-password")
         await capture("07-change-password")
         replacement = "synthetic-replacement-demo-passphrase"
         await submit(

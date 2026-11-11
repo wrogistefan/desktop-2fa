@@ -64,6 +64,7 @@ class D2FAApp(App[object]):
         self._copy_busy = False
         self._code_request = 0
         self._accounts_lock = asyncio.Lock()
+        self.view_ready = asyncio.Event()
         self._refreshing = False
         self._last_activity = time.monotonic()
         self._displayed_code: DisplayedCode | None = None
@@ -85,6 +86,8 @@ class D2FAApp(App[object]):
 
     @property
     def selected_index(self) -> int | None:
+        if not self.screen_stack:
+            return None
         if not self.main_screen.query("#accounts"):
             return None
         index = self.main_screen.query_one("#accounts", ListView).index
@@ -174,26 +177,32 @@ class D2FAApp(App[object]):
         self._update_controls()
         self.set_interval(0.25, self._update_validity)
         self.set_interval(1, self._check_inactivity)
+        self.view_ready.set()
 
     async def on_event(self, event: events.Event) -> None:
         # Observe input before focused widgets consume it (including passwords
         # and pasted input). Countdown/timer events must not extend the session.
-        if isinstance(event, (events.InputEvent, events.Paste)):
+        if (
+            isinstance(event, (events.InputEvent, events.Paste))
+            and not event.is_forwarded
+        ):
             self._last_activity = time.monotonic()
         await super().on_event(event)
 
     async def _check_inactivity(self, now: float | None = None) -> None:
+        if not self.screen_stack or not self.main_screen.query("#workspace"):
+            return
         if self.busy or (self.vault is None and len(self.screen_stack) == 1):
             return
         now = time.monotonic() if now is None else now
-        if now - self._last_activity >= self.AUTO_LOCK_SECONDS:
+        if now >= self._last_activity + self.AUTO_LOCK_SECONDS:
             await self.action_lock()
             self.main_screen.query_one("#message", Label).update(
                 "Vault locked after 5 minutes of inactivity."
             )
 
     def _update_controls(self) -> None:
-        if not self.main_screen.query("#add"):
+        if not self.screen_stack or not self.main_screen.query("#add"):
             return
         unlocked = self.vault is not None
         for identifier in (
@@ -260,6 +269,8 @@ class D2FAApp(App[object]):
         self._show_selection()
 
     async def show_vault(self, vault: Vault, message: str) -> None:
+        self._displayed_code = None
+        self._clear_code()
         if self.vault is None:
             self._last_activity = time.monotonic()
         self.vault = vault
@@ -272,7 +283,7 @@ class D2FAApp(App[object]):
 
     def _clear_code(self) -> None:
         self._code_request += 1
-        if self.main_screen.query("#code"):
+        if self.screen_stack and self.main_screen.query("#code"):
             self.main_screen.query_one("#code", Label).update("------")
             self.main_screen.query_one("#output", Label).update("")
             self.main_screen.query_one("#validity", ProgressBar).update(progress=0)
@@ -349,6 +360,9 @@ class D2FAApp(App[object]):
         displayed = self._displayed_code
         if displayed is None or self.vault is None:
             return
+        if not self.screen_stack:
+            self._displayed_code = None
+            return
         if not self.main_screen.query("#output") or not self.main_screen.query(
             "#accounts"
         ):
@@ -381,7 +395,7 @@ class D2FAApp(App[object]):
         )
 
     def on_list_view_highlighted(self, event: ListView.Highlighted) -> None:
-        if self._refreshing:
+        if self._refreshing or not self.screen_stack:
             return
         if not self.main_screen.query("#accounts") or not self.main_screen.query(
             "#add"
@@ -396,7 +410,7 @@ class D2FAApp(App[object]):
             await self._refresh_accounts()
 
     async def action_lock(self) -> None:
-        if self.busy:
+        if self.busy or not self.screen_stack:
             return
         while len(self.screen_stack) > 1:
             if isinstance(self.screen, OperationForm):
@@ -411,18 +425,18 @@ class D2FAApp(App[object]):
             "Vault locked. Unlock to view accounts."
         )
 
-    def open_form(self, operation: str) -> None:
-        if self.busy or len(self.screen_stack) > 1:
+    async def open_form(self, operation: str) -> None:
+        if self.busy or not self.screen_stack or len(self.screen_stack) > 1:
             return
         if operation not in {"unlock", "create", "import"} and self.vault is None:
             return
-        self.push_screen(OperationForm(self, operation))
+        await self.push_screen(OperationForm(self, operation))
 
-    def action_add(self) -> None:
-        self.open_form("add")
+    async def action_add(self) -> None:
+        await self.open_form("add")
 
-    def action_backup(self) -> None:
-        self.open_form("backup")
+    async def action_backup(self) -> None:
+        await self.open_form("backup")
 
     async def action_quit(self) -> None:
         # Do not abandon a write between its publication and UI completion.
@@ -444,6 +458,8 @@ class D2FAApp(App[object]):
         )
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if not self.screen_stack or not self.main_screen.query("#workspace"):
+            return
         identifier = event.button.id
         if identifier == "lock":
             await self.action_lock()
@@ -470,7 +486,7 @@ class D2FAApp(App[object]):
                         )
                     )
         elif identifier:
-            self.open_form(identifier)
+            await self.open_form(identifier)
 
 
 def run_textual(

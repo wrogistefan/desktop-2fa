@@ -253,6 +253,7 @@ def test_ui_reports_legacy_empty_key_without_generating_or_copying(
 
     async def check() -> None:
         async with ui.run_test(size=(110, 38)) as pilot:
+            await asyncio.wait_for(ui.view_ready.wait(), timeout=10)
             ui.query_one(f"#{action}", Button).focus()
             await pilot.press("enter")
             assert str(ui.query_one("#output", Label).render()) == (

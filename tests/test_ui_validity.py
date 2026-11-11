@@ -3,7 +3,7 @@
 import asyncio
 
 import pytest
-from textual.widgets import Label, ListView
+from textual.widgets import Button, Label, ListView
 
 from desktop_2fa.totp.generator import generate
 from desktop_2fa.ui_textual.app import D2FAApp
@@ -27,10 +27,13 @@ def test_active_timer_tolerates_removed_screen_children(
 
     async def check() -> None:
         async with app.run_test(size=(110, 38)) as pilot:
+            await asyncio.wait_for(app.view_ready.wait(), timeout=10)
             await pilot.click("#generate")
             assert app._displayed_code is not None
             await app.query_one("#workspace").remove()
-            await pilot.pause(0.35)
+            async with asyncio.timeout(5):
+                while app._displayed_code is not None:
+                    await asyncio.sleep(0.01)
             assert app._displayed_code is None
             app._update_validity()
 
@@ -66,8 +69,12 @@ def test_validity_refreshes_and_copy_uses_current_code(
         )
 
     async def check() -> None:
-        async with app.run_test(size=(110, 38)) as pilot:
-            await pilot.click(f"#{action}")
+        async with app.run_test(size=(110, 38)):
+            await asyncio.wait_for(app.view_ready.wait(), timeout=10)
+            await app.on_button_pressed(
+                Button.Pressed(app.query_one(f"#{action}", Button))
+            )
+            await app.workers.wait_for_complete()
             output = app.query_one("#output", Label)
             prefix = "Copied to clipboard! " if action == "copy" else ""
             assert (
@@ -77,12 +84,18 @@ def test_validity_refreshes_and_copy_uses_current_code(
             if action == "copy":
                 assert copied == [expected_code()]
             clock[0] = period
-            await pilot.pause(0.35)
+            async with asyncio.timeout(5):
+                while (
+                    str(output.render())
+                    != f"Code: {expected_code()} (valid for {period}s)"
+                ):
+                    await asyncio.sleep(0.01)
             assert (
                 str(output.render()) == f"Code: {expected_code()} (valid for {period}s)"
             )
             assert len(copied) == (1 if action == "copy" else 0)
-            await pilot.click("#copy")
+            await app.on_button_pressed(Button.Pressed(app.query_one("#copy", Button)))
+            await app.workers.wait_for_complete()
             assert copied[-1] == expected_code()
             assert str(output.render()) == (
                 f"Copied to clipboard! Code: {expected_code()} (valid for {period}s)"
@@ -111,13 +124,15 @@ def test_selection_change_clears_previous_code_and_copy_failure_stays_visible(
 
     async def check() -> None:
         async with app.run_test(size=(110, 38)) as pilot:
+            await asyncio.wait_for(app.view_ready.wait(), timeout=10)
             await pilot.click("#generate")
             output = app.query_one("#output", Label)
             assert str(output.render()).startswith("Code: ")
             app.query_one("#accounts", ListView).index = 1
             await pilot.pause()
             assert str(output.render()).startswith("Code: ")
-            await pilot.click("#copy")
+            await app.on_button_pressed(Button.Pressed(app.query_one("#copy", Button)))
+            await app.workers.wait_for_complete()
             assert (
                 str(output.render())
                 == "Copy failed: clipboard unavailable. Try generating a visible code."
@@ -127,5 +142,27 @@ def test_selection_change_clears_previous_code_and_copy_failure_stays_visible(
                 str(output.render())
                 == "Copy failed: clipboard unavailable. Try generating a visible code."
             )
+
+    asyncio.run(check())
+
+
+def test_queued_callbacks_tolerate_an_empty_screen_stack(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = make_app(
+        monkeypatch, [TotpEntry(account_name="synthetic", secret="MY======")]
+    )
+
+    async def check() -> None:
+        async with app.run_test(size=(110, 38)):
+            await asyncio.wait_for(app.view_ready.wait(), timeout=10)
+            button = app.query_one("#generate", Button)
+            assert app._displayed_code is not None
+        assert not app.screen_stack
+        await app.on_button_pressed(Button.Pressed(button))
+        app._update_controls()
+        app._update_validity()
+        await app._check_inactivity(app._last_activity + 301)
+        assert app._displayed_code is None
 
     asyncio.run(check())
